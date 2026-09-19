@@ -13,7 +13,10 @@ import type { MatchOptions, Reference } from './match-words.use-case'
  * a shaded bar - is at the mercy of the engine's layout analysis and of one
  * resolution. Cropped to itself, enlarged further, read as a single line (or
  * word, or as digits only when it is a figure), light-on-dark text inverted,
- * contrast stretched, it often reads cleanly. Measured on real scans at 120
+ * contrast stretched, it often reads cleanly. Whether the text is light on a
+ * dark bar is taken from the original, where it is certain, rather than
+ * guessed from the scan: a white total on a purple bar can scan as pale lilac
+ * on paler lilac, too light overall to look like a dark bar. Measured on real scans at 120
  * and 144 dpi, cropped multi-pass reading confirmed 96-97% of every printed
  * value on the page; at 93 dpi, a third.
  *
@@ -49,6 +52,9 @@ export const DEFAULT_RECHECK_PASSES: readonly RecheckPass[] = [
   { dpi: 600, layout: 'line', stretch: true },
 ]
 
+/** Which way the original prints a run: dark text on light, or light text on a dark bar. */
+export type PrintPolarity = 'dark-on-light' | 'light-on-dark'
+
 export interface Recheck {
   cleared: boolean
   /** An agreeing reading when cleared; `null` otherwise. */
@@ -68,9 +74,10 @@ export async function recheckRun (
   image: { raster: Raster, dpi: number },
   run: Reference,
   options: MatchOptions & RecheckOptions,
+  polarity?: PrintPolarity,
 ): Promise<Recheck> {
   const { passes = DEFAULT_RECHECK_PASSES, agree = 2 } = options
-  const crop = cropRun(image.raster, image.dpi, run)
+  const crop = cropRun(image.raster, image.dpi, run, polarity)
   if (crop === null) return { cleared: false, reading: null, passes: 0, agreed: 0 }
 
   const characters = FIGURE.test(run.text.trim()) ? FIGURE_CHARACTERS : undefined
@@ -83,7 +90,8 @@ export async function recheckRun (
     tried++
     const scale = Math.max(1, pass.dpi / image.dpi)
     const enlarged = scale === 1 ? crop : await resampleRaster(crop, Math.round(crop.width * scale), Math.round(crop.height * scale))
-    const prepared = frame(pass.stretch === true ? stretch(enlarged) : enlarged)
+    // Inverted text keeps the bar's grey behind it; only a stretch makes that paper white.
+    const prepared = frame(polarity === 'light-on-dark' || pass.stretch === true ? stretch(enlarged) : enlarged)
     const read = await engine.recognise(prepared, { layout: pass.layout, characters })
     const text = read.lines.map(line => line.text).join(' ').trim()
 
@@ -99,9 +107,10 @@ export async function recheckRun (
 
 /**
  * The run's box on the image, grown by a quarter of its height (at least 2 pt)
- * so the glyphs are whole; light text on a dark bar is turned dark on light.
+ * so the glyphs are whole; light text on a dark bar is turned dark on light -
+ * as the original prints it when that is known, else when the crop is dark.
  */
-function cropRun (raster: Raster, dpi: number, run: Reference): Raster | null {
+function cropRun (raster: Raster, dpi: number, run: Reference, polarity?: PrintPolarity): Raster | null {
   const s = dpi / 72
   const pad = Math.max(2, run.height * 0.25)
   const left = Math.max(0, Math.floor((run.x - pad) * s))
@@ -116,11 +125,35 @@ function cropRun (raster: Raster, dpi: number, run: Reference): Raster | null {
 
   let sum = 0
   for (let i = 0; i < out.data.length; i += 4) sum += luminance(out.data, i)
-  if (sum / (out.width * out.height) < 110)
+  const invert = polarity === undefined ? sum / (out.width * out.height) < 110 : polarity === 'light-on-dark'
+  if (invert)
     for (let i = 0; i < out.data.length; i += 4)
       for (let c = 0; c < 3; c++) out.data[i + c] = 255 - out.data[i + c]
 
   return out
+}
+
+/**
+ * Which way the original prints a run, read off its own crisp rendering: the
+ * glyphs are the pixels far from the background, and the background is most of
+ * the box.
+ */
+export function printPolarity (raster: Raster, dpi: number, run: Reference): PrintPolarity {
+  const s = dpi / 72
+  const left = Math.max(0, Math.floor(run.x * s))
+  const top = Math.max(0, Math.floor(run.y * s))
+  const right = Math.min(raster.width, Math.ceil((run.x + run.width) * s))
+  const bottom = Math.min(raster.height, Math.ceil((run.y + run.height) * s))
+  const values: number[] = []
+  for (let y = top; y < bottom; y++)
+    for (let x = left; x < right; x++) values.push(luminance(raster.data, (y * raster.width + x) * 4))
+  if (values.length === 0) return 'dark-on-light'
+
+  const background = values.toSorted((a, b) => a - b)[Math.floor(values.length / 2)]
+  const glyphs = values.filter(v => Math.abs(v - background) > 48)
+  if (glyphs.length === 0) return 'dark-on-light'
+
+  return glyphs.reduce((a, b) => a + b, 0) / glyphs.length > background ? 'light-on-dark' : 'dark-on-light'
 }
 
 /** Linear stretch so the darkest 2% become black and the lightest 2% white. */

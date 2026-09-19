@@ -7,7 +7,7 @@ import { DEFAULT_NORMALISE } from '../text-normalisation'
 import { compareTexts } from '../text-similarity'
 import { claimWords, judgeRun, judgeRuns } from './match-words.use-case'
 import type { MatchOptions, Reference } from './match-words.use-case'
-import { recheckRun } from './recheck-run.use-case'
+import { printPolarity, recheckRun } from './recheck-run.use-case'
 import type { OcrOptions, OcrReport, PageOcr, PlacedText, ReadablePage, SideText } from './ocr-report.contract'
 
 /**
@@ -114,7 +114,7 @@ async function readPage (page: ReadablePage, engine: OcrEngine, options: OcrOpti
       if (judgeRun(run.text, claims.found[r], rules).agrees) continue
       rechecks.attempted++
       rechecked.add(r)
-      const second = await recheckRun(engine, scanImage, run, { ...rules, ...recheck })
+      const second = await recheckRun(engine, scanImage, run, { ...rules, ...recheck }, printPolarity(page.original.raster, originalDpi, run))
       if (second.reading === null) continue
       claims.found[r] = second.reading
       rechecks.cleared++

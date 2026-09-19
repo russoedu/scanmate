@@ -163,6 +163,35 @@ describe('ocrPages', () => {
     expect(report.pages[0].rechecks.cleared).toBe(0)
   })
 
+  it('reads light text on a bar the scan left pale as the original prints it: light on dark', async () => {
+    // White figures on a dark bar in the original; the scan washed the bar out to pale grey.
+    const run = { text: '1,250.00', x: 300, y: 120, width: 60, height: 11 }
+    const original = createRaster(600, 800)
+    fillRect(original, { x: 296, y: 116, width: 70, height: 20 }, 90)
+    fillRect(original, { x: 302, y: 122, width: 50, height: 6 }, 255)
+    const scan = createRaster(600, 800)
+    fillRect(scan, { x: 296, y: 116, width: 70, height: 20 }, 205)
+    fillRect(scan, { x: 302, y: 122, width: 50, height: 6 }, 242)
+    const readable = page(1, [run])
+    readable.original = { ...readable.original, raster: original }
+    readable.aligned = { ...readable.aligned, raster: scan }
+
+    // The engine reads a crop only when it is dark text on white paper.
+    const engine = rereading(() => '')
+    engine.recognise = async (image, hints) => {
+      if (hints?.layout === undefined || hints.layout === 'page') return { text: '', confidence: 0, lines: [] }
+      const crop = image as Raster
+      const values = Array.from({ length: crop.width * crop.height }, (_, p) => crop.data[p * 4])
+      const text = Math.min(...values) < 40 && values.toSorted((a, b) => a - b)[Math.floor(values.length / 2)] > 215 ? '1,250.00' : ''
+
+      return { text, confidence: 90, lines: [{ text, words: [] }] }
+    }
+    const report = await ocrPages([readable], { engine, targetDpi: null })
+
+    expect(report.pages[0].differences).toEqual([])
+    expect(report.pages[0].rechecks).toEqual({ attempted: 1, cleared: 1 })
+  })
+
   it('does not call words added where the original printed something that is not text, like a logo', async () => {
     // The margin note of READ lands on a block the original printed as an image.
     const withLogo = page()
