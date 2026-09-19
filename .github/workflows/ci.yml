@@ -213,9 +213,14 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - run: node -e "const fs=require('node:fs'),cp=require('node:child_process');const hasNpm=fs.globSync('packages/*/package.json').length>0;const hasPython=fs.globSync('python-packages/*/pyproject.toml').length>0;const hasCsharp=fs.globSync('packages/*/*.csproj').length>0;if(!hasNpm&&!hasPython&&!hasCsharp){console.log('Nothing to release - skipping.');process.exit(0)}const env={...process.env};process.exit(cp.spawnSync('npx nx release --yes',{stdio:'inherit',shell:true,env}).status ?? 1)"
+      # RELEASE_SPECIFIER (Settings > Secrets and variables > ACTIONS > Variables)
+      # overrides the bump for one release: set it to 'minor' or 'major' when the
+      # next version is a decision rather than what the commits imply, and clear
+      # it afterwards. Empty - the normal state - versions from conventional commits.
+      - run: node -e "const fs=require('node:fs'),cp=require('node:child_process');const hasNpm=fs.globSync('packages/*/package.json').length>0;const hasPython=fs.globSync('python-packages/*/pyproject.toml').length>0;const hasCsharp=fs.globSync('packages/*/*.csproj').length>0;if(!hasNpm&&!hasPython&&!hasCsharp){console.log('Nothing to release - skipping.');process.exit(0)}const specifier=(process.env.RELEASE_SPECIFIER||'').trim();if(specifier&&!/^(major|minor|patch|premajor|preminor|prepatch|prerelease)$/.test(specifier)){console.error(`::error::RELEASE_SPECIFIER is '${specifier}', which is not a semver keyword.`);process.exit(1)}if(specifier)console.log(`Releasing with specifier '${specifier}' rather than from conventional commits.`);const env={...process.env};process.exit(cp.spawnSync(`npx nx release ${specifier} --yes`,{stdio:'inherit',shell:true,env}).status ?? 1)"
         name: Release — version, tag, publish and GitHub Release (npm + Python + C#)
         if: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN:    ${{ secrets.NPM_TOKEN }}
+          GITHUB_TOKEN:       ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_SPECIFIER:  ${{ vars.RELEASE_SPECIFIER }}

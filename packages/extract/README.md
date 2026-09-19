@@ -177,7 +177,7 @@ Returns `null` if page contains no full-page embedded image.
 Resolves target DPI for a single page based on metadata and user preference.
 
 #### `pairDpi(originalMeta: PageMetadata, scannedMeta: PageMetadata, choice?: DpiChoice): number`
-Determines optimal 1:1 render resolution DPI for a page pair, matching original render scale to the scan's native DPI.
+Resolves the render resolution of both sides of a page pair. With `'match'` the original renders at the scan's resolution *on the paper it shows* - the scan's pixels over the original's page size - and the scan at its own pixels, never resampled. A phone photo stored at one pixel per point says 72 dpi of itself; a 3024 x 4032 picture of an A4 sheet holds about 345 on the sheet, and that is what the original is rendered at.
 
 ---
 
