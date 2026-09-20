@@ -119,7 +119,7 @@ describe('ocrPages', () => {
   it('compares the scan with the original’s text layer, run by run, and scores the page', async () => {
     const engine = stub(READ)
     const report = await ocrPages([page()], { engine, targetDpi: null, recheck: false })
-    const [result] = report.pages
+    const [{ text: result }] = report.pages
 
     // Only the scan was read: the original's text came from its text layer.
     expect(engine.calls).toBe(1)
@@ -146,20 +146,20 @@ describe('ocrPages', () => {
     const always = await ocrPages([page(1, [ITEMS[4]])], { engine: rereading(() => "Planet D'Qar"), targetDpi: null })
     const once = await ocrPages([page(1, [ITEMS[4]])], { engine: rereading(n => (n === 0 ? "Planet D'Qar" : 'Pianet OQar')), targetDpi: null })
 
-    expect(always.pages[0].differences).toEqual([])
-    expect(always.pages[0].rechecks).toEqual({ attempted: 1, cleared: 1 })
-    expect(always.pages[0].score).toBe(1)
+    expect(always.pages[0].text.differences).toEqual([])
+    expect(always.pages[0].text.rechecks).toEqual({ attempted: 1, cleared: 1 })
+    expect(always.pages[0].text.score).toBe(1)
     // One agreeing reading among six is not enough: that is how a forgery gets through.
-    expect(once.pages[0].differences.map(d => d.kind)).toEqual(['missing'])
-    expect(once.pages[0].rechecks).toEqual({ attempted: 1, cleared: 0 })
+    expect(once.pages[0].text.differences.map(d => d.kind)).toEqual(['missing'])
+    expect(once.pages[0].text.rechecks).toEqual({ attempted: 1, cleared: 0 })
   })
 
   it('never clears a figure that keeps reading as a different figure', async () => {
     const engine = stub([[word('Total', 301, 120, 25), word('7,250.00', 330, 120, 40)]])
     const report = await ocrPages([page(1, [ITEMS[3]])], { engine, targetDpi: null })
 
-    expect(report.pages[0].differences).toMatchObject([{ kind: 'changed', reason: 'numbers', expected: 'Total 1,250.00' }])
-    expect(report.pages[0].rechecks.cleared).toBe(0)
+    expect(report.pages[0].text.differences).toMatchObject([{ kind: 'changed', reason: 'numbers', expected: 'Total 1,250.00' }])
+    expect(report.pages[0].text.rechecks.cleared).toBe(0)
   })
 
   it('reads light text on a bar the scan left pale as the original prints it: light on dark', async () => {
@@ -187,8 +187,8 @@ describe('ocrPages', () => {
     }
     const report = await ocrPages([readable], { engine, targetDpi: null })
 
-    expect(report.pages[0].differences).toEqual([])
-    expect(report.pages[0].rechecks).toEqual({ attempted: 1, cleared: 1 })
+    expect(report.pages[0].text.differences).toEqual([])
+    expect(report.pages[0].text.rechecks).toEqual({ attempted: 1, cleared: 1 })
   })
 
   it('does not call words added where the original printed something that is not text, like a logo', async () => {
@@ -199,7 +199,7 @@ describe('ocrPages', () => {
     withLogo.original = { ...withLogo.original, raster: printed }
     const report = await ocrPages([withLogo], { engine: stub(READ), targetDpi: null, recheck: false })
 
-    expect(report.pages[0].differences.map(d => d.kind)).toEqual(['changed', 'missing'])
+    expect(report.pages[0].text.differences.map(d => d.kind)).toEqual(['changed', 'missing'])
   })
 
   it('leaves an engine it was given running, for the next call', async () => {
@@ -212,7 +212,7 @@ describe('ocrPages', () => {
   it('reads the original too when it has no text layer', async () => {
     const engine = stub(READ)
     const report = await ocrPages([page(1, [])], { engine, targetDpi: null })
-    const [result] = report.pages
+    const [{ text: result }] = report.pages
 
     expect(engine.calls).toBe(2)
     expect(result.original.source).toBe('ocr')
@@ -225,7 +225,7 @@ describe('ocrPages', () => {
     const dense = page(1)
     const sparse = page(2, [{ text: 'Order#', x: 301, y: 100, width: 38, height: 11 }])
     const report = await ocrPages([dense, sparse], { engine: stub([[word('Order#', 301, 100, 38)]]), targetDpi: null })
-    const [first, second] = report.pages
+    const [{ text: first }, { text: second }] = report.pages
 
     expect(second.score).toBe(1)
     expect(report.pageMean).toBeCloseTo((first.score + 1) / 2, 10)
@@ -237,7 +237,7 @@ describe('ocrPages', () => {
     const events: StageEvent[] = []
     const report = await ocrPages([page()], { engine: stub(READ), targetDpi: null, scoreMetric: 'wordRecall', onProgress: e => { events.push(e) } })
 
-    expect(report.pages[0].score).toBe(report.pages[0].metrics.wordRecall)
+    expect(report.pages[0].text.score).toBe(report.pages[0].text.metrics.wordRecall)
     expect(events.map(e => `${e.stage}:${e.phase}:${e.page}`)).toEqual(['ocr:start:1', 'ocr:done:1'])
     expect(events[1].detail).toMatchObject({ original: 'text-layer', differences: 3, rechecked: 2, cleared: 0 })
   })
@@ -245,8 +245,8 @@ describe('ocrPages', () => {
   it('warns when nothing could be read, or when a text layer was insisted on and missing', async () => {
     const blankReport = await ocrPages([page()], { engine: stub([]), targetDpi: null })
     const noLayerReport = await ocrPages([page(1, [])], { engine: stub(READ), targetDpi: null, original: 'text-layer' })
-    const [blank] = blankReport.pages
-    const [noLayer] = noLayerReport.pages
+    const [{ text: blank }] = blankReport.pages
+    const [{ text: noLayer }] = noLayerReport.pages
 
     expect(blank.warnings).toContain('nothing could be read on the scanned page')
     expect(blank.differences.every(d => d.kind === 'missing')).toBe(true)

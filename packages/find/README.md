@@ -19,14 +19,16 @@ import { ocrPages } from '@scanmate/ocr'
 import { findContent } from '@scanmate/find'
 
 const report = await ocrPages(alignedPages)
-const found = findContent(report, [
+// The reading hands its pages back, and the search takes them straight.
+const found = findContent(report.pages, [
   { page: 1, content: ['The Resistance', '17 September 2026', '27,211,380.00'] },
   { page: 2, content: ['Comm Specs', '4,080,300.00'] },
 ])
 
 found.allFound                    // every item present on its page
 found.allIdentifiable             // every item present where the original prints it
-found.pages[0].content[2]         // { found, identifiable, foundBy, score, excerpt, box, occurrences, foundOnPages }
+found.pages[0].find.content[2]    // { found, identifiable, foundBy, score, excerpt, box, occurrences, foundOnPages }
+found.warnings                    // content expected on a page that was not given
 ```
 
 ## How it decides

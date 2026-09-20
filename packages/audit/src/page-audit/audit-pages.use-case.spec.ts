@@ -95,7 +95,7 @@ function printed (total: string): SyntheticPdfPage {
 describe('auditPages', () => {
   it('passes a page signed where expected, reading as printed', async () => {
     const audit = await auditPages([page(signed())], { expected: EXPECTED, ocr: { engine: reads(AS_PRINTED), targetDpi: null, recheck: false }, output: 'none' })
-    const [result] = audit.pages
+    const [{ audit: result }] = audit.pages
 
     expect(audit.verdict).toBe('pass')
     expect(result).toMatchObject({ verdict: 'pass', reasons: [], findings: [] })
@@ -110,7 +110,7 @@ describe('auditPages', () => {
     // The amount reads differently; the tick reads as a word where the original has none.
     const read = [...AS_PRINTED.slice(0, 3), word('7,250.00', 440, 30, 48), word('X', TICK.x + TICK.width / 2 - 3, TICK.y + TICK.height / 2 - 7, 6)]
     const audit = await auditPages([page(raster)], { expected: EXPECTED, ocr: { engine: reads(read), targetDpi: null, recheck: false }, output: 'none' })
-    const [result] = audit.pages
+    const [{ audit: result }] = audit.pages
 
     expect(audit.verdict).toBe('review')
     expect(result.findings.map(f => [f.kind, f.corroborated])).toEqual([['unexpected-mark', true], ['text-changed', false]])
@@ -125,26 +125,26 @@ describe('auditPages', () => {
       ocr:      { engine: reads(read), targetDpi: null, recheck: false },
       output:   'none',
     })
-    const kinds = audit.pages[0].findings.map(f => f.kind)
+    const kinds = audit.pages[0].audit.findings.map(f => f.kind)
 
     expect(kinds).toEqual(['text-changed', 'expected-empty'])
-    expect(audit.pages[0].findings[0]).toMatchObject({ summary: 'Printed "Total 1,250.00" reads "Total 7,250.00" - its figures differ' })
+    expect(audit.pages[0].audit.findings[0]).toMatchObject({ summary: 'Printed "Total 1,250.00" reads "Total 7,250.00" - its figures differ' })
     // The ink moved where the reading says it did, so nothing had to be settled by re-reading.
-    expect(audit.pages[0].settled.map(settlement => [settlement.verdict, settlement.because])).toEqual([['changed', 'ink']])
+    expect(audit.pages[0].audit.settled.map(settlement => [settlement.verdict, settlement.because])).toEqual([['changed', 'ink']])
   })
 
   it('does not pass a page that reads too poorly to trust, even with nothing found', async () => {
     const audit = await auditPages([page(signed())], { expected: EXPECTED, ocr: { engine: reads(AS_PRINTED), targetDpi: null, recheck: false, scoreMetric: 'wordRecall' }, minTextScore: 1.01, output: 'none' })
 
-    expect(audit.pages[0].verdict).toBe('review')
-    expect(audit.pages[0].reasons[0]).toMatch(/too poorly to trust/)
+    expect(audit.pages[0].audit.verdict).toBe('review')
+    expect(audit.pages[0].audit.reasons[0]).toMatch(/too poorly to trust/)
   })
 
   it('draws the original, the scan and the overlay side by side with the findings, and encodes it', async () => {
     const raster = signed()
     drawTick(raster, TICK)
     const audit = await auditPages([page(raster)], { expected: EXPECTED, ocr: { engine: reads(AS_PRINTED), targetDpi: null, recheck: false } })
-    const [result] = audit.pages
+    const [{ audit: result }] = audit.pages
 
     // Three panels - the original, the scan, the overlay - and a legend along the foot.
     expect(result.evidenceRaster.width).toBeGreaterThan(600 * 3)
@@ -168,7 +168,7 @@ describe('auditPages', () => {
       expected: [{ page: 1, id: 'signature', x: 150, y: 255, width: 300, height: 55 }],
       output:   'none',
     })
-    const [result] = audit.pages
+    const [{ audit: result }] = audit.pages
 
     expect(result.pixels.expected[0].identified).toBe(true)
     expect(result.findings.map(f => f.kind).toSorted((a, b) => a.localeCompare(b))).toEqual(['text-changed', 'unexpected-mark'])

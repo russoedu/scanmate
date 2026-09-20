@@ -1,4 +1,5 @@
 import type { AuditReport } from '@scanmate/audit'
+import type { ReadablePage } from '@scanmate/ink'
 import type { PageDiff } from '@scanmate/diff'
 import type { OcrEngine, OcrReport } from '@scanmate/ocr'
 
@@ -21,17 +22,18 @@ import type { OcrEngine, OcrReport } from '@scanmate/ocr'
  * settings it was given.
  */
 
-export function readingFromAudit (report: AuditReport, engine: OcrEngine): OcrReport {
-  const pages = report.pages.map(page => page.text)
+export function readingFromAudit<Page extends ReadablePage> (report: AuditReport<Page>, engine: OcrEngine): OcrReport<Page> {
+  const pages = report.pages.map(page => ({ ...page, text: page.audit.text }))
+  const readings = pages.map(page => page.text)
 
   return {
     score:    report.textScore,
-    pageMean: pages.length === 0 ? 1 : pages.reduce((sum, page) => sum + page.score, 0) / pages.length,
+    pageMean: readings.length === 0 ? 1 : readings.reduce((sum, reading) => sum + reading.score, 0) / readings.length,
     pages,
     engine:   { name: engine.name, version: engine.version, languages: engine.languages },
   }
 }
 
-export function pixelsFromAudit (report: AuditReport): PageDiff[] {
-  return report.pages.map(page => page.pixels)
+export function pixelsFromAudit<Page extends ReadablePage> (report: AuditReport<Page>): Array<Page & { diff: PageDiff }> {
+  return report.pages.map(page => ({ ...page, diff: page.audit.pixels }))
 }

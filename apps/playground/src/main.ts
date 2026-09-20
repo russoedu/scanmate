@@ -216,9 +216,9 @@ async function runDocument (original: string, scanned: string, options: Options)
   console.log('  page  original  scanned   dpi  model       confidence       rotation  filled        unexpected  missing')
   console.log(`  ${'─'.repeat(100)}`)
   const summary = []
-  for (const [i, page] of aligned.entries()) {
-    const { aligned: result, metadata } = page
-    const diff = diffs[i]
+  // The comparison hands the pages back, so there is nothing to zip up again.
+  for (const page of diffs) {
+    const { aligned: result, metadata, diff } = page
     await write(options.out, `page-${page.page}-aligned.png`, result.raster)
     await write(options.out, `page-${page.page}-diff.png`, diff.diffRaster)
 

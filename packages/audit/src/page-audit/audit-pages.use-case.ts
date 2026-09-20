@@ -7,7 +7,7 @@ import { renderEvidence } from '../audit-evidence'
 import { settleDisputes } from '../dispute-settlement'
 import { correlateFindings } from '../finding-correlation'
 import type { FindingKind } from '../finding-correlation'
-import type { AuditOptions, AuditReport, PageAudit } from './audit-report.contract'
+import type { AuditOptions, AuditReport, AuditedPage } from './audit-report.contract'
 import type { ReadablePage } from '@scanmate/ink'
 
 /**
@@ -40,12 +40,12 @@ import type { ReadablePage } from '@scanmate/ink'
  * text score high enough to trust that silence. Everything else is for review,
  * with the reasons and the evidence page to check them against.
  */
-export async function auditPages<Page extends ReadablePage> (pages: readonly Page[], options: AuditOptions = {}): Promise<AuditReport> {
+export async function auditPages<Page extends ReadablePage> (pages: readonly Page[], options: AuditOptions = {}): Promise<AuditReport<Page>> {
   const { expected = [], minTextScore = 0.85, output = 'png', onProgress } = options
   // One engine for the whole run: the page readings and every disputed re-read.
   const engine: OcrEngine = options.ocr?.engine ?? await createTesseractEngine(options.ocr?.tesseract)
 
-  const audits: PageAudit[] = []
+  const audits: Array<AuditedPage<Page>> = []
   const readings: PageOcr[] = []
   try {
     for (const [position, page] of pages.entries()) {
@@ -72,7 +72,7 @@ export async function auditPages<Page extends ReadablePage> (pages: readonly Pag
           return result
         })(),
       ])
-      const text = reading.pages[0]
+      const text = reading.pages[0].text
       readings.push(text)
 
       const started = Date.now()
@@ -113,17 +113,20 @@ export async function auditPages<Page extends ReadablePage> (pages: readonly Pag
         expectedMargin: options.diff?.expectedMargin,
       })
       audits.push({
-        page:          page.page,
-        verdict:       reasons.length === 0 ? 'pass' : 'review',
-        reasons,
-        findings,
-        explained,
-        noise,
-        settled,
-        text,
-        pixels:        diff,
-        evidenceRaster,
-        evidenceImage: output === 'none' ? null : await encodeImage(evidenceRaster, { format: output }),
+        ...page,
+        audit: {
+          page:          page.page,
+          verdict:       reasons.length === 0 ? 'pass' : 'review',
+          reasons,
+          findings,
+          explained,
+          noise,
+          settled,
+          text,
+          pixels:        diff,
+          evidenceRaster,
+          evidenceImage: output === 'none' ? null : await encodeImage(evidenceRaster, { format: output }),
+        },
       })
 
       onProgress?.({
@@ -133,7 +136,7 @@ export async function auditPages<Page extends ReadablePage> (pages: readonly Pag
         index:      position + 1,
         total:      pages.length,
         durationMs: Date.now() - started,
-        detail:     { verdict: audits.at(-1)?.verdict, findings: findings.length },
+        detail:     { verdict: audits.at(-1)?.audit.verdict, findings: findings.length },
       })
     }
   } finally {
@@ -141,16 +144,16 @@ export async function auditPages<Page extends ReadablePage> (pages: readonly Pag
   }
 
   const counts: Partial<Record<FindingKind, number>> = {}
-  const every = audits.flatMap(a => a.findings)
+  const every = audits.flatMap(page => page.audit.findings)
   for (const finding of every) counts[finding.kind] = (counts[finding.kind] ?? 0) + 1
 
   return {
-    verdict:   audits.every(a => a.verdict === 'pass') ? 'pass' : 'review',
+    verdict:   audits.every(page => page.audit.verdict === 'pass') ? 'pass' : 'review',
     textScore: documentScore(readings),
     pages:     audits,
     summary:   {
       pages:        audits.length,
-      passed:       audits.filter(a => a.verdict === 'pass').length,
+      passed:       audits.filter(page => page.audit.verdict === 'pass').length,
       findings:     counts,
       corroborated: every.filter(f => f.corroborated).length,
     },

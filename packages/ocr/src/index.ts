@@ -24,7 +24,7 @@
  */
 
 export { ocrPages } from './page-reading'
-export type { OcrOptions, OcrReport, PageOcr, PlacedText, RunReading, SideText, TextDifference } from './page-reading'
+export type { OcrOptions, OcrReport, PageOcr, PlacedText, ReadPage, RunReading, SideText, TextDifference } from './page-reading'
 export { createTesseractEngine, DEFAULT_TESSERACT_OPTIONS } from './ocr-engine'
 export type { OcrEngine, OcrLine, OcrWord, RecognisedText, RecogniseHints, TesseractCacheOptions, TesseractEngine, TesseractEngineOptions, TesseractSettings } from './ocr-engine'
 export { compareTexts } from './text-similarity'

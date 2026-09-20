@@ -29,10 +29,11 @@ const audit = await auditPages(await alignPages(pages), {
 })
 
 audit.verdict                  // 'pass' | 'review'
-audit.pages[0].reasons         // why, one sentence each
-audit.pages[0].findings        // text and pixel findings, merged by place
-audit.pages[0].noise           // read differently, printed identically - not reported
-audit.pages[0].settled         // how each disagreement was settled, and what each re-read said
+audit.pages[0].audit.reasons   // why, one sentence each
+audit.pages[0].audit.findings  // text and pixel findings, merged by place
+audit.pages[0].audit.noise     // read differently, printed identically - not reported
+audit.pages[0].audit.settled   // how each disagreement was settled, and what each re-read said
+audit.pages[0].aligned.raster  // the page itself is still there
 audit.pages[0].evidenceImage   // original, scan and overlay side by side, findings drawn on each
 audit.pages[0].text            // the full OCR comparison (@scanmate/ocr)
 audit.pages[0].pixels          // the full pixel comparison (@scanmate/diff)

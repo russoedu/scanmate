@@ -10,7 +10,7 @@ export type { Component, LabelledComponents, LabelOptions } from './connected-co
 export { diffPage, diffPages } from './diff-pages.use-case'
 export { mergeBoxes } from './merge-boxes.use-case'
 export type { MergedBox } from './merge-boxes.use-case'
-export type { Change, CoordinateUnits, DiffOptions, ExpectedChange, ExpectedResult, InkProbe, PageDiff, ProbeRect, RegionInkMetrics } from './page-diff.contract'
+export type { Change, ComparedPage, CoordinateUnits, DiffOptions, ExpectedChange, ExpectedResult, InkProbe, PageDiff, ProbeRect, RegionInkMetrics } from './page-diff.contract'
 export { measureRegionInk } from './region-ink.use-case'
 export type { RegionInk, RegionInkOptions } from './region-ink.use-case'
 export { composeSideBySide } from './side-by-side.use-case'

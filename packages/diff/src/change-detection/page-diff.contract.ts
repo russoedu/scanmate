@@ -1,4 +1,4 @@
-import type { ImageFormat, InkOptions, ProgressCallback, Raster, ScanmateRect } from '@scanmate/ink'
+import type { AlignedPage, ImageFormat, InkOptions, ProgressCallback, Raster, ScanmateRect } from '@scanmate/ink'
 
 import type { Masks } from '../region-comparison'
 
@@ -23,6 +23,18 @@ export interface ExpectedChange {
   width:  number
   height: number
 }
+
+/**
+ * An aligned page with what the pixel comparison found on it.
+ *
+ * The comparison hands the page back rather than a bare result, so whatever the
+ * producer attached - the metadata, the page's partner in the scan, anything a
+ * caller added - is still there afterwards. A bare result carries only a page
+ * number, and matching those up again is a join the caller should never have to
+ * write: page numbers are the original's, and go non-contiguous the moment
+ * anyone extracts `'1-3,5'`.
+ */
+export type ComparedPage<Page extends AlignedPage = AlignedPage> = Page & { diff: PageDiff }
 
 export interface DiffOptions {
   /** Units of `ExpectedChange` rectangles and of every rectangle reported back. Default `'points'`. */

@@ -1,4 +1,4 @@
-import type { ProgressCallback } from '@scanmate/ink'
+import type { ProgressCallback, ReadablePage } from '@scanmate/ink'
 
 import type { OcrEngine, TesseractEngineOptions } from '../ocr-engine'
 import type { VerifyOptions } from '../print-verification'
@@ -147,11 +147,21 @@ export interface PageOcr {
   warnings:    string[]
 }
 
-export interface OcrReport {
+/** A page with what the scan reads on it, beside what the original says. */
+export type ReadPage<Page extends ReadablePage = ReadablePage> = Page & { text: PageOcr }
+
+export interface OcrReport<Page extends ReadablePage = ReadablePage> {
   /** Page scores weighted by each page's expected characters - a three-word page does not outvote a dense one. */
   score:    number
   /** Unweighted mean of page scores; the two disagreeing says the short pages read differently. */
   pageMean: number
-  pages:    PageOcr[]
+  /**
+   * The pages handed in, each carrying its reading.
+   *
+   * The pages come back rather than a bare list of results, so a later stage
+   * can take these straight and whatever the producer attached is still on
+   * them. `page.text` is this page's reading.
+   */
+  pages:    Array<ReadPage<Page>>
   engine:   { name: string, version: string, languages: readonly string[] }
 }

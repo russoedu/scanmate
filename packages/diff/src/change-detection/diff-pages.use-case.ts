@@ -9,7 +9,7 @@ import { connectedComponents } from './connected-components.use-case'
 import { mergeBoxes } from './merge-boxes.use-case'
 import type { MergedBox } from './merge-boxes.use-case'
 import { probeInk } from './probe-ink.use-case'
-import type { Change, DiffOptions, ExpectedChange, ExpectedResult, InkProbe, PageDiff } from './page-diff.contract'
+import type { Change, ComparedPage, DiffOptions, ExpectedChange, ExpectedResult, InkProbe, PageDiff } from './page-diff.contract'
 import { measureRegionInk } from './region-ink.use-case'
 import { composeSideBySide } from './side-by-side.use-case'
 
@@ -29,13 +29,13 @@ import { composeSideBySide } from './side-by-side.use-case'
  * Masks are built once per page and read four ways: the overlay, the expected
  * regions, the added changes and the missing ones.
  */
-export async function diffPages (
-  pages: readonly AlignedPage[],
+export async function diffPages<Page extends AlignedPage> (
+  pages: readonly Page[],
   expected: readonly ExpectedChange[] = [],
   options: DiffOptions = {},
-): Promise<PageDiff[]> {
+): Promise<Array<ComparedPage<Page>>> {
   const { onProgress } = options
-  const results: PageDiff[] = []
+  const results: Array<ComparedPage<Page>> = []
 
   for (const [position, page] of pages.entries()) {
     const index = position + 1
@@ -46,7 +46,7 @@ export async function diffPages (
       ...options,
       probes: (options.probes ?? []).filter(probe => probe.page === undefined || probe.page === page.page),
     })
-    results.push(result)
+    results.push({ ...page, diff: result })
 
     onProgress?.({
       stage:      'diff',

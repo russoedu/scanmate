@@ -1,11 +1,11 @@
 import type { AuditOptions, AuditReport } from '@scanmate/audit'
 import type { AlignPagesOptions } from '@scanmate/align'
-import type { DiffOptions, ExpectedChange, PageDiff } from '@scanmate/diff'
+import type { ComparedPage, DiffOptions, ExpectedChange, PageDiff } from '@scanmate/diff'
 import type { EnhancePagesOptions } from '@scanmate/enhance'
 import type { ExtractPairOptions } from '@scanmate/extract'
 import type { ExpectedContent, FindOptions, FindReport } from '@scanmate/find'
-import type { PipelineStage, ReadablePage } from '@scanmate/ink'
-import type { OcrOptions, OcrReport } from '@scanmate/ocr'
+import type { PipelineStage } from '@scanmate/ink'
+import type { OcrOptions, OcrReport, ReadPage } from '@scanmate/ocr'
 
 import { pixelsFromAudit, readingFromAudit } from '../audit-reuse'
 import { resolveDocument } from '../document-input'
@@ -14,8 +14,7 @@ import { SharedEngine } from '../reading-engine'
 import { fingerprint, StageCache } from '../stage-caching'
 import { loadAlign, loadAudit, loadDiff, loadEnhance, loadFind, loadOcr, loadedStages } from '../stage-loading'
 import { relayAuditProgress } from './progress-relay.mapper'
-import { PageJoinError } from './scan-session.contract'
-import type { AlignedScanmatePage, EnhancedScanmatePage, ScanmateOptions, ScanmatePageReport } from './scan-session.contract'
+import type { AlignedScanmatePage, EnhancedScanmatePage, ReadableScanmatePage, ScanmateOptions, ScanmatePageReport } from './scan-session.contract'
 
 /**
  * One returned document, compared with the one that was issued.
@@ -75,11 +74,14 @@ export class Scanmate {
     return merged
   }
 
-  /** The newest page set a reader can work on: enhanced when it was asked for, else aligned. */
-  async #readable (): Promise<ReadablePage[]> {
-    if (this.#cache.has('enhance')) return await this.enhance() as unknown as ReadablePage[]
+  /**
+   * The newest page set a reader can work on: enhanced when it was asked for,
+   * else aligned. No cast: both satisfy `ReadablePage` structurally.
+   */
+  async #readable (): Promise<ReadableScanmatePage[]> {
+    if (this.#cache.has('enhance')) return this.enhance()
 
-    return await this.align() as unknown as ReadablePage[]
+    return this.align()
   }
 
   // --- the stages -----------------------------------------------------------
@@ -132,8 +134,8 @@ export class Scanmate {
     })
   }
 
-  /** How closely the scan's text matches the original's. */
-  async ocr (options?: Omit<OcrOptions, 'onProgress' | 'engine'>): Promise<OcrReport> {
+  /** How closely the scan's text matches the original's. Each page comes back carrying its `text`. */
+  async ocr (options?: Omit<OcrOptions, 'onProgress' | 'engine'>): Promise<OcrReport<ReadableScanmatePage>> {
     const ocr = this.#merge('ocr', options)
 
     return this.#cache.run('ocr', fingerprint(ocr), async () => {
@@ -145,8 +147,8 @@ export class Scanmate {
     })
   }
 
-  /** What changed, and whether it was supposed to. */
-  async diff (expected?: readonly ExpectedChange[], options?: Omit<DiffOptions, 'onProgress'>): Promise<PageDiff[]> {
+  /** What changed, and whether it was supposed to. Each page comes back carrying its `diff`. */
+  async diff (expected?: readonly ExpectedChange[], options?: Omit<DiffOptions, 'onProgress'>): Promise<Array<ComparedPage<AlignedScanmatePage>>> {
     const regions = expected ?? this.#options.expected ?? []
     const diff = this.#merge('diff', options)
 
@@ -158,8 +160,8 @@ export class Scanmate {
     })
   }
 
-  /** Whether the content that must be there is there. */
-  async find (content?: readonly ExpectedContent[], options?: FindOptions): Promise<FindReport> {
+  /** Whether the content that must be there is there. Each page comes back carrying its `find`. */
+  async find (content?: readonly ExpectedContent[], options?: FindOptions): Promise<FindReport<ReadPage<ReadableScanmatePage>>> {
     const wanted = content ?? this.#options.content ?? []
     const find = this.#merge('find', options)
 
@@ -171,7 +173,7 @@ export class Scanmate {
       const total = reading.pages.length
       for (const [index, page] of reading.pages.entries())
         this.#options.onProgress?.({ stage: 'find', phase: 'start', page: page.page, index: index + 1, total })
-      const report = findContent(reading, wanted, find)
+      const report = findContent(reading.pages, wanted, find)
       for (const [index, page] of reading.pages.entries())
         this.#options.onProgress?.({
           stage:      'find',
@@ -180,15 +182,15 @@ export class Scanmate {
           index:      index + 1,
           total,
           durationMs: Date.now() - started,
-          detail:     { allFound: report.pages[index]?.allFound },
+          detail:     { allFound: report.pages[index]?.find.allFound },
         })
 
       return report
     })
   }
 
-  /** The verdict, with its evidence. */
-  async audit (options?: Omit<AuditOptions, 'onProgress'>): Promise<AuditReport> {
+  /** The verdict, with its evidence. Each page comes back carrying its `audit`. */
+  async audit (options?: Omit<AuditOptions, 'onProgress'>): Promise<AuditReport<ReadableScanmatePage>> {
     const expected = options?.expected ?? this.#options.expected ?? []
     const audit = this.#merge('audit', options)
 
@@ -223,22 +225,26 @@ export class Scanmate {
     })
   }
 
-  /** Everything this session knows about each page, joined by page number. */
+  /**
+   * Everything this session knows about each page.
+   *
+   * A plain lookup by page number, not a join with an assertion: every stage
+   * hands its pages back, so nothing has to be matched up again afterwards.
+   */
   async report (): Promise<ScanmatePageReport[]> {
     const aligned = await this.align()
-    const text = this.#cache.settled<OcrReport>('ocr')
-    const pixels = this.#cache.settled<PageDiff[]>('diff')
-    const audit = this.#cache.settled<AuditReport>('audit')
-    const reading = byPage(text?.pages)
-    const diffs = join(aligned, pixels)
-    const audits = byPage(audit?.pages)
+    const reading = byPage(this.#cache.settled<OcrReport<ReadableScanmatePage>>('ocr')?.pages)
+    const compared = byPage(this.#cache.settled<Array<ComparedPage<AlignedScanmatePage>>>('diff'))
+    const audited = byPage(this.#cache.settled<AuditReport<ReadableScanmatePage>>('audit')?.pages)
+    const searched = byPage(this.#cache.settled<FindReport<ReadPage<ReadableScanmatePage>>>('find')?.pages)
 
     return aligned.map(page => ({
       page:    page.page,
       aligned: page,
-      text:    reading.get(page.page),
-      diff:    diffs.get(page.page),
-      audit:   audits.get(page.page),
+      text:    reading.get(page.page)?.text,
+      diff:    compared.get(page.page)?.diff,
+      find:    searched.get(page.page)?.find,
+      audit:   audited.get(page.page)?.audit,
     }))
   }
 
@@ -287,24 +293,6 @@ export class Scanmate {
 /** Items by the page they belong to. */
 function byPage<T extends { page: number }> (items: readonly T[] | undefined): Map<number, T> {
   return new Map((items ?? []).map(item => [item.page, item]))
-}
-
-/**
- * Diffs by the page they belong to.
- *
- * By page number, never by position: the numbers are the original's, and a
- * caller who extracted `'1-3,5'` has a hole in them. A mismatch throws rather
- * than guessing, because the guess would attach one page's findings to another
- * page's evidence.
- */
-function join (aligned: readonly { page: number }[], diffs: readonly PageDiff[] | undefined): Map<number, PageDiff> {
-  if (diffs === undefined) return new Map()
-  const pages = aligned.map(page => page.page)
-  const reported = diffs.map(diff => diff.page)
-  if (reported.length !== pages.length || reported.some(page => !pages.includes(page)))
-    throw new PageJoinError(pages, reported)
-
-  return new Map(diffs.map(diff => [diff.page, diff]))
 }
 
 export { loadedStages } from '../stage-loading'

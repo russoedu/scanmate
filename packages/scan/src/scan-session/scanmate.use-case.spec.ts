@@ -52,10 +52,15 @@ vi.mock('@scanmate/enhance', () => ({
 }))
 
 vi.mock('@scanmate/ocr', () => ({
-  ocrPages: vi.fn(async () => {
+  ocrPages: vi.fn(async (pages: readonly { page: number }[]) => {
     calls.push('ocrPages')
 
-    return { score: 1, pageMean: 1, pages: [{ page: 1, score: 1, metrics: { characters: 10 }, differences: [] }], engine: { name: 'stub', version: '1', languages: ['eng'] } }
+    return {
+      score:    1,
+      pageMean: 1,
+      pages:    pages.map(page => ({ ...page, text: { page: page.page, score: 1, metrics: { characters: 10 }, differences: [] } })),
+      engine:   { name: 'stub', version: '1', languages: ['eng'] },
+    }
   }),
   createTesseractEngine: vi.fn(async () => {
     created()
@@ -69,31 +74,39 @@ vi.mock('@scanmate/diff', () => ({
   diffPages: vi.fn(async (pages: readonly { page: number }[]) => {
     calls.push('diffPages')
 
-    return pages.map(p => ({ page: p.page, expected: [], unexpected: [], missing: [], probes: [], masks: null }))
+    return pages.map(page => ({ ...page, diff: { page: page.page, expected: [], unexpected: [], missing: [], probes: [], masks: null } }))
   }),
 }))
 
 vi.mock('@scanmate/find', () => ({
-  findContent: vi.fn(() => {
+  findContent: vi.fn((pages: readonly { page: number }[]) => {
     calls.push('findContent')
 
-    return { pages: [{ page: 1, allFound: true, content: [] }], allFound: true }
+    return {
+      allFound:        true,
+      allIdentifiable: true,
+      warnings:        [],
+      pages:           pages.map(page => ({ ...page, find: { page: page.page, allFound: true, content: [], warnings: [] } })),
+    }
   }),
 }))
 
 vi.mock('@scanmate/audit', () => ({
-  auditPages: vi.fn(async () => {
+  auditPages: vi.fn(async (pages: readonly { page: number }[]) => {
     calls.push('auditPages')
 
     return {
       verdict:   'pass',
       textScore: 1,
-      pages:     [{
-        page:    1,
-        verdict: 'pass',
-        text:    { page: 1, score: 1, metrics: { characters: 10 }, differences: [] },
-        pixels:  { page: 1, expected: [], unexpected: [], missing: [], probes: [], masks: null },
-      }],
+      pages:     pages.map(page => ({
+        ...page,
+        audit: {
+          page:    page.page,
+          verdict: 'pass',
+          text:    { page: page.page, score: 1, metrics: { characters: 10 }, differences: [] },
+          pixels:  { page: page.page, expected: [], unexpected: [], missing: [], probes: [], masks: null },
+        },
+      })),
       summary: { pages: 1, passed: 1, findings: {}, corroborated: 0 },
     }
   }),

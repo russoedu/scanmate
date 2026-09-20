@@ -3,7 +3,7 @@ import type { AlignPagesOptions, AlignResult } from '@scanmate/align'
 import type { DiffOptions, ExpectedChange, PageDiff } from '@scanmate/diff'
 import type { EnhancePagesOptions, EnhancedImage } from '@scanmate/enhance'
 import type { ExtractPairOptions } from '@scanmate/extract'
-import type { ExpectedContent, FindOptions } from '@scanmate/find'
+import type { ExpectedContent, FindOptions, PageFind } from '@scanmate/find'
 import type { AlignedPage, ProgressCallback } from '@scanmate/ink'
 import type { MergeOptions } from '@scanmate/merge'
 import type { OcrEngine, OcrOptions, PageOcr } from '@scanmate/ocr'
@@ -15,6 +15,15 @@ export type AlignedScanmatePage = ScanmatePage & AlignedPage<AlignResult>
 
 /** ...and with a cleaned copy alongside. */
 export type EnhancedScanmatePage = AlignedScanmatePage & { enhanced: EnhancedImage }
+
+/**
+ * Whichever page set a reader works on.
+ *
+ * Both satisfy `ReadablePage`, which is what lets `ocr()` and `audit()` take
+ * either without a cast - and what lets a caller enhance before or after
+ * aligning and have the types still line up.
+ */
+export type ReadableScanmatePage = AlignedScanmatePage & { enhanced?: EnhancedImage }
 
 /**
  * How much of each stage's pixels to keep once a later stage has consumed them.
@@ -58,21 +67,6 @@ export interface ScanmatePageReport {
   aligned: AlignedScanmatePage
   text?:   PageOcr
   diff?:   PageDiff
+  find?:   PageFind
   audit?:  PageAudit
-}
-
-/**
- * A diff could not be matched to the page it came from.
- *
- * `diffPages` returns bare results carrying only a page number, and page
- * numbers are the original's, one-based, and not necessarily contiguous - a
- * caller selecting `'1-3,5'` leaves a hole. Zipping by array index would
- * therefore put one page's findings onto another page's evidence, which is the
- * worst thing this library could quietly do. So the join asserts.
- */
-export class PageJoinError extends Error {
-  constructor (expected: readonly number[], got: readonly number[]) {
-    super(`the pixel comparison reported pages ${got.join(', ')} where ${expected.join(', ')} were aligned; they cannot be matched up`)
-    this.name = 'PageJoinError'
-  }
 }

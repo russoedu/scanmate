@@ -92,7 +92,7 @@ async function pairImages (original: ScanmateSource, scanned: ScanmateSource): P
     original:    first,
     scanned:     second,
     scannedPage: 1,
-    metadata:    { original: null, scanned: null },
+    metadata:    {},
   }]
 }
 

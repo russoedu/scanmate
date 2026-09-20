@@ -1,3 +1,4 @@
+import type { PageMetadata } from '@scanmate/extract'
 import type { ScanPage, ScanmateBinarySource, ScanmateSource } from '@scanmate/ink'
 
 /**
@@ -21,11 +22,13 @@ export type ScanmateDocument = ScanmateBinarySource | readonly ScanmateSource[]
 export interface ScanmatePage extends ScanPage {
   /** The page this pairs with in the scanned document; equals `page` under index pairing. */
   scannedPage: number
-  metadata:    { original: PageMetadataOrNull, scanned: PageMetadataOrNull }
+  /**
+   * What each PDF said about itself. A side that was an image has none - the
+   * field is absent rather than `null`, so the page still satisfies
+   * `ReadablePage` and a reader can take it without a cast.
+   */
+  metadata:    { original?: PageMetadata, scanned?: PageMetadata }
 }
-
-/** Whatever the PDF said about itself, or `null` when the side was an image. */
-export type PageMetadataOrNull = { [key: string]: unknown } | null
 
 /** What resolving the inputs produced, plus anything the caller may want back. */
 export interface ResolvedDocument {

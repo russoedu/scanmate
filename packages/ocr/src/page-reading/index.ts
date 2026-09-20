@@ -3,6 +3,6 @@
 export { claimWords, judgeRun, judgeRuns, matchWords } from './match-words.use-case'
 export type { Claims, MatchOptions, Reference, Verdict, WordMatch } from './match-words.use-case'
 export { ocrPages } from './ocr-pages.use-case'
-export type { OcrOptions, OcrReport, PageOcr, PlacedText, RunReading, SideText, TextDifference } from './ocr-report.contract'
+export type { OcrOptions, OcrReport, ReadPage, PageOcr, PlacedText, RunReading, SideText, TextDifference } from './ocr-report.contract'
 export { DEFAULT_RECHECK_PASSES, readRun, recheckRun } from './recheck-run.use-case'
 export type { Recheck, RecheckOptions, RecheckPass } from './recheck-run.use-case'

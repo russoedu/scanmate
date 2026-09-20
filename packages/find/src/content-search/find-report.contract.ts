@@ -1,3 +1,4 @@
+import type { ReadPage } from '@scanmate/ocr'
 import type { ScanmateRect } from '@scanmate/ink'
 import type { NormaliseOptions } from '@scanmate/ocr'
 
@@ -67,10 +68,16 @@ export interface PageFind {
   warnings: string[]
 }
 
-export interface FindReport {
-  /** Every expected content was found on its page. */
+/** A page with what the search found on it. */
+export type SearchedPage<Page extends ReadPage = ReadPage> = Page & { find: PageFind }
+
+export interface FindReport<Page extends ReadPage = ReadPage> {
+  /** Every expected content was found on its page, and no page was missing. */
   allFound:        boolean
   /** Every expected content was found where the original prints it. */
   allIdentifiable: boolean
-  pages:           PageFind[]
+  /** The pages handed in, each carrying what was looked for on it. */
+  pages:           Array<SearchedPage<Page>>
+  /** Content expected on a page that was not given; there is no page to report it on. */
+  warnings:        string[]
 }
