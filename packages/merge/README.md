@@ -1,8 +1,18 @@
-![scanmate merge](./scanmate-merge.svg)
+![scanmate merge](./assets/scanmate-merge.svg)
 
 # `@scanmate/merge`
 
 PDFs, images and rasters into one PDF, in the order given and mixed freely.
+
+![three photographed pages and a PDF, merged into one document](./assets/merged.jpg)
+
+*Three photographed pages and a PDF, in one document: the JPEGs embedded as their own bytes, the PDF's pages copied, never re-rendered. Made from the [IRS Form W-9](https://www.irs.gov/pub/irs-pdf/fw9.pdf) (a work of the United States government, in the public domain): filled in as a generator would, printed, signed by hand and scanned crooked.*
+
+## Install
+
+```bash
+npm install @scanmate/merge
+```
 
 ```ts
 import { mergeDocuments } from '@scanmate/merge'
@@ -47,3 +57,7 @@ Each entry in `pages` says which source and source page it came from, how it was
 Measured on real scans: three 120-dpi page JPEGs plus a 7-page PDF merged in 20 ms (0.73 MB). Seven aligned pages made a 3.3 MB PNG or 0.74 MB JPEG evidence file.
 
 PDF writing uses `@cantoo/pdf-lib`, the maintained fork of pdf-lib, which is pure JavaScript with nothing to install on the host.
+
+## How it decides
+
+[`documentation/algorithms.md`](./documentation/algorithms.md) has the algorithms in full: what each step measures, the decision flows, every constant with the measurement behind it, and what the package deliberately does not do.

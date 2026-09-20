@@ -1,8 +1,18 @@
-![scanmate audit](./scanmate-audit.svg)
+![scanmate audit](./assets/scanmate-audit.svg)
 
 # `@scanmate/audit`
 
 The final audit of a returned document. Every page is read in full and compared pixel by pixel. The two results are merged into one list of findings and a verdict, with a side-by-side image as evidence.
+
+![the evidence page: original and returned scan side by side, findings drawn on both](./assets/evidence.jpg)
+
+*The evidence page: the original and the returned scan side by side, every finding drawn on both halves. Green a field filled in, orange the room a signature is given to stray, red text that reads differently. Made from the [IRS Form W-9](https://www.irs.gov/pub/irs-pdf/fw9.pdf) (a work of the United States government, in the public domain): filled in as a generator would, printed, signed by hand and scanned crooked.*
+
+## Install
+
+```bash
+npm install @scanmate/audit @scanmate/extract @scanmate/align
+```
 
 ```ts
 import { extractPair } from '@scanmate/extract'
@@ -75,3 +85,7 @@ Corroborated findings are drawn twice as thick.
 | `minTextScore` | `0.85` | Below this, a page's text is too unreliable for it to pass. |
 | `output` | `'png'` | Encoding of the evidence image and the pixel overlay; `'none'` keeps only rasters. |
 | `onProgress` | none | Receives `ocr`, `diff` and `audit` stage events. |
+
+## How it decides
+
+[`documentation/algorithms.md`](./documentation/algorithms.md) has the algorithms in full: what each step measures, the decision flows, every constant with the measurement behind it, and what the package deliberately does not do.

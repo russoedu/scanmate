@@ -1,8 +1,18 @@
-![scanmate find](./scanmate-find.svg)
+![scanmate find](./assets/scanmate-find.svg)
 
 # `@scanmate/find`
 
 Checks whether the content that must be on each page is there, and whether it's where the original puts it.
+
+![the signer fields, resolved from the words the form prints](./assets/regions.jpg)
+
+*The signer fields, resolved from the words the form itself prints rather than from coordinates typed into a config. Made from the [IRS Form W-9](https://www.irs.gov/pub/irs-pdf/fw9.pdf) (a work of the United States government, in the public domain): filled in as a generator would, printed, signed by hand and scanned crooked.*
+
+## Install
+
+```bash
+npm install @scanmate/find @scanmate/ocr
+```
 
 ```ts
 import { ocrPages } from '@scanmate/ocr'
@@ -59,3 +69,7 @@ const { regions, problems } = resolveRegions(page.metadata.textItems, { width: 5
 ```
 
 An anchor must occur exactly once unless `occurrence` names which one to use.
+
+## How it decides
+
+[`documentation/algorithms.md`](./documentation/algorithms.md) has the algorithms in full: what each step measures, the decision flows, every constant with the measurement behind it, and what the package deliberately does not do.

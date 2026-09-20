@@ -1,8 +1,18 @@
-![scanmate ocr](./scanmate-ocr.svg)
+![scanmate ocr](./assets/scanmate-ocr.svg)
 
 # `@scanmate/ocr`
 
 Measures how closely a scan's text matches the original's: a score per page and for the document, ten measures, both texts in full, and every difference with its position on the page.
+
+![a printed figure, and the same figure on the scan with one digit replaced](./assets/figures.jpg)
+
+*A printed account number, and the same line on the returned scan where one digit has been replaced by another of the same run. `@scanmate/ocr` matches printed figures against the original's own glyphs, so it reads this for what it is. Made from the [IRS Form W-9](https://www.irs.gov/pub/irs-pdf/fw9.pdf) (a work of the United States government, in the public domain): filled in as a generator would, printed, signed by hand and scanned crooked.*
+
+## Install
+
+```bash
+npm install @scanmate/ocr @scanmate/extract @scanmate/align
+```
 
 ```ts
 import { alignPages } from '@scanmate/align'
@@ -25,6 +35,7 @@ report.pages[0].scanned.text     // the scan's
 - **The scan** is read with tesseract, at 300 dpi (it is enlarged first if lower), or from its `enhanced` image when `@scanmate/enhance` ran first.
 - **Matching by place, not order.** Alignment puts the scan on the original's canvas, so each word read is claimed by the run of the original printed where it was read. A two-column page read column by column is therefore not a page of errors, and every difference has a position.
 - **Figures must keep their digits.** A run whose digits read back differently has changed, however similar the rest is: "Total 1,250.00" read as "Total 7,250.00" is 93% similar. A figure whose separators alone differ ("5.768.700 00") is the same figure. Words keep OCR's tolerance (`matchThreshold`, 0.8).
+- **Figures are matched, not only read.** Every printed figure is checked glyph by glyph against the original's own ink and against the other digits the page prints, at the scan's own sharpness. That settles what no reading of a coarse scan can: whether this is still the digit that was printed. On real returned scans it verified 36 of 40 printed figures at 125 dpi with no false calls, and read a digit replaced by another of the same run for what it is.
 - **What is not an addition.** Words over something the original prints without text, such as a logo, are not additions. Nor are specks under 4 pt tall.
 
 ## The recheck
@@ -75,3 +86,7 @@ Nothing is downloaded and, by default, nothing is written. This matters where de
 | `matchThreshold` | `0.8` | Word similarity below which a run has changed. |
 | `minWordConfidence` | `60` | For words to count as added. |
 | `recheck` | on | `{ passes, agree }`, or `false`. |
+
+## How it decides
+
+[`documentation/algorithms.md`](./documentation/algorithms.md) has the algorithms in full: what each step measures, the decision flows, every constant with the measurement behind it, and what the package deliberately does not do.
