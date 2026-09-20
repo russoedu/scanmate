@@ -1,4 +1,4 @@
-import { annotateOverlay, composeSideBySide, IDENTIFIED, MISSING, NOT_IDENTIFIED, UNEXPECTED } from '@scanmate/diff'
+import { annotateOverlay, composeSideBySide, EXPECTED_MARGIN, IDENTIFIED, MISSING, NOT_IDENTIFIED, UNEXPECTED } from '@scanmate/diff'
 import type { Annotation, ExpectedResult, Rgba } from '@scanmate/diff'
 import type { Raster, Rect } from '@scanmate/ink'
 
@@ -9,6 +9,7 @@ import type { AuditFinding, FindingKind } from '../finding-correlation'
  * side, with the audit's verdict drawn on both halves in the same places.
  *
  * - green: an expected region that was filled in;
+ * - orange: the band around it where ink still counts as that region's;
  * - amber: an expected region left empty, or blacked out;
  * - magenta: ink added where nothing was expected;
  * - blue: printed ink the scan lost;
@@ -39,12 +40,17 @@ export function renderEvidence (
   dpi: number,
   expected: readonly ExpectedResult[],
   findings: readonly AuditFinding[],
+  expectedMargin = 6,
 ): Raster {
   const toPixels = dpi / 72
   const line = Math.max(2, Math.round(dpi / 72))
-  const drawn: Annotation[] = expected
-    .filter(region => region.identified)
-    .map(region => ({ rect: grow(scale(region, toPixels), 2), color: IDENTIFIED }))
+  const drawn: Annotation[] = [
+    // How far outside each region its ink still counts, drawn under the region itself.
+    ...(expectedMargin > 0 ? expected.map(region => ({ rect: scale(grow(region, expectedMargin), toPixels), color: EXPECTED_MARGIN })) : []),
+    ...expected
+      .filter(region => region.identified)
+      .map(region => ({ rect: grow(scale(region, toPixels), 2), color: IDENTIFIED })),
+  ]
 
   const thin: Annotation[] = []
   const thick: Annotation[] = []

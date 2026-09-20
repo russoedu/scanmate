@@ -59,6 +59,36 @@ describe('diffPage', () => {
     expect(diff.unexpected).toEqual([])
   })
 
+  it('takes a signature written past its box for the signature it is', async () => {
+    // Signed across a box drawn a little too small for the hand that filled it.
+    const raster = cloneRaster(FORM.raster)
+    drawSignature(raster, SIGNATURE, 4)
+    const tight = { x: SIGNATURE.x + 30, y: SIGNATURE.y + 6, width: SIGNATURE.width - 60, height: SIGNATURE.height - 12 }
+    const diff = await diffPage(page(raster), [expect_('signature', tight)], { output: 'none' })
+
+    expect(diff.expected[0].identified).toBe(true)
+    expect(diff.unexpected).toEqual([])
+  })
+
+  it('still reports a mark made beyond the margin of every expected region', async () => {
+    const raster = signed()
+    drawTick(raster, TICK)
+    const diff = await diffPage(page(raster), [expect_('signature', SIGNATURE)], { output: 'none' })
+
+    expect(diff.expected[0].identified).toBe(true)
+    expect(diff.unexpected).toHaveLength(1)
+  })
+
+  it('claims a stroke running through two fields at once, rather than leaving it over', async () => {
+    // One line written across both boxes, as a hurried signature crosses a rule.
+    const raster = cloneRaster(FORM.raster)
+    const across = { x: SIGNATURE.x, y: SIGNATURE.y, width: TICK.x + TICK.width - SIGNATURE.x, height: 3 }
+    fillRect(raster, across, 20)
+    const diff = await diffPage(page(raster), [expect_('signature', SIGNATURE), expect_('tick', TICK)], { output: 'none' })
+
+    expect(diff.unexpected).toEqual([])
+  })
+
   it('does not identify an expected region that was left empty', async () => {
     const diff = await diffPage(page(signed()), [expect_('signature', SIGNATURE), expect_('tick', TICK)], { output: 'none' })
 

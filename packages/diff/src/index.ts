@@ -23,7 +23,7 @@ export type { DocumentDiff, Region, RegionOptions, RegionReport } from './region
 
 // --- Building blocks ---
 
-export { annotateOverlay, composeSideBySide, connectedComponents, IDENTIFIED, labelComponents, measureRegionInk, mergeBoxes, MISSING, NOT_IDENTIFIED, UNEXPECTED } from './change-detection'
+export { annotateOverlay, composeSideBySide, connectedComponents, EXPECTED_MARGIN, IDENTIFIED, labelComponents, measureRegionInk, mergeBoxes, MISSING, NOT_IDENTIFIED, UNEXPECTED } from './change-detection'
 export type { Annotation, Component, LabelledComponents, LabelOptions, MergedBox, RegionInk, RegionInkOptions, Rgba } from './change-detection'
 export { buildMasks, measureRegion, paintOverlay } from './region-comparison'
 export type { Masks } from './region-comparison'

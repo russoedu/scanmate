@@ -1,6 +1,6 @@
 /** What changed on a page and whether it was supposed to: changed pixels grouped into reportable regions. */
 
-export { annotateOverlay, IDENTIFIED, MISSING, NOT_IDENTIFIED, UNEXPECTED } from './annotate-overlay.use-case'
+export { annotateOverlay, EXPECTED_MARGIN, IDENTIFIED, MISSING, NOT_IDENTIFIED, UNEXPECTED } from './annotate-overlay.use-case'
 export type { Annotation, Rgba } from './annotate-overlay.use-case'
 export { connectedComponents, labelComponents } from './connected-components.use-case'
 export type { Component, LabelledComponents, LabelOptions } from './connected-components.use-case'

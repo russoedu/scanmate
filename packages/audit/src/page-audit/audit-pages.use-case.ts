@@ -48,7 +48,7 @@ export async function auditPages<Page extends ReadablePage> (pages: readonly Pag
     if (text.score < minTextScore)
       reasons.push(`the text reads too poorly to trust (score ${text.score.toFixed(2)} below ${minTextScore}): changes may have gone unseen`)
 
-    const evidenceRaster = renderEvidence(page.original.raster, page.aligned.raster, page.original.dpi ?? 150, diff.expected, findings)
+    const evidenceRaster = renderEvidence(page.original.raster, page.aligned.raster, page.original.dpi ?? 150, diff.expected, findings, options.diff?.expectedMargin)
     audits.push({
       page:          page.page,
       verdict:       reasons.length === 0 ? 'pass' : 'review',
