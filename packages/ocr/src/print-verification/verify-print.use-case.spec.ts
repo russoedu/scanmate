@@ -110,10 +110,14 @@ describe('verifyPrintedRun', () => {
     const originalGray = toGrayscale(aligned.original.raster)
     const scanGray = toGrayscale(aligned.aligned.raster)
     const items = aligned.metadata.original.textItems
-    const templates = collectTemplates(originalGray, aligned.original.dpi!, items)
+    // The fixture is rendered at a known resolution, so this cannot happen -
+    // but narrowing it here beats asserting, which the two tools disagree about.
+    const { dpi } = aligned.original
+    if (dpi === null) throw new Error('the fixture was extracted without a resolution')
+    const templates = collectTemplates(originalGray, dpi, items)
     const run = items.find(item => item.text.includes(FIGURE))!
 
-    return verifyPrintedRun(originalGray, scanGray, aligned.original.dpi!, run, templates, {})
+    return verifyPrintedRun(originalGray, scanGray, dpi, run, templates, {})
   }
 
   it('confirms a figure the scan did not change, digit by digit', async () => {
