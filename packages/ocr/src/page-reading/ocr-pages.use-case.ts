@@ -149,7 +149,7 @@ async function readPage (page: ReadablePage, engine: OcrEngine, options: OcrOpti
   const printChecks: PageOcr['printChecks'] = {
     checked:   0,
     different: 0,
-    skipped:   { 'no-figure': 0, 'unplaceable': 0, 'few-rivals': 0, 'too-coarse': 0, 'undecided': 0 },
+    skipped:   { 'no-figure': 0, 'unplaceable': 0, 'few-rivals': 0, 'too-coarse': 0, 'undecided': 0, 'no-claim': 0 },
   }
   const seenChanged = new Set<number>()
   if (printCheck !== false && useLayer) {
