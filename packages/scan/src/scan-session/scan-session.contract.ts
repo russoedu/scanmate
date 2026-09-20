@@ -54,6 +54,15 @@ export interface ScanmateOptions {
   onProgress?: ProgressCallback
   /** An engine to use and leave running. A session never terminates one it did not create. */
   engine?:     OcrEngine
+  /**
+   * How the reading path prepares its pages. `'auto'` (the default) reads one
+   * page each way and keeps whichever agreed with the original most; `'none'`
+   * reads the aligned pages as they are.
+   *
+   * Either way it leaves the evidence alone: `diff()` and the glyph check read
+   * the aligned page and never this one.
+   */
+  prepare?:    'auto' | 'none'
 
   merge?:   Omit<MergeOptions, 'onProgress'>
   extract?: Omit<ExtractPairOptions, 'onProgress'>

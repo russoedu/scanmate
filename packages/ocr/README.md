@@ -26,7 +26,7 @@ const report = await ocrPages(await alignPages(pages))
 report.pages[0].text.differences // [{ kind: 'changed', expected: 'Account 4412-9087-3355',
                                  //    found: 'Account 4412-9987-3355', reason: 'numbers',
                                  //    verified: true, x, y, width, height }]
-report.pages[0].text.printChecks // { checked, different }: figures matched against the original's glyphs
+report.pages[0].text.printChecks // { checked, different, skipped }: figures matched against the original's glyphs
 report.score                     // document score, weighted by characters
 report.pages[0].text.metrics     // levenshtein, jaccard, dice, cosine, CER, WER, word recall, ...
 report.pages[0].text.original.text   // the original's text
@@ -41,6 +41,7 @@ report.pages[0].aligned.raster   // the page itself comes back too
 - **Matching by place, not order.** Alignment puts the scan on the original's canvas, so each word read is claimed by the run of the original printed where it was read. A two-column page read column by column is therefore not a page of errors, and every difference has a position.
 - **Figures must keep their digits.** A run whose digits read back differently has changed, however similar the rest is: "Total 1,250.00" read as "Total 7,250.00" is 93% similar. A figure whose separators alone differ ("5.768.700 00") is the same figure. Words keep OCR's tolerance (`matchThreshold`, 0.8).
 - **Figures are matched, not only read.** Every printed figure is checked glyph by glyph against the original's own ink and against the other digits the page prints, at the scan's own sharpness. That settles what no reading of a coarse scan can: whether this is still the digit that was printed. On real returned scans it verified 35 of 40 printed figures at 125 dpi with no false calls, and read a digit replaced by another of the same run for what it is.
+- **It says why it abstained.** `printChecks.skipped` counts each reason - `no-figure`, `unplaceable`, `few-rivals`, `too-coarse`, `undecided` - because "checked and agreed" and "never looked at" are otherwise the same silence, and telling them apart by inference is slow and can come out wrong.
 - **It abstains rather than confirm.** A page that prints too few digits to offer a full set of rivals, a run too small to segment, a cell too soft to call: each is left to the reading, and the answer is applied only to the cells it actually decided. Confirming a digit that had in fact been altered would be worse than saying nothing, so every threshold is set to fail that way.
 - **What is not an addition.** Words over something the original prints without text, such as a logo, are not additions. Nor are specks under 4 pt tall.
 

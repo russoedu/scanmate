@@ -21,7 +21,7 @@
 
 export { enhancePages, enhanceScan } from './scan-enhancement'
 export type { EnhancedImage, EnhancedPage, EnhancePagesOptions, EnhanceResult, EnhanceScanOptions } from './scan-enhancement'
-export type { AppliedEnhancement, EnhanceOptions } from './illumination-correction'
+export type { AppliedEnhancement, EnhanceOptions, SharpenOptions } from './illumination-correction'
 
 // --- Building blocks ---
 

@@ -7,6 +7,7 @@ import { glyphCells } from './glyph-cells.use-case'
 import { collectTemplates } from './glyph-templates.use-case'
 import { printPolarity } from './print-polarity.policy'
 import { verifyPrintedRun } from './verify-print.use-case'
+import type { PrintVerification } from './verify-print.use-case'
 
 /** A page printed at 72 dpi, where one point is one pixel. */
 function page (draw: (set: (x: number, y: number, value: number) => void) => void): GrayImage {
@@ -120,21 +121,47 @@ describe('verifyPrintedRun', () => {
     return verifyPrintedRun(originalGray, scanGray, dpi, run, templates, {})
   }
 
+  /** The verdict, insisting the run was looked at - and saying why when it was not. */
+  function checked (result: ReturnType<typeof verify>): PrintVerification {
+    if (!result.verified) throw new Error(`the run was not checked: ${result.because}`)
+
+    return result
+  }
+
   it('confirms a figure the scan did not change, digit by digit', async () => {
-    const result = verify(await scanned())
+    const result = checked(verify(await scanned()))
 
     expect(result).toMatchObject({ agrees: true, reading: `Account ${FIGURE}` })
     // Most digits are settled; the rest are left undecided rather than guessed at.
-    expect(result!.checked).toBeGreaterThanOrEqual(4)
-    expect(result!.cells.filter(cell => cell.read !== null && cell.read !== cell.printed)).toEqual([])
+    expect(result.checked).toBeGreaterThanOrEqual(4)
+    expect(result.cells.filter(cell => cell.read !== null && cell.read !== cell.printed)).toEqual([])
   }, 180_000)
 
   it('reads a digit replaced by another of the same run as the digit it now is', async () => {
     // "4412-9087-3355" becomes "4412-9987-3355": the 9 written over the 0. The
     // cells count every printed character of the run, "Account" included.
-    const result = verify(await scanned({ at: 13, from: 12 }))
+    const result = checked(verify(await scanned({ at: 13, from: 12 })))
 
     expect(result).toMatchObject({ agrees: false, reading: 'Account 4412-9987-3355' })
-    expect(result!.confidence).toBeGreaterThan(0.12)
+    expect(result.confidence).toBeGreaterThan(0.12)
+  }, 180_000)
+
+  it('says why it abstained rather than going silent', async () => {
+    const aligned = await scanned()
+    const originalGray = toGrayscale(aligned.original.raster)
+    const scanGray = toGrayscale(aligned.aligned.raster)
+    const { dpi } = aligned.original
+    if (dpi === null) throw new Error('the fixture was extracted without a resolution')
+    const items = aligned.metadata.original.textItems
+    const templates = collectTemplates(originalGray, dpi, items)
+    const run = items.find(item => item.text.includes(FIGURE))
+    if (run === undefined) throw new Error('the fixture does not print the figure')
+
+    // Nothing to check is not the same as checked and agreed, and neither is
+    // "this face is too rare to rule anything out".
+    expect(verifyPrintedRun(originalGray, scanGray, dpi, { ...run, text: 'Account' }, templates, {}))
+      .toEqual({ verified: false, because: 'no-figure' })
+    expect(verifyPrintedRun(originalGray, scanGray, dpi, run, templates, { minRivals: 99 }))
+      .toEqual({ verified: false, because: 'few-rivals' })
   }, 180_000)
 })

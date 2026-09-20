@@ -8,6 +8,8 @@ import type { PipelineStage } from '@scanmate/ink'
 import type { OcrOptions, OcrReport, ReadPage } from '@scanmate/ocr'
 
 import { pixelsFromAudit, readingFromAudit } from '../audit-reuse'
+import { preparePages } from '../page-preparation'
+import type { Preparation } from '../page-preparation'
 import { resolveDocument } from '../document-input'
 import type { ScanmateDocument, ScanmatePage } from '../document-input'
 import { SharedEngine } from '../reading-engine'
@@ -76,13 +78,35 @@ export class Scanmate {
   }
 
   /**
-   * The newest page set a reader can work on: enhanced when it was asked for,
-   * else aligned. No cast: both satisfy `ReadablePage` structurally.
+   * The pages a reader works on, prepared for this document.
+   *
+   * Nobody has to ask for this. `ocr()`, `find()` and `audit()` need pages that
+   * read well and this is how they get them; `align()` and `enhance()` remain
+   * callable for their own sake but are not steps a caller has to perform.
+   *
+   * An explicit `enhance()` wins, because a caller who named a treatment meant
+   * it. Otherwise the document picks its own - see `preparePages` - and
+   * `prepare: 'none'` reads the aligned pages exactly as they are.
    */
   async #readable (): Promise<ReadableScanmatePage[]> {
     if (this.#cache.has('enhance')) return this.enhance()
+    if (this.#options.prepare === 'none') return this.align()
 
-    return this.align()
+    const prepared = await this.#prepare()
+
+    return prepared.pages
+  }
+
+  /** Which treatment this document reads best under, decided once. */
+  async #prepare (): Promise<Preparation> {
+    const ocr = this.#options.ocr
+
+    return this.#cache.run('prepare', fingerprint({ ocr, prepare: this.#options.prepare }), async () => {
+      const pages = await this.align()
+      const { engine } = await this.#engine.lease()
+
+      return await preparePages(pages, { engine, ocr, onProgress: this.#options.onProgress })
+    })
   }
 
   // --- the stages -----------------------------------------------------------
@@ -264,6 +288,11 @@ export class Scanmate {
   get mergedPdf (): { original: Uint8Array | null, scanned: Uint8Array | null } { return this.#merged }
   /** Set when the two sides are of different kinds, so they share no matched resolution. */
   get warning (): string | null { return this.#warning }
+  /**
+   * How this document was prepared for reading, once anything has read it:
+   * which treatment won, what the others scored, and on which page.
+   */
+  get preparation (): Preparation | undefined { return this.#cache.settled('prepare') }
   /**
    * Which stage packages have been loaded.
    *

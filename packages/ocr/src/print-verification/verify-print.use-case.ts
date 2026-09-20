@@ -106,8 +106,38 @@ const MAX_PRINTED_SCORE = 0.85
 const MATCH_HEIGHT = 16
 /** The template is slid this far, in match pixels, to absorb a cell landing half a pixel out. */
 const SHIFT = 1
-/** How much the print may be softened by to meet the scan, in match pixels. */
-const SOFTENING = [0, 0.5, 1, 1.5, 2] as const
+/**
+ * The scan is sharpened to meet the print, rather than the print softened to
+ * meet the scan, and that direction is the whole of it.
+ *
+ * Softening the template was the obvious way round and it is wrong: the blur
+ * lands on the printed glyph and on all nine rivals alike, so above about one
+ * match pixel a `3` and an `8` become the same blob and every rival ties the
+ * truth. Measured on a returned order confirmation, the totals on its shaded
+ * bar fitted a softening of 1.5 and scored 0.937 against the digit actually
+ * printed and 0.928 against the best rival - a margin of 0.006 where 0.12 is
+ * needed, so not one of 109 cells could be decided. The same collapse hits
+ * ordinary black-on-white text on a 93 dpi scan, which is how we know it is
+ * the softening and not the shaded bar.
+ *
+ * Sharpening the scan puts back what the scanner took out and leaves the
+ * template's own detail intact, so what survives is what distinguishes one
+ * digit from another. On the same document that took light-on-dark cells from
+ * 0 decided to 12, and dark-on-light from 316 to 343, with no false call.
+ *
+ * `RECOVERY` is how far, in match pixels; `SHARPENING` is how hard.
+ */
+const RECOVERY = [0, 0.5, 1, 1.5, 2] as const
+/**
+ * A verdict has to hold at every one of these, or the cell is left undecided.
+ *
+ * Not a search for the amount that gives an answer - that is how a sweep turns
+ * into a way of manufacturing one. Sharpening can create a stroke that was
+ * never scanned, and a fabricated stroke favours whichever rival it happens to
+ * resemble, so a reading that moves as the amount moves is an artefact of the
+ * sharpening and is discarded.
+ */
+const SHARPENING = [1, 1.5, 2] as const
 
 export interface VerifyOptions {
   /** How far the winner must correlate ahead of the loser, `0` to `1`. Default `0.12`. */
@@ -147,6 +177,26 @@ export interface CellVerification {
   read:         string | null
 }
 
+/**
+ * Why a run was not checked.
+ *
+ * Reported rather than folded into a bare `null`, because "checked and agreed"
+ * and "never looked at" are the same silence from outside, and telling them
+ * apart by inference costs a consumer days and can still come out wrong.
+ *
+ * - `no-figure` - the run holds no group of digits long enough to be a figure.
+ * - `unplaceable` - the glyphs could not be cut apart.
+ * - `few-rivals` - the document prints too little of this face to rule other
+ *   characters out.
+ * - `too-coarse` - the scan resolves the cell below the height it is matched
+ *   at, so a verdict would rest on detail it never captured.
+ * - `undecided` - measured, and nothing won by enough to say.
+ */
+export type PrintAbstention = 'no-figure' | 'unplaceable' | 'few-rivals' | 'too-coarse' | 'undecided'
+
+/** What the ink said, or why it would not say. */
+export type PrintCheck = ({ verified: true } & PrintVerification) | { verified: false, because: PrintAbstention }
+
 export interface PrintVerification {
   /** The run as its ink reads, printed characters kept where nothing was checked. */
   reading:    string
@@ -169,7 +219,7 @@ export interface PrintVerification {
  * @param run - The run to check, from the original's text layer.
  * @param templates - Glyphs collected from the original by `collectTemplates`.
  * @param options - Margin, figure length and the characters figures use.
- * @returns What the ink says, or `null` when the run could not be checked.
+ * @returns What the ink says, or why it would not say.
  */
 export function verifyPrintedRun (
   original: GrayImage,
@@ -178,7 +228,7 @@ export function verifyPrintedRun (
   run: TextRun,
   templates: Templates,
   options: VerifyOptions = {},
-): PrintVerification | null {
+): PrintCheck {
   const {
     scope = 'figures',
     minMargin = MIN_MARGIN,
@@ -191,78 +241,114 @@ export function verifyPrintedRun (
   } = options
   const printed = [...run.text].filter(character => character.trim() !== '')
   const wanted = scope === 'text' ? textCells(printed, characters) : figureCells(printed, minDigits)
-  if (wanted.size === 0) return null
+  if (wanted.size === 0) return { verified: false, because: 'no-figure' }
 
   // A total on a shaded bar is printed light on dark; turned round, it is a figure like any other.
   const lightOnDark = printPolarity(original, dpi, run) === 'light-on-dark'
   const cells = placeGlyphs(original, dpi, run, run.text, { lightOnDark })
-  if (cells === null) return null
+  if (cells === null) return { verified: false, because: 'unplaceable' }
 
   // Rivals: every character the page prints in this face and size that a figure could use.
   const rivals = [...characters].filter(character => templates.has(templateKey(run, character)))
-  if (rivals.length < minRivals) return null
+  if (rivals.length < minRivals) return { verified: false, because: 'few-rivals' }
 
-  // How soft this scan's print is, measured where the answer is known: each cell
-  // against the very glyph the original prints there.
-  const pairs = [...wanted]
-    .flatMap((index) => {
-      const cell = cells[index]
-
-      return cell === null ? [] : [{ glyph: cut(scan, dpi, cell, lightOnDark), printed: cut(original, dpi, cell, lightOnDark) }]
-    })
-    .filter((pair): pair is { glyph: GrayImage, printed: GrayImage } => pair.glyph !== null && pair.printed !== null)
-  const softening = softeningFor(pairs)
-
-  const reading = [...printed]
-  const scored: CellVerification[] = []
-  let confidence = 1
-  let checked = 0
-
+  // The cell exactly: a margin would bring in the neighbouring glyphs, which
+  // both crops share, and shared ink correlates whatever the character is.
+  const crops = new Map<number, { glyph: GrayImage, printed: GrayImage }>()
+  let coarse = false
   for (const index of wanted) {
-    // The cell exactly: a margin would bring in the neighbouring glyphs, which
-    // both crops share, and shared ink correlates whatever the character is.
     const cell = cells[index]
     if (cell === null) continue
     const glyph = cut(scan, dpi, cell, lightOnDark)
     // The original's own ink here: the same glyph, at the same size, in the same place.
     const asPrinted = cut(original, dpi, cell, lightOnDark)
     if (glyph === null || asPrinted === null) continue
+    // Never invent resolution. Matching happens at MATCH_HEIGHT, so a shorter
+    // cell is scaled up and the detail that decides between two digits is
+    // interpolated rather than scanned - and an invented stroke favours
+    // whichever rival it resembles. The one false call this check produced on
+    // a 93 dpi scan came from cells of fourteen pixels.
+    if (glyph.height < MATCH_HEIGHT) {
+      coarse = true
+      continue
+    }
+    crops.set(index, { glyph, printed: asPrinted })
+  }
+  if (crops.size === 0) return { verified: false, because: coarse ? 'too-coarse' : 'unplaceable' }
 
-    const printedScore = correlate(glyph, asPrinted, softening)
-    const others = rivals
-      .filter(character => character !== printed[index])
-      .map(character => ({ character, score: bestMatch(glyph, templates.get(templateKey(run, character)) ?? [], softening) }))
-      .toSorted((a, b) => b.score - a.score)
-    const rival = others[0]
-    if (rival === undefined) continue
+  // How far this scan's print has to be sharpened, measured where the answer is
+  // known: each cell against the very glyph the original prints there.
+  const pairs = [...crops.values()]
+  const recoveries = SHARPENING.map(amount => recoveryFor(pairs, amount))
+  const limits = { minMargin, minScore, maxPrinted, minPrinted }
 
-    // Undecided unless one of the two wins clearly, and a change has to look like
-    // the character it is being read as, not merely less like the printed one.
-    const changed = rival.score >= printedScore + minMargin && rival.score >= minScore && printedScore <= maxPrinted
-    const unchanged = printedScore >= rival.score + minMargin && printedScore >= minPrinted
+  const reading = [...printed]
+  const scored: CellVerification[] = []
+  let confidence = 1
+  let checked = 0
+
+  for (const [index, crop] of crops) {
+    const passes = recoveries.map(recovery => judgeCell(crop, printed[index], rivals, run, templates, recovery, limits))
+    const first = passes[0]
+    if (first === undefined) continue
+    // Undecided unless every pass reads it the same way: a verdict that changes
+    // as the sharpening changes is the sharpening talking, not the ink.
+    const settled = first.read !== null && passes.every(pass => pass.read === first.read)
     scored.push({
-      at:         index,
-      printed:    printed[index],
-      printedScore,
-      rival:      rival.character,
-      rivalScore: rival.score,
-      read:       changed ? rival.character : (unchanged ? printed[index] : null),
+      at:           index,
+      printed:      printed[index],
+      printedScore: first.printedScore,
+      rival:        first.rival,
+      rivalScore:   first.rivalScore,
+      read:         settled ? first.read : null,
     })
-    if (!changed && !unchanged) continue
+    if (!settled || first.read === null) continue
 
     checked++
-    if (changed) reading[index] = rival.character
-    confidence = Math.min(confidence, Math.abs(printedScore - rival.score))
+    reading[index] = first.read
+    // The narrowest margin any pass decided by, so confidence is the weakest link.
+    confidence = Math.min(confidence, ...passes.map(pass => Math.abs(pass.printedScore - pass.rivalScore)))
   }
 
   // Nothing decided is not an answer: say nothing rather than guess a digit.
-  if (checked === 0) return null
+  if (checked === 0) return { verified: false, because: 'undecided' }
 
   // Put the spaces back, so the reading reads like the run it is about.
   let cell = 0
   const text = [...run.text].map(character => (character.trim() === '' ? character : reading[cell++])).join('')
 
-  return { reading: text, agrees: text === run.text, checked, confidence, cells: scored }
+  return { verified: true, reading: text, agrees: text === run.text, checked, confidence, cells: scored }
+}
+
+/** What one pass of the sharpening sweep makes of a single cell. */
+function judgeCell (
+  crop: { glyph: GrayImage, printed: GrayImage },
+  printed: string,
+  rivals: readonly string[],
+  run: TextRun,
+  templates: Templates,
+  recovery: Recovery,
+  limits: { minMargin: number, minScore: number, maxPrinted: number, minPrinted: number },
+): { read: string | null, printedScore: number, rival: string, rivalScore: number } {
+  const printedScore = correlate(crop.glyph, crop.printed, recovery)
+  const others = rivals
+    .filter(character => character !== printed)
+    .map(character => ({ character, score: bestMatch(crop.glyph, templates.get(templateKey(run, character)) ?? [], recovery) }))
+    .toSorted((a, b) => b.score - a.score)
+  const rival = others[0]
+  if (rival === undefined) return { read: null, printedScore, rival: '', rivalScore: -1 }
+
+  // A change has to look like the character it is being read as, not merely
+  // less like the printed one.
+  const changed = rival.score >= printedScore + limits.minMargin && rival.score >= limits.minScore && printedScore <= limits.maxPrinted
+  const unchanged = printedScore >= rival.score + limits.minMargin && printedScore >= limits.minPrinted
+
+  return {
+    read:       changed ? rival.character : (unchanged ? printed : null),
+    printedScore,
+    rival:      rival.character,
+    rivalScore: rival.score,
+  }
 }
 
 /**
@@ -299,22 +385,40 @@ function figureCells (printed: readonly string[], minDigits: number): Set<number
 }
 
 /** How soft the print has to be drawn to sit best on the scan's own glyphs. */
-function softeningFor (pairs: readonly { glyph: GrayImage, printed: GrayImage }[]): number {
-  let best: { softening: number, score: number } = { softening: 0, score: -Infinity }
-  for (const softening of SOFTENING) {
-    const score = pairs.reduce((sum, pair) => sum + correlate(pair.glyph, pair.printed, softening), 0)
-    if (score > best.score) best = { softening, score }
+function recoveryFor (pairs: readonly { glyph: GrayImage, printed: GrayImage }[], amount: number): Recovery {
+  let best: { recovery: Recovery, score: number } = { recovery: { sigma: 0, amount }, score: -Infinity }
+  for (const sigma of RECOVERY) {
+    const recovery = { sigma, amount }
+    const score = pairs.reduce((sum, pair) => sum + correlate(pair.glyph, pair.printed, recovery), 0)
+    if (score > best.score) best = { recovery, score }
   }
 
-  return best.softening
+  return best.recovery
 }
 
 /** The best correlation between one glyph and a character's templates. */
-function bestMatch (glyph: GrayImage, templates: readonly GrayImage[], softening: number): number {
+function bestMatch (glyph: GrayImage, templates: readonly GrayImage[], recovery: Recovery): number {
   let best = -1
-  for (const template of templates) best = Math.max(best, correlate(glyph, template, softening))
+  for (const template of templates) best = Math.max(best, correlate(glyph, template, recovery))
 
   return best
+}
+
+/** How far and how hard the scan's glyph is sharpened before it is compared. */
+interface Recovery {
+  sigma:  number
+  amount: number
+}
+
+/** An unsharp mask: what the scanner blurred away, added back. */
+function sharpen (image: GrayImage, { sigma, amount }: Recovery): GrayImage {
+  if (sigma <= 0 || amount <= 0) return image
+
+  const blurred = soften(image, sigma)
+  const data = new Float32Array(image.data.length)
+  for (let i = 0; i < data.length; i++) data[i] = image.data[i] + amount * (image.data[i] - blurred.data[i])
+
+  return { width: image.width, height: image.height, data }
 }
 
 /**
@@ -322,13 +426,15 @@ function bestMatch (glyph: GrayImage, templates: readonly GrayImage[], softening
  * slid a pixel each way to allow for a cell that landed a fraction out.
  *
  * Correlation, rather than a difference of pixels, because a scan is darker or
- * lighter than the print it came from and that must not decide anything.
+ * lighter than the print it came from and that must not decide anything. The
+ * scan's glyph is sharpened; the template is left as it was printed. See
+ * {@link RECOVERY} for why that direction and not the other.
  */
-function correlate (glyph: GrayImage, template: GrayImage, softening = 0): number {
+function correlate (glyph: GrayImage, template: GrayImage, recovery: Recovery): number {
   const height = MATCH_HEIGHT
   const width = Math.max(2, Math.round(height * ((glyph.width / glyph.height + template.width / template.height) / 2)))
-  const a = resizeGray(glyph, width, height)
-  const b = soften(resizeGray(template, width, height), softening)
+  const a = sharpen(resizeGray(glyph, width, height), recovery)
+  const b = resizeGray(template, width, height)
 
   let best = -1
   for (let dy = -SHIFT; dy <= SHIFT; dy++)

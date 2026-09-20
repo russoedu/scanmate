@@ -1,5 +1,19 @@
+/** How hard to put back the edges a scanner softened. */
+export interface SharpenOptions {
+  /** Radius, in pixels of the enhanced page - so fitted after any enlargement. */
+  sigma:   number
+  /** How much of what the blur removed is added back. Default `1.5`. */
+  amount?: number
+}
+
 /** How a page is cleaned. Every option has a default; see `DEFAULT_ENHANCE_OPTIONS`. */
 export interface EnhanceOptions {
+  /**
+   * Sharpen the levelled page. Default `false`: it helps a soft scan a great
+   * deal and costs a good one a little, so it is chosen per document rather
+   * than applied to every one. `@scanmate/scan` picks it by measurement.
+   */
+  sharpen?:            SharpenOptions | false
   /**
    * Background window as a share of the page's shorter side. Wide enough that
    * no stroke fills it - or a bold heading becomes its own background and fades -
@@ -47,4 +61,6 @@ export interface AppliedEnhancement {
   despeckled: boolean
   /** The page's measured noise level; `null` when it was not measured because nothing depended on it. */
   noiseSigma: number | null
+  /** The sharpening applied afterwards, or `false` when none was. */
+  sharpened:  SharpenOptions | false
 }
