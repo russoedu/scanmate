@@ -119,7 +119,8 @@
   "targetDefaults": {
     "test": {
       "dependsOn": [
-        "^build"
+        "^build",
+        "build"
       ]
     },
     "@nx/esbuild:esbuild": {

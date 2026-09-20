@@ -51,8 +51,8 @@ module.exports = withNx(
       {
         name: 'mnci-normalise-declaration-specifiers',
         writeBundle (outputOptions) {
-          const { readdirSync, readFileSync, writeFileSync } = require('node:fs')
-          const { join } = require('node:path')
+          const { existsSync, readdirSync, readFileSync, writeFileSync } = require('node:fs')
+          const { dirname, join } = require('node:path')
           const dir = outputOptions.dir ?? './dist'
           const stub = join(dir, 'index.d.ts')
           let source
@@ -88,8 +88,23 @@ module.exports = withNx(
             }
             const withExtensions = declaration.replaceAll(
               bareRelativeSpecifier,
-              (match, space, quote, specifier) =>
-                hasExtension.test(specifier) ? match : `from${space}${quote}${specifier}.js${quote}`,
+              (match, space, quote, specifier) => {
+                if (hasExtension.test(specifier)) return match
+                // A bare specifier may name a FILE or a DIRECTORY barrel, and the
+                // two need different extensions. Appending .js to a directory
+                // ("./raster-codec" -> "./raster-codec.js") names a file that was
+                // never emitted, leaving every consumer's import silently `any`.
+                // Resolve against what tsc actually wrote before choosing.
+                const from = dirname(filePath)
+                const suffix = existsSync(join(from, `${specifier}.d.ts`))
+                  ? '.js'
+                  : (existsSync(join(from, specifier, 'index.d.ts'))
+                      ? '/index.js'
+                      : null)
+                if (suffix === null) return match
+
+                return `from${space}${quote}${specifier}${suffix}${quote}`
+              },
             )
             if (withExtensions !== declaration) writeFileSync(filePath, withExtensions)
           }
