@@ -146,6 +146,28 @@ describe('verifyPrintedRun', () => {
     expect(result.confidence).toBeGreaterThan(0.12)
   }, 180_000)
 
+  it('settles a named claim against the print, on two templates rather than eight', async () => {
+    const aligned = await scanned()
+    const originalGray = toGrayscale(aligned.original.raster)
+    const scanGray = toGrayscale(aligned.aligned.raster)
+    const { dpi } = aligned.original
+    if (dpi === null) throw new Error('the fixture was extracted without a resolution')
+    const items = aligned.metadata.original.textItems
+    const templates = collectTemplates(originalGray, dpi, items)
+    const run = items.find(item => item.text.includes(FIGURE))
+    if (run === undefined) throw new Error('the fixture does not print the figure')
+    const confirm = (claimed: string): ReturnType<typeof verifyPrintedRun> =>
+      verifyPrintedRun(originalGray, scanGray, dpi, run, templates, { scope: 'confirm', claimed })
+
+    // The scan was not altered, so a claim that it was must not be endorsed.
+    const lie = checked(confirm(`Account ${FIGURE.replace('9087', '9387')}`))
+    expect(lie.agrees).toBe(true)
+
+    // And a claim that lines up with nothing is not a question it can answer.
+    expect(confirm('too short')).toEqual({ verified: false, because: 'no-claim' })
+    expect(confirm(`Account ${FIGURE}`)).toEqual({ verified: false, because: 'no-claim' })
+  }, 180_000)
+
   it('says why it abstained rather than going silent', async () => {
     const aligned = await scanned()
     const originalGray = toGrayscale(aligned.original.raster)

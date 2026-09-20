@@ -150,10 +150,22 @@ export interface VerifyOptions {
   minRivals?:  number
   /**
    * What to check: the digits of a figure (`'figures'`, the default, cheap
-   * enough for a whole page), or every letter and digit of the run (`'text'`,
-   * for a single run under dispute).
+   * enough for a whole page), every letter and digit of the run (`'text'`, for
+   * a single run under dispute), or the one question a settlement actually
+   * asks (`'confirm'`).
+   *
+   * `'confirm'` needs {@link claimed} and answers "is this ink the character
+   * the original printed, or the one the reading says it is?" - which takes
+   * two templates rather than a near-complete alphabet, because the reading
+   * has already named the alternative. See {@link VerifyOptions.claimed}.
    */
-  scope?:      'figures' | 'text'
+  scope?:      'figures' | 'text' | 'confirm'
+  /**
+   * What the reading claims the run says, for `scope: 'confirm'`. Compared
+   * character by character against the original's own text, so it has to hold
+   * the same number of printed characters; anything else abstains.
+   */
+  claimed?:    string
   /** How badly the printed glyph must match for a character to count as changed. Default `0.85`. */
   maxPrinted?: number
   /** Digits in a row before a group is treated as a figure. Default `2`. */
@@ -191,8 +203,10 @@ export interface CellVerification {
  * - `too-coarse` - the scan resolves the cell below the height it is matched
  *   at, so a verdict would rest on detail it never captured.
  * - `undecided` - measured, and nothing won by enough to say.
+ * - `no-claim` - `scope: 'confirm'` without a reading to test, or one that
+ *   does not line up with the print character for character.
  */
-export type PrintAbstention = 'no-figure' | 'unplaceable' | 'few-rivals' | 'too-coarse' | 'undecided'
+export type PrintAbstention = 'no-figure' | 'unplaceable' | 'few-rivals' | 'too-coarse' | 'undecided' | 'no-claim'
 
 /** What the ink said, or why it would not say. */
 export type PrintCheck = ({ verified: true } & PrintVerification) | { verified: false, because: PrintAbstention }
@@ -237,20 +251,48 @@ export function verifyPrintedRun (
     minPrinted = MIN_PRINTED_SCORE,
     minRivals = scope === 'text' ? MIN_TEXT_RIVALS : MIN_RIVALS,
     minDigits = 2,
-    characters = scope === 'text' ? TEXT_CHARACTERS : FIGURE_CHARACTERS,
+    characters = scope === 'figures' ? FIGURE_CHARACTERS : TEXT_CHARACTERS,
+    claimed,
   } = options
   const printed = [...run.text].filter(character => character.trim() !== '')
-  const wanted = scope === 'text' ? textCells(printed, characters) : figureCells(printed, minDigits)
-  if (wanted.size === 0) return { verified: false, because: 'no-figure' }
+
+  // What the reading says it is, lined up with what the original printed. The
+  // two must correspond character for character or the comparison is meaningless.
+  const proposed = scope === 'confirm' ? [...(claimed ?? '')].filter(character => character.trim() !== '') : null
+  if (proposed !== null && (proposed.length === 0 || proposed.length !== printed.length)) return { verified: false, because: 'no-claim' }
+
+  const wanted = proposed === null
+    ? (scope === 'text' ? textCells(printed, characters) : figureCells(printed, minDigits))
+    : disputedCells(printed, proposed, characters)
+  if (wanted.size === 0) return { verified: false, because: proposed === null ? 'no-figure' : 'no-claim' }
 
   // A total on a shaded bar is printed light on dark; turned round, it is a figure like any other.
   const lightOnDark = printPolarity(original, dpi, run) === 'light-on-dark'
   const cells = placeGlyphs(original, dpi, run, run.text, { lightOnDark })
   if (cells === null) return { verified: false, because: 'unplaceable' }
 
-  // Rivals: every character the page prints in this face and size that a figure could use.
+  /**
+   * Who each cell is up against.
+   *
+   * Identifying an unknown glyph needs most of the alphabet: to assert "this is
+   * a 7" you must be able to rule the others out, and the bar of eight digits
+   * is what the false-call rate justified. A settlement is not asking that. The
+   * reading has already named its answer, so the question is which of two named
+   * characters this ink is - and two templates answer it. A wrong verdict then
+   * requires the ink to match the *other specific character* better, not merely
+   * to be hard to read.
+   */
   const rivals = [...characters].filter(character => templates.has(templateKey(run, character)))
-  if (rivals.length < minRivals) return { verified: false, because: 'few-rivals' }
+  const rivalsAt = (index: number): readonly string[] => {
+    if (proposed === null) return rivals
+    const against = proposed[index]
+
+    return against !== undefined && templates.has(templateKey(run, against)) ? [against] : []
+  }
+  const enough = proposed === null
+    ? rivals.length >= minRivals
+    : [...wanted].some(index => rivalsAt(index).length > 0)
+  if (!enough) return { verified: false, because: 'few-rivals' }
 
   // The cell exactly: a margin would bring in the neighbouring glyphs, which
   // both crops share, and shared ink correlates whatever the character is.
@@ -288,7 +330,7 @@ export function verifyPrintedRun (
   let checked = 0
 
   for (const [index, crop] of crops) {
-    const passes = recoveries.map(recovery => judgeCell(crop, printed[index], rivals, run, templates, recovery, limits))
+    const passes = recoveries.map(recovery => judgeCell(crop, printed[index], rivalsAt(index), run, templates, recovery, limits))
     const first = passes[0]
     if (first === undefined) continue
     // Undecided unless every pass reads it the same way: a verdict that changes
@@ -361,6 +403,17 @@ function judgeCell (
 function textCells (printed: readonly string[], characters: string): Set<number> {
   const wanted = new Set<number>()
   for (const [index, character] of printed.entries()) if (characters.includes(character)) wanted.add(index)
+
+  return wanted
+}
+
+/** Where the print and the reading disagree, which is the whole of what a settlement asks about. */
+function disputedCells (printed: readonly string[], proposed: readonly string[], characters: string): Set<number> {
+  const wanted = new Set<number>()
+  for (const [index, character] of printed.entries()) {
+    const against = proposed[index]
+    if (against !== undefined && against !== character && characters.includes(character) && characters.includes(against)) wanted.add(index)
+  }
 
   return wanted
 }
