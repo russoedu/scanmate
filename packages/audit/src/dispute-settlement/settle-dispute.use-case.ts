@@ -194,7 +194,7 @@ export async function settleDisputes (input: SettlementInput): Promise<Settlemen
       grey.scanned ??= toGrayscale(scanned.raster)
       templates ??= collectTemplates(grey.original, original.dpi, runs)
       const matched = verifyPrintedRun(grey.original, grey.scanned, original.dpi, asPrinted, templates, { scope: 'text' })
-      if (matched?.agrees === true) {
+      if (matched.verified && matched.agrees) {
         settlements.push({ difference, verdict: 'misread', because: 'glyphs-match', readings: none, steady: false })
         continue
       }

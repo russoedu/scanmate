@@ -11,8 +11,13 @@ import { settleDisputes } from './settle-dispute.use-case'
  * pixel. The lines above the run under test are there to be harvested for
  * glyph templates: the check will not speak about a run unless the page prints
  * enough of that face elsewhere to give every rival something to match.
+ *
+ * The scale matters. Glyphs are matched at a fixed height, and the check
+ * refuses a cell shorter than that rather than match on detail it would have
+ * to interpolate - so at `SCALE = 2` this page is below its own bar and
+ * nothing here would be checked at all.
  */
-const SCALE = 2
+const SCALE = 3
 const LINES = [
   'ABCDEFGHIJKLM',
   'NOPQRSTUVWXYZ',
@@ -22,17 +27,17 @@ const LINES = [
   'JUMPS OVER A DOG',
 ]
 const TARGET = 'PAID IN FULL'
-const LINE_HEIGHT = 20
+const LINE_HEIGHT = 30
 
 function page (target = TARGET): { raster: Raster, runs: TextRun[] } {
-  const raster = createRaster(400, (LINES.length + 2) * LINE_HEIGHT)
+  const raster = createRaster(560, (LINES.length + 2) * LINE_HEIGHT)
   raster.data.fill(255)
   const runs: TextRun[] = []
   for (const [index, text] of [...LINES, target].entries()) {
     const at = { x: 10, y: 10 + index * LINE_HEIGHT }
     drawLabel(raster, text, at, { scale: SCALE })
     const size = labelSize(text, { scale: SCALE })
-    runs.push({ text, x: at.x, y: at.y, width: size.width, height: size.height, fontName: 'bitmap', fontSize: 7 })
+    runs.push({ text, x: at.x, y: at.y, width: size.width, height: size.height, fontName: 'bitmap', fontSize: 7 * SCALE })
   }
 
   return { raster, runs }

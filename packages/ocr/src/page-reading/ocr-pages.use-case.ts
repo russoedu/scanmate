@@ -146,14 +146,21 @@ async function readPage (page: ReadablePage, engine: OcrEngine, options: OcrOpti
     }
   // Figures are matched against the original's own glyphs, which settles what no
   // reading of a returned scan can: whether this is still the digit that was printed.
-  const printChecks = { checked: 0, different: 0 }
+  const printChecks: PageOcr['printChecks'] = {
+    checked:   0,
+    different: 0,
+    skipped:   { 'no-figure': 0, 'unplaceable': 0, 'few-rivals': 0, 'too-coarse': 0, 'undecided': 0 },
+  }
   const seenChanged = new Set<number>()
   if (printCheck !== false && useLayer) {
     const scanGray = toGrayscale(page.aligned.raster)
     const printed: TextRun[] = items.map(item => ({ ...item }))
     for (const [r, run] of printed.entries()) {
       const verified = verifyPrintedRun(originalGray, scanGray, originalDpi, run, templates, printCheck)
-      if (verified === null) continue
+      if (!verified.verified) {
+        printChecks.skipped[verified.because]++
+        continue
+      }
       printChecks.checked++
       if (!verified.agrees) {
         printChecks.different++

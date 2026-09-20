@@ -1,7 +1,7 @@
 import type { ProgressCallback, ReadablePage } from '@scanmate/ink'
 
 import type { OcrEngine, TesseractEngineOptions } from '../ocr-engine'
-import type { VerifyOptions } from '../print-verification'
+import type { PrintAbstention, VerifyOptions } from '../print-verification'
 import type { RecheckOptions } from './recheck-run.use-case'
 import type { NormaliseOptions } from '../text-normalisation'
 import type { ScoreMetric, TextMetrics } from '../text-similarity'
@@ -142,8 +142,13 @@ export interface PageOcr {
   differences: TextDifference[]
   /** Runs the page reading doubted and re-read on their own, and how many of them the re-reading cleared. */
   rechecks:    { attempted: number, cleared: number }
-  /** Printed figures matched against the original's own glyphs, and how many read as something else. */
-  printChecks: { checked: number, different: number }
+  /**
+   * Printed figures matched against the original's own glyphs: how many were
+   * decided, how many read as something else, and why the rest were not looked
+   * at. Without `skipped`, "checked and agreed" and "never checked" are the
+   * same silence from outside.
+   */
+  printChecks: { checked: number, different: number, skipped: Record<PrintAbstention, number> }
   warnings:    string[]
 }
 

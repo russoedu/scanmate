@@ -205,17 +205,51 @@ worst possible error is not missing a forgery — it is *confirming* one:
    Each page's greyscale is released as soon as its glyphs are taken, so the
    gathering holds one page of pixels at a time rather than the document, and
    the per-character cap applies to the store as a whole.
-4. **The print is softened to the scan's sharpness** before any comparison, by
-   the amount that best fits the cells whose answer is known. Without this a
-   blurred 0 matches a crisp 8 as well as it matches a crisp 0.
-5. **The rival set has to be nearly complete** — at least 8 of the ten digits,
+4. **The scan is sharpened to the print, not the print softened to the scan.**
+   Both close the same gap, and only one of them leaves an answer behind.
+
+   Softening the template was how this worked until 0.5.0, fitted to the cells
+   whose answer is known. The flaw is that the blur lands on the printed digit
+   *and on all nine rivals alike*, so past about one match pixel every digit
+   becomes the same blob. Measured on a returned order confirmation, the totals
+   on its shaded bar fitted a softening of 1.5 and scored **0.937** against the
+   digit actually printed and **0.928** against the best rival — a margin of
+   0.006 where 0.12 is needed. Not one of 109 cells could be decided, and in 45%
+   of them a wrong digit outscored the right one. The ink was perfectly legible;
+   the comparison had simply stopped carrying information.
+
+   It is not about shaded bars, which is how we know it is the softening: the
+   same collapse takes ordinary black-on-white text on a 93 dpi scan, where 5 of
+   480 cells could be decided.
+
+   Sharpening the scan puts back what the scanner took out and leaves the
+   template's own detail intact, so what survives is exactly what tells one
+   digit from another. On the same documents, figure runs verified went from
+   0 of 14 to **8 of 14** on the 120 dpi scan and 0 to **12 of 14** on the
+   144 dpi one, with no false call. The total that could never be checked is
+   now confirmed when it is intact, and read as `77,211,380.00` when a `7` is
+   pasted over its `2`.
+5. **A verdict has to survive being sharpened harder.** The same cell is judged
+   at three amounts, and a reading that changes between them is discarded.
+
+   Sharpening can invent a stroke that was never scanned, and an invented
+   stroke favours whichever rival it happens to resemble. The sweep is there to
+   catch that, so it is never a search for the amount that yields an answer —
+   the mildest pass does not get to win an argument. Disagreement abstains.
+6. **Nothing is matched below the height it is matched at.** Cells are compared
+   at 16 pixels; a cell the scan resolves at fewer is refused outright rather
+   than scaled up, because the detail that separates two digits would then be
+   interpolated rather than photographed. The one false call this check
+   produced across three documents came from cells of fourteen pixels, on a
+   93 dpi scan — which now declines every run and says `too-coarse` instead.
+7. **The rival set has to be nearly complete** — at least 8 of the ten digits,
    in that face and size — before a run is checked at all. A page that prints
    only a handful of digits may not print the one that is actually on the scan,
    and a digit with no template to lose to wins by default: a `7` resembles the
    `1` it replaced more than it resembles any of the three digits that page
    happens to print. Abstaining is the honest answer; confirming would be a
    forgery signed off by the tool that was meant to catch it.
-6. **A confirmation needs an absolute match, not just a relative one.** Beating
+8. **A confirmation needs an absolute match, not just a relative one.** Beating
    the rivals is not enough; the scan's ink must match the original's own print
    at **0.7** or better before the digit is called unchanged. Genuine digits
    score 0.89–0.97 even at 90 dpi, so this costs nothing real.

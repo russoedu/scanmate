@@ -24,7 +24,7 @@ function page (number: number, runs: readonly Run[], added = ''): PageOcr {
     metrics:     compareTexts(expected, alignedText),
     differences: [],
     rechecks:    { attempted: 0, cleared: 0 },
-    printChecks: { checked: 0, different: 0 },
+    printChecks: { checked: 0, different: 0, skipped: { 'no-figure': 0, 'unplaceable': 0, 'few-rivals': 0, 'too-coarse': 0, 'undecided': 0 } },
     warnings:    [],
   }
 }
