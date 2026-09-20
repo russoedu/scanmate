@@ -35,7 +35,9 @@
     "find:qa": "nx run find:lint && nx run find:test",
     "find:build": "nx run find:build",
     "audit:qa": "nx run audit:lint && nx run audit:test",
-    "audit:build": "nx run audit:build"
+    "audit:build": "nx run audit:build",
+    "scan:qa": "nx run scan:lint && nx run scan:test",
+    "scan:build": "nx run scan:build"
   },
   "private": true,
   "devDependencies": {

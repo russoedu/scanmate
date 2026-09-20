@@ -1,69 +1,5 @@
 import mnci from '@mnci/eslint-config'
 
-// WHAT IS IN HERE. Each line is one config block, by the `name` it carries.
-//
-//   mnci/ignores                  paths never linted (dist, coverage, .venv, …)
-//   mnci/base                     JS/TS correctness — @eslint/js, eslint-plugin-unicorn,
-//                                 -promise, -n, -unused-imports
-//   typescript-eslint/*           typescript-eslint's own recommended blocks
-//   mnci/typescript*              TS rules on top of them, no type information needed
-//   mnci/type-aware*              the rules that DO read types (no-floating-promises and
-//                                 friends), scoped to {apps,libs,packages}/*/src
-//   mnci/import-graph             import cycles — eslint-plugin-import-x
-//   mnci/react                    JSX/TSX — @eslint-react/eslint-plugin,
-//                                 eslint-plugin-react-hooks, -react-refresh, -jsx-a11y
-//   mnci/regexp*                  regex correctness — eslint-plugin-regexp
-//   mnci/json  mnci/jsonc  mnci/json5
-//                                 eslint-plugin-jsonc — comments are allowed in .jsonc
-//                                 and tsconfig.json, forbidden in plain .json
-//   mnci/yaml*                    eslint-plugin-yml — your CI pipeline files
-//   mnci/toml/base*               eslint-plugin-toml, PARSER ONLY: a malformed
-//                                 pyproject.toml is a syntax error, nothing is styled
-//   mnci/markdown                 @eslint/markdown
-//   mnci/css                      @eslint/css
-//   mnci/html                     @html-eslint/eslint-plugin
-//   mnci/tests                    *.spec/*.test relaxations — eslint-plugin-jest
-//                                 (Vitest's globals too; the two stacks share them)
-//   mnci/nx-dependency-checks     @nx/eslint-plugin, on publishable packages' manifests
-//   mnci/standard                 JavaScript Standard Style as ESLint rules — the
-//                                 whole formatting opinion, a faithful port of
-//                                 neostandard
-//   mnci/house-style              the deliberate departures from Standard:
-//                                 trailing commas, aligned object values,
-//                                 consistent-as-needed quote-props, a blank line
-//                                 before return. Composed LAST, on purpose:
-//                                 nothing may follow that disables it.
-//
-// To list them as ESLint actually resolves them:  npx eslint --inspect-config
-//
-// TO OVERRIDE a rule, append a block AFTER the spread — later blocks win, so one
-// of your own beats anything above it. Give it a name, so the inspector shows
-// where the change came from:
-//
-//   export default [
-//     ...mnci({ workspaceRoot: import.meta.dirname }),
-//     {
-//       name: 'local/legacy-app-allows-any',
-//       files: ['apps/legacy/**/*.ts'],
-//       rules: { '@typescript-eslint/no-explicit-any': 'off' }
-//     }
-//   ]
-//
-// Do NOT edit @mnci/eslint-config inside node_modules, and do not fork it: it is
-// a dependency, so `npm update` brings rule fixes in the way it brings any
-// other. An override here survives that; an edit to the package does not.
-//
-// FORMATTING IS LINTING HERE. There is no Prettier, no oxfmt and no
-// `format:check` — `npm run lint` reports indentation, quotes and spacing as
-// ordinary errors, and `npm run format` is `eslint . --fix`. So do not add a
-// formatter: whichever one you pick will disagree with the `mnci/standard`
-// block above, and because a formatter runs on save it wins silently, leaving
-// `lint` to fail on files you never edited by hand.
-//
-// That also applies to the editor. Installing a Prettier or oxfmt extension is
-// enough on its own — neither needs a config file, and with none present they
-// format against their own defaults (semicolons, double quotes), which is the
-// inverse of Standard.
 export default [
   {
     name:    'local/ignored-docs-and-generated-files',
@@ -135,5 +71,10 @@ export default [
         ],
       }],
     },
+  },
+  {
+    ignores: [
+      '**/vitest.config.*.timestamp*',
+    ],
   },
 ]

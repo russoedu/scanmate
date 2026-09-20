@@ -40,6 +40,7 @@ Every stage stands on its own: install the one you need, or the lot.
 
 | package | what it answers |
 |---|---|
+| [`@scanmate/scan`](packages/scan) | **All of it, in one object.** `new Scanmate(issued, returned)` with a method per comparison, each running what it needs, remembering what it did, and loading a stage only when that stage is used. |
 | [`@scanmate/audit`](packages/audit) | **Is this return acceptable?** Runs the reading and the pixel comparison together, merges what both saw by place, settles what they disagree about, and gives a verdict with a three-panel evidence page. |
 | [`@scanmate/ocr`](packages/ocr) | **Does the scan still say what the original said?** Read run by run against the original's text layer, with printed figures matched glyph by glyph against the original's own ink. |
 | [`@scanmate/diff`](packages/diff) | **What changed?** Expected regions filled in, unexpected marks, printed ink lost — measured in square millimetres of real ink. |
