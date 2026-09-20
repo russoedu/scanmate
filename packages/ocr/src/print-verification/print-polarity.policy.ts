@@ -1,6 +1,4 @@
-import type { GrayImage } from '@scanmate/ink'
-
-import type { Box } from './glyph-cells.use-case'
+import type { GrayImage, ScanmateOrientedRect } from '@scanmate/ink'
 
 /** Which way the original prints a run: dark text on light, or light text on a dark bar. */
 export type PrintPolarity = 'dark-on-light' | 'light-on-dark'
@@ -10,7 +8,7 @@ export type PrintPolarity = 'dark-on-light' | 'light-on-dark'
  * glyphs are the pixels far from the background, and the background is most of
  * the box.
  */
-export function printPolarity (page: GrayImage, dpi: number, run: Box): PrintPolarity {
+export function printPolarity (page: GrayImage, dpi: number, run: ScanmateOrientedRect): PrintPolarity {
   const s = dpi / 72
   const left = Math.max(0, Math.floor(run.x * s))
   const top = Math.max(0, Math.floor(run.y * s))

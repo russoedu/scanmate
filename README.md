@@ -40,6 +40,7 @@ Every stage stands on its own: install the one you need, or the lot.
 
 | package | what it answers |
 |---|---|
+| [`@scanmate/scan`](packages/scan) | **All of it, in one object.** `new Scanmate(issued, returned)` with a method per comparison, each running what it needs, remembering what it did, and loading a stage only when that stage is used. |
 | [`@scanmate/audit`](packages/audit) | **Is this return acceptable?** Runs the reading and the pixel comparison together, merges what both saw by place, settles what they disagree about, and gives a verdict with a three-panel evidence page. |
 | [`@scanmate/ocr`](packages/ocr) | **Does the scan still say what the original said?** Read run by run against the original's text layer, with printed figures matched glyph by glyph against the original's own ink. |
 | [`@scanmate/diff`](packages/diff) | **What changed?** Expected regions filled in, unexpected marks, printed ink lost — measured in square millimetres of real ink. |
@@ -50,6 +51,14 @@ Every stage stands on its own: install the one you need, or the lot.
 | [`@scanmate/merge`](packages/merge) | **How do these photos become one document?** Without re-encoding what is already good, and keeping each page's real resolution. |
 | [`@scanmate/ink`](packages/ink) | The kernel: ink separation, warps, matrices, correlation, and the contracts the stages pass along. |
 | [`@scanmate/image-fix`](packages/image-fix) | Deprecated. The first version of all of this; its README maps every export to its new home. |
+
+Every stage takes pages and hands the same pages back, carrying what it found:
+`align` adds `aligned`, `enhance` adds `enhanced`, `ocr` adds `text`, `diff` adds
+`diff`, `find` adds `find`, `audit` adds `audit`. So the stages compose in any
+order their inputs allow, nothing has to be matched up again by index, and
+whatever you attached to a page is still on it at the end. `extract` and `merge`
+are the ends of the line: they turn documents into pages, and pages back into a
+document.
 
 ## Getting started
 
@@ -72,9 +81,10 @@ const audit = await auditPages(await alignPages(pages), {
 })
 
 audit.verdict                    // 'pass' | 'review'
-audit.pages[0].reasons           // why, one sentence each
-audit.pages[0].findings          // text and pixel findings, merged by place
-audit.pages[0].evidenceImage     // the page above
+audit.pages[0].audit.reasons     // why, one sentence each
+audit.pages[0].audit.findings    // text and pixel findings, merged by place
+audit.pages[0].audit.evidenceImage   // the page above
+audit.pages[0].original          // the page itself is still there
 ```
 
 ## How it decides

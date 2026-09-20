@@ -1,7 +1,6 @@
-import type { GrayImage } from '@scanmate/ink'
+import type { GrayImage, ScanmateOrientedRect, TextRun } from '@scanmate/ink'
 
 import { placeGlyphs } from './glyph-cells.use-case'
-import type { Box } from './glyph-cells.use-case'
 import { printPolarity } from './print-polarity.policy'
 
 /**
@@ -19,11 +18,6 @@ import { printPolarity } from './print-polarity.policy'
  */
 
 /** A run of the original's text layer, where it sits and how it is set. */
-export interface PrintedRun extends Box {
-  text:      string
-  fontName?: string
-  fontSize?: number
-}
 
 /** Glyph images by face, size and character. */
 export type Templates = ReadonlyMap<string, GrayImage[]>
@@ -32,7 +26,7 @@ export type Templates = ReadonlyMap<string, GrayImage[]>
 const PER_CHARACTER = 4
 
 /** The key a run's glyphs are filed under. */
-export function templateKey (run: PrintedRun, character: string): string {
+export function templateKey (run: TextRun, character: string): string {
   // The turn belongs in the key: a glyph printed up the margin and the same
   // glyph printed across the page are different pictures, and matching one
   // against the other would compare a letter with its own rotation.
@@ -49,7 +43,7 @@ export function templateKey (run: PrintedRun, character: string): string {
  * @param runs - Its text layer.
  * @returns Glyph images, by {@link templateKey}.
  */
-export function collectTemplates (page: GrayImage, dpi: number, runs: readonly PrintedRun[]): Templates {
+export function collectTemplates (page: GrayImage, dpi: number, runs: readonly TextRun[]): Templates {
   const templates = new Map<string, GrayImage[]>()
 
   for (const run of runs) {
@@ -81,7 +75,7 @@ function keep (templates: Map<string, GrayImage[]>, key: string, glyph: GrayImag
  * The greyscale of one box of the page, or `null` when it lies outside it;
  * inverted when the run it belongs to is printed light on dark.
  */
-export function cut (page: GrayImage, dpi: number, box: Box, invert = false): GrayImage | null {
+export function cut (page: GrayImage, dpi: number, box: ScanmateOrientedRect, invert = false): GrayImage | null {
   const s = dpi / 72
   const left = Math.max(0, Math.floor(box.x * s))
   const top = Math.max(0, Math.floor(box.y * s))

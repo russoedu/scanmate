@@ -1,16 +1,15 @@
-import type { Raster } from '@scanmate/ink'
+import type { PdfTextRun, Raster } from '@scanmate/ink'
 
 import { extractPages } from '../page-extraction'
 import { A4, createSyntheticPdf } from '../synthetic-pdf'
 import type { SyntheticPdfPage } from '../synthetic-pdf'
-import type { TextItem } from './text-item.contract'
 
 const PRINTED: SyntheticPdfPage = {
   text: [{ x: 72, y: 760, size: 18, content: 'ORDER CONFIRMATION' }, { x: 300, y: 500, content: 'Total 1,250.00' }],
 }
 
 /** Bounds of the dark pixels near an item, in points - where the glyphs really are. */
-function inkBounds (raster: Raster, dpi: number, item: TextItem, margin = 12) {
+function inkBounds (raster: Raster, dpi: number, item: PdfTextRun, margin = 12) {
   const s = dpi / 72
   let left = Infinity, top = Infinity, right = -Infinity, bottom = -Infinity
   for (let y = Math.max(0, Math.floor((item.y - margin) * s)); y < Math.min(raster.height, (item.y + item.height + margin) * s); y++)

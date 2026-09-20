@@ -1,9 +1,9 @@
 import { resizeGray } from '@scanmate/ink'
-import type { GrayImage } from '@scanmate/ink'
+import type { GrayImage, TextRun } from '@scanmate/ink'
 
 import { placeGlyphs } from './glyph-cells.use-case'
 import { cut, templateKey } from './glyph-templates.use-case'
-import type { PrintedRun, Templates } from './glyph-templates.use-case'
+import type { Templates } from './glyph-templates.use-case'
 import { printPolarity } from './print-polarity.policy'
 
 /**
@@ -175,7 +175,7 @@ export function verifyPrintedRun (
   original: GrayImage,
   scan: GrayImage,
   dpi: number,
-  run: PrintedRun,
+  run: TextRun,
   templates: Templates,
   options: VerifyOptions = {},
 ): PrintVerification | null {

@@ -1,8 +1,7 @@
 import { resampleRaster, toGrayscale } from '@scanmate/ink'
-import type { Raster } from '@scanmate/ink'
+import type { Raster, ReadablePage, TextRun } from '@scanmate/ink'
 
 import { collectTemplates, mergeVerifiedFigures, printPolarity, verifyPrintedRun } from '../print-verification'
-import type { PrintedRun } from '../print-verification'
 import { createTesseractEngine } from '../ocr-engine'
 import type { OcrEngine, RecognisedText } from '../ocr-engine'
 import { DEFAULT_NORMALISE } from '../text-normalisation'
@@ -10,7 +9,7 @@ import { compareTexts } from '../text-similarity'
 import { claimWords, judgeRun, judgeRuns } from './match-words.use-case'
 import type { MatchOptions, Reference } from './match-words.use-case'
 import { recheckRun } from './recheck-run.use-case'
-import type { OcrOptions, OcrReport, PageOcr, PlacedText, ReadablePage, SideText } from './ocr-report.contract'
+import type { OcrOptions, OcrReport, PageOcr, PlacedText, ReadPage, SideText } from './ocr-report.contract'
 
 /**
  * Read every aligned page and say how closely the scan's text matches the
@@ -26,17 +25,17 @@ import type { OcrOptions, OcrReport, PageOcr, PlacedText, ReadablePage, SideText
  * One engine serves the whole call. Pass `engine` to share one across calls;
  * it is then left running.
  */
-export async function ocrPages<Page extends ReadablePage> (pages: readonly Page[], options: OcrOptions = {}): Promise<OcrReport> {
+export async function ocrPages<Page extends ReadablePage> (pages: readonly Page[], options: OcrOptions = {}): Promise<OcrReport<Page>> {
   const engine = options.engine ?? await createTesseractEngine(options.tesseract)
   try {
-    const results: PageOcr[] = []
+    const results: Array<ReadPage<Page>> = []
     for (const [position, page] of pages.entries()) {
       const index = position + 1
       const started = Date.now()
       options.onProgress?.({ stage: 'ocr', phase: 'start', page: page.page, index, total: pages.length })
 
       const result = await readPage(page, engine, options)
-      results.push(result)
+      results.push({ ...page, text: result })
 
       options.onProgress?.({
         stage:      'ocr',
@@ -49,11 +48,12 @@ export async function ocrPages<Page extends ReadablePage> (pages: readonly Page[
       })
     }
 
-    const characters = results.reduce((sum, r) => sum + r.metrics.characters, 0)
+    const readings = results.map(page => page.text)
+    const characters = readings.reduce((sum, reading) => sum + reading.metrics.characters, 0)
 
     return {
-      score:    characters === 0 ? mean(results.map(r => r.score)) : results.reduce((sum, r) => sum + r.score * r.metrics.characters, 0) / characters,
-      pageMean: mean(results.map(r => r.score)),
+      score:    characters === 0 ? mean(readings.map(r => r.score)) : readings.reduce((sum, r) => sum + r.score * r.metrics.characters, 0) / characters,
+      pageMean: mean(readings.map(r => r.score)),
       pages:    results,
       engine:   { name: engine.name, version: engine.version, languages: engine.languages },
     }
@@ -129,7 +129,7 @@ async function readPage (page: ReadablePage, engine: OcrEngine, options: OcrOpti
   const seenChanged = new Set<number>()
   if (printCheck !== false && useLayer) {
     const scanGray = toGrayscale(page.aligned.raster)
-    const printed: PrintedRun[] = items.map(item => ({ ...item }))
+    const printed: TextRun[] = items.map(item => ({ ...item }))
     const templates = collectTemplates(originalGray, originalDpi, printed)
     for (const [r, run] of printed.entries()) {
       const verified = verifyPrintedRun(originalGray, scanGray, originalDpi, run, templates, printCheck)

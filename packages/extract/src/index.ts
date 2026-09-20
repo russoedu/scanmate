@@ -24,9 +24,7 @@ export { extractPages, extractPageStream, extractPair, extractPairStream } from 
 export type { ExtractedPage, ExtractOptions, ExtractPairOptions, PagePairing, PageSelection, PairedDocument, PairedPage } from './page-extraction'
 
 export type { EmbeddedImage, PageKind, PageMetadata } from './page-inspection'
-export type { TextItem } from './text-layer'
 export type { DpiChoice } from './page-rendering'
-export type { PdfInput } from './pdf-document'
 
 // --- Building blocks, for pipelines that need to stop part way ---
 

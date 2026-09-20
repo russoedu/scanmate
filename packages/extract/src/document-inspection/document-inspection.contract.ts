@@ -1,4 +1,4 @@
-import type { Rect } from '@scanmate/ink'
+import type { ScanmateRect } from '@scanmate/ink'
 
 import type { PageSelection } from '../page-extraction'
 import type { PageMetadata } from '../page-inspection'
@@ -28,7 +28,7 @@ export interface InspectedPage {
   displayWidth:  number
   displayHeight: number
   /** The visible box in points, as pdf.js resolves it (the crop box, within the media box). */
-  box:           Rect
+  box:           ScanmateRect
   /** The full metadata, when asked for; otherwise `null`. */
   metadata:      PageMetadata | null
 }

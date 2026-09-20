@@ -242,6 +242,20 @@
         "script": "audit:build",
         "problemMatcher": [],
         "group": "build"
+      },
+      {
+        "label": "scan: qa",
+        "type": "npm",
+        "script": "scan:qa",
+        "problemMatcher": [],
+        "group": "qa"
+      },
+      {
+        "label": "scan: build",
+        "type": "npm",
+        "script": "scan:build",
+        "problemMatcher": [],
+        "group": "build"
       }
     ]
   },

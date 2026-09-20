@@ -1,4 +1,4 @@
-import type { AlignedPage, PageImage, ProgressCallback } from '@scanmate/ink'
+import type { ProgressCallback, ReadablePage } from '@scanmate/ink'
 
 import type { OcrEngine, TesseractEngineOptions } from '../ocr-engine'
 import type { VerifyOptions } from '../print-verification'
@@ -7,17 +7,6 @@ import type { NormaliseOptions } from '../text-normalisation'
 import type { ScoreMetric, TextMetrics } from '../text-similarity'
 
 /** A run of text placed on the page, in PDF points from the top-left - what `@scanmate/extract` calls a text item. */
-export interface PositionedText {
-  text:      string
-  x:         number
-  y:         number
-  width:     number
-  height:    number
-  endsLine?: boolean
-  /** How the run is set, when the text layer says: a figure is matched against glyphs of the same face and size. */
-  fontName?: string
-  fontSize?: number
-}
 
 /**
  * What `ocrPages` reads: an aligned page, and optionally its enhanced image
@@ -26,10 +15,6 @@ export interface PositionedText {
  * ignored, deliberately - hidden or stale text must not vouch for what the
  * paper shows.
  */
-export type ReadablePage = AlignedPage & {
-  enhanced?: PageImage
-  metadata?: { original?: { textItems?: readonly PositionedText[] | null } }
-}
 
 export interface OcrOptions {
   /** An engine to use and leave running. Default: a tesseract engine made for this call and terminated after it. */
@@ -162,11 +147,21 @@ export interface PageOcr {
   warnings:    string[]
 }
 
-export interface OcrReport {
+/** A page with what the scan reads on it, beside what the original says. */
+export type ReadPage<Page extends ReadablePage = ReadablePage> = Page & { text: PageOcr }
+
+export interface OcrReport<Page extends ReadablePage = ReadablePage> {
   /** Page scores weighted by each page's expected characters - a three-word page does not outvote a dense one. */
   score:    number
   /** Unweighted mean of page scores; the two disagreeing says the short pages read differently. */
   pageMean: number
-  pages:    PageOcr[]
+  /**
+   * The pages handed in, each carrying its reading.
+   *
+   * The pages come back rather than a bare list of results, so a later stage
+   * can take these straight and whatever the producer attached is still on
+   * them. `page.text` is this page's reading.
+   */
+  pages:    Array<ReadPage<Page>>
   engine:   { name: string, version: string, languages: readonly string[] }
 }

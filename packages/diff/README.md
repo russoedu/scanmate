@@ -26,11 +26,13 @@ const changes = await diffPages(await alignPages(pages), [
   { page: 1, id: 'date',      x: 404, y: 577, width: 171, height: 22 },
 ], { sideBySide: true })
 
-changes[0].expected          // [{ id, identified, addedInk, overfilled, ink: { ... } }]
-changes[0].unexpected        // [{ x, y, width, height, inkArea, pixels }]
-changes[0].missing           // printed ink the scan lost
-changes[0].sideBySideImage   // original and scan, boxed alike
-changes[0].diffImage         // the overlay: violet where the ink differs, grey where it agrees
+// Every page comes back carrying its comparison, so nothing has to be matched
+// up again by index - and everything the page already had is still on it.
+changes[0].diff.expected     // [{ id, identified, addedInk, overfilled, ink: { ... } }]
+changes[0].diff.unexpected   // [{ x, y, width, height, inkArea, pixels }]
+changes[0].diff.missing      // printed ink the scan lost
+changes[0].diff.diffImage    // the overlay: violet where the ink differs, grey where it agrees
+changes[0].aligned.raster    // still the page you handed in
 ```
 
 Rectangles are in PDF points from the page's top-left by default, the same frame `@scanmate/extract` reports text in; `units: 'pixels'` switches to the original's rendered pixels.

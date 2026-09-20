@@ -58,7 +58,7 @@ describe('ocrPages, end to end', () => {
     const { pages } = await extractPair({ original, scanned }, { output: 'none' })
     const aligned = await alignPages(pages, { output: 'none' })
     const report = await ocrPages(aligned)
-    const [result] = report.pages
+    const [{ text: result }] = report.pages
 
     expect(result.original.source).toBe('text-layer')
     const changed = result.differences.filter(d => d.kind === 'changed')

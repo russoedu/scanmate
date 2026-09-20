@@ -1,6 +1,6 @@
-import type { Rect } from '@scanmate/ink'
+import type { ScanmateRect, TextRun } from '@scanmate/ink'
 import { normaliseText } from '@scanmate/ocr'
-import type { NormaliseOptions, PositionedText } from '@scanmate/ocr'
+import type { NormaliseOptions } from '@scanmate/ocr'
 
 /**
  * Regions placed relative to text the original prints, instead of at fixed
@@ -52,20 +52,20 @@ export type RegionProblem = { kind: 'anchor-missing', anchor: string } |
 
 export interface ResolvedRegions {
   /** Where the anchor was found; `null` when it could not be settled. */
-  anchor:   Rect | null
+  anchor:   ScanmateRect | null
   /** The fields, by id, in points from the page's top-left - empty when the anchor could not be settled. */
-  regions:  Record<string, Rect>
+  regions:  Record<string, ScanmateRect>
   /** Everything wrong: an empty list means the regions can be trusted. */
   problems: RegionProblem[]
 }
 
 /** Every place the anchor occurs, in page order: the box around the runs that spell it. */
-export function locateAnchor (items: readonly PositionedText[], anchor: string, options: AnchorOptions = {}): Rect[] {
+export function locateAnchor (items: readonly TextRun[], anchor: string, options: AnchorOptions = {}): ScanmateRect[] {
   const { normalise, maxRuns = 12, lineTolerance = 2 } = options
   const target = normaliseText(anchor, normalise)
   if (target === '') return []
 
-  const found: Rect[] = []
+  const found: ScanmateRect[] = []
   for (const start of items.keys()) {
     const box = anchorAt(items.slice(start, start + maxRuns), target, normalise, lineTolerance)
     // The same place reached from a different first run is one occurrence.
@@ -76,8 +76,8 @@ export function locateAnchor (items: readonly PositionedText[], anchor: string, 
 }
 
 /** The anchor spelled by the first few of `runs`, all on one line, or `null`. */
-function anchorAt (runs: readonly PositionedText[], target: string, normalise: NormaliseOptions | undefined, lineTolerance: number): Rect | null {
-  const line: PositionedText[] = []
+function anchorAt (runs: readonly TextRun[], target: string, normalise: NormaliseOptions | undefined, lineTolerance: number): ScanmateRect | null {
+  const line: TextRun[] = []
   for (const run of runs) {
     if (line.length > 0 && Math.abs(run.y - line[0].y) > lineTolerance) return null
     line.push(run)
@@ -88,12 +88,12 @@ function anchorAt (runs: readonly PositionedText[], target: string, normalise: N
 }
 
 /** Each field placed from the anchor's top-left corner. */
-export function regionsFromAnchor (anchor: Rect, fields: Readonly<Record<string, FieldOffset>>): Record<string, Rect> {
+export function regionsFromAnchor (anchor: ScanmateRect, fields: Readonly<Record<string, FieldOffset>>): Record<string, ScanmateRect> {
   return Object.fromEntries(Object.entries(fields).map(([id, f]) => [id, { x: anchor.x + f.dx, y: anchor.y + f.dy, width: f.width, height: f.height }]))
 }
 
 /** Everything that makes a set of regions unusable: off the page, not a number, or overlapping another. */
-export function checkRegions (regions: Readonly<Record<string, Rect>>, page: { width: number, height: number }): RegionProblem[] {
+export function checkRegions (regions: Readonly<Record<string, ScanmateRect>>, page: { width: number, height: number }): RegionProblem[] {
   const problems: RegionProblem[] = []
   const entries = Object.entries(regions)
 
@@ -110,7 +110,7 @@ export function checkRegions (regions: Readonly<Record<string, Rect>>, page: { w
 }
 
 /** Find the anchor, place the fields, check them - one call for a signature block. */
-export function resolveRegions (items: readonly PositionedText[], page: { width: number, height: number }, spec: RegionSpec): ResolvedRegions {
+export function resolveRegions (items: readonly TextRun[], page: { width: number, height: number }, spec: RegionSpec): ResolvedRegions {
   const { anchor: text, fields, occurrence = 'unique' } = spec
   const occurrences = locateAnchor(items, text, spec)
 
@@ -123,7 +123,7 @@ export function resolveRegions (items: readonly PositionedText[], page: { width:
   return { anchor: chosen, regions, problems: checkRegions(regions, page) }
 }
 
-function union (runs: readonly PositionedText[]): Rect {
+function union (runs: readonly TextRun[]): ScanmateRect {
   const left = Math.min(...runs.map(r => r.x))
   const top = Math.min(...runs.map(r => r.y))
 

@@ -11,15 +11,6 @@ import type { Raster } from '@scanmate/ink'
  *   is. When it also carries its encoded `image`, those bytes are embedded
  *   rather than encoding the raster again.
  */
-export type MergeSource = string | URL | Uint8Array | ArrayBuffer | Raster | ImageWithResolution
-
-export interface ImageWithResolution {
-  raster: Raster
-  /** Pixels per inch, which sets the page size; `null` or absent when unknown. */
-  dpi?:   number | null
-  /** The raster already encoded - PNG or JPEG bytes are embedded as they are. */
-  image?: Uint8Array | null
-}
 
 /** What a source turned out to be. */
 export type SourceKind = 'pdf' | 'image' | 'raster'

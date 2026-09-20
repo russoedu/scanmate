@@ -1,10 +1,10 @@
-import type { Rect } from '@scanmate/ink'
+import type { ScanmateRect } from '@scanmate/ink'
 import { DEFAULT_NORMALISE, normaliseText } from '@scanmate/ocr'
-import type { NormaliseOptions, OcrReport, PageOcr } from '@scanmate/ocr'
+import type { NormaliseOptions, PageOcr, ReadPage } from '@scanmate/ocr'
 
 import { approximateSearch, bestMatch, wordSpan } from '../approximate-search'
 import type { ApproximateMatch } from '../approximate-search'
-import type { ContentResult, ExpectedContent, FindOptions, FindReport, Occurrence, PageFind } from './find-report.contract'
+import type { ContentResult, ExpectedContent, FindOptions, FindReport, Occurrence } from './find-report.contract'
 
 /**
  * Is what must be on the page on the page - and is it where it belongs?
@@ -24,24 +24,34 @@ import type { ContentResult, ExpectedContent, FindOptions, FindReport, Occurrenc
  * Matching tolerates OCR's slips in words (`minScore`), never in figures: a
  * reference number, an amount or a date must keep every digit.
  */
-export function findContent (report: OcrReport, expected: readonly ExpectedContent[], options: FindOptions = {}): FindReport {
+export function findContent<Page extends ReadPage> (
+  pages: readonly Page[],
+  expected: readonly ExpectedContent[],
+  options: FindOptions = {},
+): FindReport<Page> {
   const { minScore = 0.85, normalise = DEFAULT_NORMALISE } = options
-  const pages = new Map(report.pages.map(page => [page.page, indexPage(page, normalise)]))
+  const indexed = new Map(pages.map(page => [page.page, indexPage(page.text, normalise)]))
+  const wanted = new Map(expected.map(entry => [entry.page, entry.content]))
 
-  const results: PageFind[] = expected.map(({ page, content }) => {
-    const index = pages.get(page)
-    if (index === undefined)
-      return { page, content: content.map(c => notFound(c)), allFound: content.length === 0, warnings: [`page ${page} is not in the OCR report`] }
+  const searched = pages.map((page) => {
+    const content = wanted.get(page.page) ?? []
+    const index = indexed.get(page.page)
+    const found = index === undefined ? content.map(one => notFound(one)) : content.map(one => findOne(one, index, indexed, { minScore, normalise }))
 
-    const found = content.map(c => findOne(c, index, pages, { minScore, normalise }))
-
-    return { page, content: found, allFound: found.every(f => f.found), warnings: [] }
+    return { ...page, find: { page: page.page, content: found, allFound: found.every(one => one.found), warnings: [] } }
   })
 
+  // Content asked for on a page that is not here at all: said once, at the top,
+  // because there is no page to hang it on.
+  const warnings = [...wanted.keys()]
+    .filter(page => !indexed.has(page))
+    .map(page => `content was expected on page ${page}, which is not among the pages given`)
+
   return {
-    allFound:        results.every(p => p.allFound),
-    allIdentifiable: results.every(p => p.content.every(c => c.identifiable)),
-    pages:           results,
+    allFound:        warnings.length === 0 && searched.every(page => page.find.allFound),
+    allIdentifiable: searched.every(page => page.find.content.every(one => one.identifiable)),
+    pages:           searched,
+    warnings,
   }
 }
 
@@ -115,7 +125,7 @@ function excerptOf (text: string, match: { start: number, end: number }): string
   return text.slice(span.start, span.end)
 }
 
-function union (boxes: readonly Rect[]): Rect {
+function union (boxes: readonly ScanmateRect[]): ScanmateRect {
   const left = Math.min(...boxes.map(b => b.x))
   const top = Math.min(...boxes.map(b => b.y))
 

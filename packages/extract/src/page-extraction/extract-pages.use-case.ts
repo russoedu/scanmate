@@ -1,9 +1,9 @@
-import type { PdfInput } from '../pdf-document'
 import { openPdf } from '../pdf-document'
 import { inspectPage } from '../page-inspection'
 import { DEFAULT_DPI_LIMITS, pageDpi, renderPage } from '../page-rendering'
 import type { ExtractedPage, ExtractOptions } from './extract-result.contract'
 import { selectPages } from './page-selection.mapper'
+import type { ScanmateBinarySource } from '@scanmate/ink'
 
 /**
  * Every requested page of one PDF, rendered, with what the page says about itself.
@@ -13,7 +13,7 @@ import { selectPages } from './page-selection.mapper'
  * gigabyte a small function instance may not have. {@link extractPages} collects
  * the stream, for documents where that is fine.
  */
-export async function * extractPageStream (pdf: PdfInput, options: ExtractOptions = {}): AsyncGenerator<ExtractedPage> {
+export async function * extractPageStream (pdf: ScanmateBinarySource, options: ExtractOptions = {}): AsyncGenerator<ExtractedPage> {
   const {
     dpi = 'native',
     fallbackDpi = DEFAULT_DPI_LIMITS.fallbackDpi,
@@ -61,7 +61,7 @@ export async function * extractPageStream (pdf: PdfInput, options: ExtractOption
   }
 }
 
-export async function extractPages (pdf: PdfInput, options: ExtractOptions = {}): Promise<ExtractedPage[]> {
+export async function extractPages (pdf: ScanmateBinarySource, options: ExtractOptions = {}): Promise<ExtractedPage[]> {
   const pages: ExtractedPage[] = []
   for await (const page of extractPageStream(pdf, options)) pages.push(page)
 

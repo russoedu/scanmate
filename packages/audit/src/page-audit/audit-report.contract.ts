@@ -1,5 +1,5 @@
 import type { DiffOptions, ExpectedChange, PageDiff } from '@scanmate/diff'
-import type { ImageFormat, ProgressCallback, Raster } from '@scanmate/ink'
+import type { ImageFormat, ProgressCallback, Raster, ReadablePage } from '@scanmate/ink'
 import type { OcrOptions, PageOcr, TextDifference } from '@scanmate/ocr'
 
 import type { Settlement, SettlementInput } from '../dispute-settlement'
@@ -50,12 +50,16 @@ export interface PageAudit {
   evidenceImage:  Uint8Array | null
 }
 
-export interface AuditReport {
+/** A page with the verdict on it, and the evidence behind it. */
+export type AuditedPage<Page extends ReadablePage = ReadablePage> = Page & { audit: PageAudit }
+
+export interface AuditReport<Page extends ReadablePage = ReadablePage> {
   /** `pass` only when every page passes. */
   verdict:   Verdict
   /** The document's text score, weighted by characters. */
   textScore: number
-  pages:     PageAudit[]
+  /** The pages handed in, each carrying its own verdict as `page.audit`. */
+  pages:     Array<AuditedPage<Page>>
   summary: {
     pages:        number
     passed:       number

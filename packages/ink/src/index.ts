@@ -28,7 +28,7 @@
 // --- Images: the shapes, their constructors, and the codec ---
 
 export { cloneRaster, createBinary, createGray, createRaster, isRaster } from './raster-codec'
-export type { BinaryImage, GrayImage, ImageInput, Raster, Rgba } from './raster-codec'
+export type { BinaryImage, GrayImage, ImageWithResolution, Raster, Rgba, ScanmateBinarySource, ScanmateSource } from './raster-codec'
 
 /**
  * The codec: libvips through sharp, so asynchronous. Roughly 20x faster at
@@ -67,7 +67,7 @@ export {
   similarity,
   translation,
 } from './plane-geometry'
-export type { Matrix3, Point, PointMatch, Rect, TransformModel, TransformSummary } from './plane-geometry'
+export type { Matrix3, Point, PointMatch, ScanmateOrientedRect, ScanmateRect, TransformModel, TransformSummary } from './plane-geometry'
 
 /** Linear algebra behind the model fitters. Consumed by `@scanmate/align`. */
 export { jacobiEigen, smallestEigenvector, solve } from './plane-geometry'
@@ -86,7 +86,7 @@ export { createRandom, gaussian } from './deterministic-sampling'
 
 // --- Pipeline contracts: what the stages hand one another ---
 
-export type { AlignedImage, AlignedPage, PageImage, PipelineStage, ProgressCallback, ScanPage, StageEvent } from './pipeline-contract'
+export type { AlignedImage, AlignedPage, PageImage, PdfTextRun, PipelineStage, ProgressCallback, ReadablePage, ScanPage, StageEvent, TextRun } from './pipeline-contract'
 
 // --- Test fixtures, also useful for smoke-testing a deployment ---
 

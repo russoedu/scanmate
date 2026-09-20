@@ -1,4 +1,4 @@
-import type { BinaryImage, Rect } from '@scanmate/ink'
+import type { BinaryImage, ScanmateRect } from '@scanmate/ink'
 
 import { labelComponents } from './connected-components.use-case'
 import type { Component } from './connected-components.use-case'
@@ -41,7 +41,7 @@ export interface RegionInk {
   /** Pixels in the largest one. */
   largest:   number
   /** Box around every change that counts, in page pixels; `null` when there is none. */
-  bounds:    Rect | null
+  bounds:    ScanmateRect | null
   /** Share of those pixels that lie in the band along the region's border. */
   edgeTouch: number
   /** Share of the region's area that is counted new ink. */
@@ -53,7 +53,7 @@ export interface RegionInk {
 const NONE: Omit<RegionInk, 'formLines'> = { pixels: 0, changes: 0, largest: 0, bounds: null, edgeTouch: 0, fill: 0 }
 
 /** Analyse `added` (the page's new-ink mask) inside `rect` (page pixels). */
-export function measureRegionInk (added: BinaryImage, rect: Rect, options: RegionInkOptions): RegionInk {
+export function measureRegionInk (added: BinaryImage, rect: ScanmateRect, options: RegionInkOptions): RegionInk {
   const left = Math.max(0, Math.floor(rect.x))
   const top = Math.max(0, Math.floor(rect.y))
   const right = Math.min(added.width, Math.ceil(rect.x + rect.width))

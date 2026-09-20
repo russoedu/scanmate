@@ -1,5 +1,6 @@
+import { createRaster, IDENTITY } from '@scanmate/ink'
 import { compareTexts } from '@scanmate/ocr'
-import type { OcrReport, PageOcr, RunReading } from '@scanmate/ocr'
+import type { PageOcr, ReadPage, RunReading } from '@scanmate/ocr'
 
 import { findContent } from './find-content.use-case'
 
@@ -28,8 +29,18 @@ function page (number: number, runs: readonly Run[], added = ''): PageOcr {
   }
 }
 
-function report (...pages: PageOcr[]): OcrReport {
-  return { score: 1, pageMean: 1, pages, engine: { name: 'test', version: '1', languages: ['eng'] } }
+/** The readings as pages, which is what the search takes: the picture is never looked at. */
+function report (...readings: PageOcr[]): ReadPage[] {
+  const raster = createRaster(4, 4)
+  const image = { raster, image: null, dpi: 72, width: 4, height: 4 }
+
+  return readings.map(text => ({
+    page:     text.page,
+    original: image,
+    scanned:  image,
+    aligned:  { ...image, matrix: IDENTITY, inverse: IDENTITY, confidence: 1 },
+    text,
+  }))
 }
 
 const TERMS = page(1, [
@@ -42,7 +53,7 @@ const TERMS = page(1, [
 describe('findContent', () => {
   it('finds content where the original prints it - present and identifiable - forgiving OCR’s slips in words', () => {
     const result = findContent(report(TERMS), [{ page: 1, content: ['Initial Subscription Term', 'Order# 10231'] }])
-    const [term, order] = result.pages[0].content
+    const [term, order] = result.pages[0].find.content
 
     expect(result.allFound).toBe(true)
     expect(result.allIdentifiable).toBe(true)
@@ -52,7 +63,7 @@ describe('findContent', () => {
   })
 
   it('does not find a figure the scan changed, and says how close the page came', () => {
-    const [total] = findContent(report(TERMS), [{ page: 1, content: ['Total 1,250.00'] }]).pages[0].content
+    const [total] = findContent(report(TERMS), [{ page: 1, content: ['Total 1,250.00'] }]).pages[0].find.content
 
     expect(total).toMatchObject({ found: false, identifiable: false, foundBy: 'none', printedInOriginal: true, excerpt: null })
     expect(total.box).toEqual({ x: 30, y: 140, width: 200, height: 11 })
@@ -63,7 +74,7 @@ describe('findContent', () => {
       ['Belgium new 5,768,700.00', 'Belgium new 5,768,700.00', 100],
       ['Canada new 5,768,700.00', 'Canada new 5,568,700.00', 120],
     ])
-    const [amount] = findContent(report(twice), [{ page: 1, content: ['5,768,700.00'] }]).pages[0].content
+    const [amount] = findContent(report(twice), [{ page: 1, content: ['5,768,700.00'] }]).pages[0].find.content
 
     expect(amount).toMatchObject({ found: true, identifiable: false, foundBy: 'in-place' })
     expect(amount.occurrences.map(o => [o.box.y, o.intact])).toEqual([[100, true], [120, false]])
@@ -72,13 +83,13 @@ describe('findContent', () => {
   it('finds part of a run, and content spanning runs', () => {
     const result = findContent(report(TERMS), [{ page: 1, content: ['The Resistance', 'Subscription Term Total'] }])
 
-    expect(result.pages[0].content[0]).toMatchObject({ foundBy: 'in-place', excerpt: 'the resistance' })
+    expect(result.pages[0].find.content[0]).toMatchObject({ foundBy: 'in-place', excerpt: 'the resistance' })
     // "Initial Subscription Term" and "Total ..." are separate runs: the box covers both.
-    expect(result.pages[0].content[1].box).toEqual({ x: 30, y: 120, width: 200, height: 31 })
+    expect(result.pages[0].find.content[1].box).toEqual({ x: 30, y: 120, width: 200, height: 31 })
   })
 
   it('finds on the page what the original never printed, and says so', () => {
-    const [note] = findContent(report(TERMS), [{ page: 1, content: ['Approved by Leia'] }]).pages[0].content
+    const [note] = findContent(report(TERMS), [{ page: 1, content: ['Approved by Leia'] }]).pages[0].find.content
 
     expect(note).toMatchObject({ found: true, identifiable: false, foundBy: 'on-page', printedInOriginal: false, box: null })
   })
@@ -86,7 +97,7 @@ describe('findContent', () => {
   it('says which pages a clause is on, so a swapped page shows', () => {
     const first = page(1, [['Schedule A', 'Schedule B', 100]])
     const second = page(2, [['Schedule B', 'Schedule A', 100]])
-    const [clause] = findContent(report(first, second), [{ page: 1, content: ['Schedule A'] }]).pages[0].content
+    const [clause] = findContent(report(first, second), [{ page: 1, content: ['Schedule A'] }]).pages[0].find.content
 
     expect(clause).toMatchObject({ found: false, printedInOriginal: true, foundOnPages: [2] })
   })
@@ -94,9 +105,11 @@ describe('findContent', () => {
   it('reports a page it was not given rather than guessing', () => {
     const result = findContent(report(TERMS), [{ page: 9, content: ['Anything'] }])
 
+    // There is no page 9 to hang the result on, so it is said once, at the top,
+    // rather than by inventing a page that was never handed over.
     expect(result.allFound).toBe(false)
-    expect(result.pages[0].warnings).toEqual(['page 9 is not in the OCR report'])
-    expect(result.pages[0].content[0].found).toBe(false)
+    expect(result.warnings).toEqual(['content was expected on page 9, which is not among the pages given'])
+    expect(result.pages[0].find.content).toEqual([])
   })
 
   it('refuses content that normalises to nothing', () => {

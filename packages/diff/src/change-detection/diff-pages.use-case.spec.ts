@@ -1,6 +1,6 @@
 import { alignScan } from '@scanmate/align'
 import { cloneRaster, createSyntheticDocument, decodeImage, drawSignature, drawTick, fillRect, IDENTITY, simulateScan } from '@scanmate/ink'
-import type { AlignedPage, Raster, Rect, StageEvent } from '@scanmate/ink'
+import type { AlignedPage, Raster, ScanmateRect, StageEvent } from '@scanmate/ink'
 
 import { IDENTIFIED, NOT_IDENTIFIED, REFERENCE, UNEXPECTED } from './annotate-overlay.use-case'
 import { diffPage, diffPages } from './diff-pages.use-case'
@@ -21,11 +21,11 @@ function page (aligned: Raster, dpi = 72, number = 1): AlignedPage {
     page:     number,
     original: side,
     scanned:  { ...side, raster: aligned },
-    aligned:  { raster: aligned, image: null, width: aligned.width, height: aligned.height, matrix: IDENTITY, inverse: IDENTITY, confidence: 1 },
+    aligned:  { raster: aligned, image: null, dpi: null, width: aligned.width, height: aligned.height, matrix: IDENTITY, inverse: IDENTITY, confidence: 1 },
   }
 }
 
-function expect_ (id: string, rect: Rect, pageNumber = 1): ExpectedChange {
+function expect_ (id: string, rect: ScanmateRect, pageNumber = 1): ExpectedChange {
   return { page: pageNumber, id, ...rect }
 }
 
@@ -92,7 +92,7 @@ describe('diffPage', () => {
   it('does not identify an expected region that was left empty', async () => {
     const diff = await diffPage(page(signed()), [expect_('signature', SIGNATURE), expect_('tick', TICK)], { output: 'none' })
 
-    expect(diff.expected.map(e => [e.id, e.identified])).toEqual([['signature', true], ['tick', false]])
+    expect(diff.expected.map(region => [region.id, region.identified])).toEqual([['signature', true], ['tick', false]])
     expect(diff.summary).toMatchObject({ identified: 1, notIdentified: 1 })
   })
 
@@ -294,7 +294,7 @@ describe('diffPages', () => {
       { output: 'none', onProgress: e => { events.push(e) } },
     )
 
-    expect(diffs.map(d => d.expected.map(e => [e.id, e.identified]))).toEqual([[['signature', true]], [['witness', false]]])
+    expect(diffs.map(compared => compared.diff.expected.map(region => [region.id, region.identified]))).toEqual([[['signature', true]], [['witness', false]]])
     expect(events.map(e => `${e.stage}:${e.phase}:${e.page}`)).toEqual(['diff:start:1', 'diff:done:1', 'diff:start:2', 'diff:done:2'])
   })
 
@@ -302,17 +302,17 @@ describe('diffPages', () => {
     const scan = simulateScan(signed(), { rotationDeg: -2.2, scale: 1.3, noise: 0.01, blur: 0.8, illumination: 0.2, seed: 8 })
     const aligned = await alignScan(FORM.raster, scan.raster, { output: 'none' })
     const side = { raster: FORM.raster, image: null, width: FORM.raster.width, height: FORM.raster.height, dpi: 72 }
-    const [diff] = await diffPages(
+    const [compared] = await diffPages(
       [{ page: 1, original: side, scanned: { ...side, raster: scan.raster }, aligned }],
       [expect_('signature', SIGNATURE), expect_('tick', TICK)],
       { output: 'none' },
     )
 
-    expect(diff.expected.map(e => [e.id, e.identified])).toEqual([['signature', true], ['tick', false]])
-    expect(diff.unexpected).toEqual([])
+    expect(compared.diff.expected.map(region => [region.id, region.identified])).toEqual([['signature', true], ['tick', false]])
+    expect(compared.diff.unexpected).toEqual([])
     // This scan's blur washes the form's 1-pixel rules down to 5% ink - below
     // the faint threshold and at the ink map's own noise floor - so a hairline
     // really is gone from the image, and missing says so. Nothing thicker is.
-    for (const lost of diff.missing) expect(Math.min(lost.width, lost.height)).toBeLessThanOrEqual(2)
+    for (const lost of compared.diff.missing) expect(Math.min(lost.width, lost.height)).toBeLessThanOrEqual(2)
   }, 60_000)
 })

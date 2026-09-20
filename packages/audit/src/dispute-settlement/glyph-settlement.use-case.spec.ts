@@ -1,8 +1,8 @@
 import type { InkProbe } from '@scanmate/diff'
 import { createRaster, drawLabel, labelSize } from '@scanmate/ink'
-import type { Raster } from '@scanmate/ink'
+import type { Raster, TextRun } from '@scanmate/ink'
 import { DEFAULT_NORMALISE } from '@scanmate/ocr'
-import type { MatchOptions, OcrEngine, PrintedRun, RecognisedText, TextDifference } from '@scanmate/ocr'
+import type { MatchOptions, OcrEngine, RecognisedText, TextDifference } from '@scanmate/ocr'
 
 import { settleDisputes } from './settle-dispute.use-case'
 
@@ -24,10 +24,10 @@ const LINES = [
 const TARGET = 'PAID IN FULL'
 const LINE_HEIGHT = 20
 
-function page (target = TARGET): { raster: Raster, runs: PrintedRun[] } {
+function page (target = TARGET): { raster: Raster, runs: TextRun[] } {
   const raster = createRaster(400, (LINES.length + 2) * LINE_HEIGHT)
   raster.data.fill(255)
-  const runs: PrintedRun[] = []
+  const runs: TextRun[] = []
   for (const [index, text] of [...LINES, target].entries()) {
     const at = { x: 10, y: 10 + index * LINE_HEIGHT }
     drawLabel(raster, text, at, { scale: SCALE })

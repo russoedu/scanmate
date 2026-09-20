@@ -1,5 +1,5 @@
 import { encodeImage } from '@scanmate/ink'
-import type { AlignedPage, BinaryImage, Rect } from '@scanmate/ink'
+import type { AlignedPage, BinaryImage, ScanmateRect } from '@scanmate/ink'
 
 import { buildMasks, measureRegion, paintOverlay } from '../region-comparison'
 import type { Masks } from '../region-comparison'
@@ -9,7 +9,7 @@ import { connectedComponents } from './connected-components.use-case'
 import { mergeBoxes } from './merge-boxes.use-case'
 import type { MergedBox } from './merge-boxes.use-case'
 import { probeInk } from './probe-ink.use-case'
-import type { Change, DiffOptions, ExpectedChange, ExpectedResult, InkProbe, PageDiff } from './page-diff.contract'
+import type { Change, ComparedPage, DiffOptions, ExpectedChange, ExpectedResult, InkProbe, PageDiff } from './page-diff.contract'
 import { measureRegionInk } from './region-ink.use-case'
 import { composeSideBySide } from './side-by-side.use-case'
 
@@ -29,13 +29,13 @@ import { composeSideBySide } from './side-by-side.use-case'
  * Masks are built once per page and read four ways: the overlay, the expected
  * regions, the added changes and the missing ones.
  */
-export async function diffPages (
-  pages: readonly AlignedPage[],
+export async function diffPages<Page extends AlignedPage> (
+  pages: readonly Page[],
   expected: readonly ExpectedChange[] = [],
   options: DiffOptions = {},
-): Promise<PageDiff[]> {
+): Promise<Array<ComparedPage<Page>>> {
   const { onProgress } = options
-  const results: PageDiff[] = []
+  const results: Array<ComparedPage<Page>> = []
 
   for (const [position, page] of pages.entries()) {
     const index = position + 1
@@ -46,7 +46,7 @@ export async function diffPages (
       ...options,
       probes: (options.probes ?? []).filter(probe => probe.page === undefined || probe.page === page.page),
     })
-    results.push(result)
+    results.push({ ...page, diff: result })
 
     onProgress?.({
       stage:      'diff',
@@ -238,7 +238,7 @@ function difference (a: BinaryImage, b: BinaryImage): BinaryImage {
  * Measured on ink, not on box area: a signature that overflows its box by a
  * flourish is still mostly inside it, while its bounding box may not be.
  */
-function inkShareInside (box: MergedBox, regions: readonly Rect[], masks: Masks): number {
+function inkShareInside (box: MergedBox, regions: readonly ScanmateRect[], masks: Masks): number {
   let inside = 0
   const counted = new Set<number>()
   for (const region of regions) {
@@ -265,17 +265,17 @@ function inkShareInside (box: MergedBox, regions: readonly Rect[], masks: Masks)
 }
 
 /** Pixels of a region that lie on the page - what `measureRegion`'s shares are shares of. */
-function pixelArea (rect: Rect, masks: Masks): number {
+function pixelArea (rect: ScanmateRect, masks: Masks): number {
   const width = Math.min(masks.width, Math.ceil(rect.x + rect.width)) - Math.max(0, Math.floor(rect.x))
   const height = Math.min(masks.height, Math.ceil(rect.y + rect.height)) - Math.max(0, Math.floor(rect.y))
 
   return Math.max(0, width) * Math.max(0, height)
 }
 
-function scaleRect (rect: Rect, factor: number): Rect {
+function scaleRect (rect: ScanmateRect, factor: number): ScanmateRect {
   return { x: rect.x * factor, y: rect.y * factor, width: rect.width * factor, height: rect.height * factor }
 }
 
-function grow (rect: Rect, by: number): Rect {
+function grow (rect: ScanmateRect, by: number): ScanmateRect {
   return { x: rect.x - by, y: rect.y - by, width: rect.width + 2 * by, height: rect.height + 2 * by }
 }

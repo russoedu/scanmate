@@ -1,6 +1,4 @@
-import type { Rect } from '@scanmate/ink'
-
-import type { TextItem } from '../text-layer'
+import type { PdfTextRun, ScanmateRect } from '@scanmate/ink'
 
 /**
  * What a PDF page says about itself, without anything being rendered.
@@ -46,7 +44,7 @@ export interface PageMetadata {
   /** Clockwise rotation the page asks to be displayed at. Rendering applies it. */
   rotation:       0 | 90 | 180 | 270
   /** The page's MediaBox, in points. */
-  mediaBox:       Rect
+  mediaBox:       ScanmateRect
   kind:           PageKind
   /**
    * Fraction of the page area covered by painted bitmaps, in `[0, 1]`.
@@ -64,7 +62,7 @@ export interface PageMetadata {
    * the top-left. Empty when there is no text layer. Where a value was printed -
    * a total, a signature label - is what regions and searches are built from.
    */
-  textItems:      TextItem[]
+  textItems:      PdfTextRun[]
   characterCount: number
   embeddedImages: EmbeddedImage[]
   /**

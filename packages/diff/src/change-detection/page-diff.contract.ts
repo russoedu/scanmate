@@ -1,4 +1,4 @@
-import type { ImageFormat, InkOptions, ProgressCallback, Raster, Rect } from '@scanmate/ink'
+import type { AlignedPage, ImageFormat, InkOptions, ProgressCallback, Raster, ScanmateRect } from '@scanmate/ink'
 
 import type { Masks } from '../region-comparison'
 
@@ -23,6 +23,18 @@ export interface ExpectedChange {
   width:  number
   height: number
 }
+
+/**
+ * An aligned page with what the pixel comparison found on it.
+ *
+ * The comparison hands the page back rather than a bare result, so whatever the
+ * producer attached - the metadata, the page's partner in the scan, anything a
+ * caller added - is still there afterwards. A bare result carries only a page
+ * number, and matching those up again is a join the caller should never have to
+ * write: page numbers are the original's, and go non-contiguous the moment
+ * anyone extracts `'1-3,5'`.
+ */
+export type ComparedPage<Page extends AlignedPage = AlignedPage> = Page & { diff: PageDiff }
 
 export interface DiffOptions {
   /** Units of `ExpectedChange` rectangles and of every rectangle reported back. Default `'points'`. */
@@ -185,7 +197,7 @@ export interface RegionInkMetrics {
   /** Ink in the largest change, in square millimetres. */
   largestArea: number
   /** Box around all of it, in the requested units; `null` when there is none. */
-  bounds:      Rect | null
+  bounds:      ScanmateRect | null
   /** `bounds` as a share of the region's width and height. */
   widthRatio:  number
   heightRatio: number
@@ -203,12 +215,12 @@ export interface RegionInkMetrics {
 
 /** A change found where nothing was expected, or ink that went missing. */
 /** A place to measure the ink at; `page` selects the page when several are compared. */
-export type ProbeRect = Rect & { page?: number }
+export type ProbeRect = ScanmateRect & { page?: number }
 
 /** What the ink does inside one place that was asked about. */
 export interface InkProbe {
   /** The place asked about, in `units`. */
-  rect:      Rect
+  rect:      ScanmateRect
   /** New ink there, in square millimetres. */
   addedInk:  number
   /** Printed ink lost there, in square millimetres. */

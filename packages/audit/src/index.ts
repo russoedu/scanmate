@@ -31,7 +31,7 @@
  */
 
 export { auditPages } from './page-audit'
-export type { AuditOptions, AuditReport, PageAudit, Verdict } from './page-audit'
+export type { AuditedPage, AuditOptions, AuditReport, PageAudit, Verdict } from './page-audit'
 export type { AuditFinding, ExplainedDifference, FindingKind } from './finding-correlation'
 
 // --- Building blocks ---

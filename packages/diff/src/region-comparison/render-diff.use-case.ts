@@ -1,4 +1,4 @@
-import type { ImageInput, Raster, Rgba } from '@scanmate/ink'
+import type { ScanmateSource, Raster, Rgba } from '@scanmate/ink'
 import { buildMasks } from './ink-masks.use-case'
 import type { Masks } from './ink-masks.use-case'
 import type { RegionOptions } from './region.model'
@@ -17,8 +17,8 @@ import type { RegionOptions } from './region.model'
  * carrying a distinction the eye does not need at this zoom.
  */
 export async function renderDiff (
-  original: ImageInput,
-  aligned: ImageInput,
+  original: ScanmateSource,
+  aligned: ScanmateSource,
   options: RegionOptions = {},
 ): Promise<Raster> {
   const { tolerance = 2, ink, faintInk } = options

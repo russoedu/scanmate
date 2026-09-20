@@ -2,10 +2,9 @@ import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 
 import { isRaster } from '@scanmate/ink'
-import type { Raster } from '@scanmate/ink'
+import type { Raster, ScanmateSource } from '@scanmate/ink'
 
 import { MergeSourceError } from './merge-source.contract'
-import type { MergeSource } from './merge-source.contract'
 
 /**
  * A source resolved to what merging needs: its bytes and what they are, or its
@@ -21,7 +20,7 @@ export type ResolvedSource =
 const PDF_HEADER = [0x25, 0x50, 0x44, 0x46, 0x2D] // %PDF-
 const HEADER_WINDOW = 1024
 
-export async function readSource (source: MergeSource, index: number): Promise<ResolvedSource> {
+export async function readSource (source: ScanmateSource, index: number): Promise<ResolvedSource> {
   if (isRaster(source)) return { kind: 'raster', raster: source, dpi: null, bytes: null }
   if (isImageWithResolution(source))
     return { kind: 'raster', raster: source.raster, dpi: source.dpi ?? null, bytes: source.image ?? null }
@@ -40,11 +39,11 @@ export function isPdf (bytes: Uint8Array): boolean {
   return false
 }
 
-function isImageWithResolution (source: MergeSource): source is { raster: Raster, dpi?: number | null, image?: Uint8Array | null } {
+function isImageWithResolution (source: ScanmateSource): source is { raster: Raster, dpi?: number | null, image?: Uint8Array | null } {
   return typeof source === 'object' && source !== null && 'raster' in source && isRaster(source.raster)
 }
 
-async function readBytes (source: Exclude<MergeSource, Raster | { raster: Raster }>, index: number): Promise<Uint8Array> {
+async function readBytes (source: Exclude<ScanmateSource, Raster | { raster: Raster }>, index: number): Promise<Uint8Array> {
   try {
     if (typeof source === 'string') return new Uint8Array(await readFile(source))
     if (source instanceof URL) return new Uint8Array(await readFile(fileURLToPath(source)))

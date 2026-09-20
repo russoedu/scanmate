@@ -11,7 +11,7 @@ function page (number: number, aligned: Raster, scanned: Raster): AlignedPage & 
     page:     number,
     original: side(createRaster(40, 30), 150),
     scanned:  side(scanned, 96),
-    aligned:  { raster: aligned, image: null, width: aligned.width, height: aligned.height, matrix: IDENTITY, inverse: IDENTITY, confidence: 0.95 },
+    aligned:  { raster: aligned, image: null, dpi: null, width: aligned.width, height: aligned.height, matrix: IDENTITY, inverse: IDENTITY, confidence: 0.95 },
     note:     'kept',
   }
 }

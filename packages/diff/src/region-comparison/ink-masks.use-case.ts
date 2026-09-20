@@ -1,5 +1,5 @@
 import { binarize, decodeImage, dilate, inkMap, otsuThreshold, toGrayscale } from '@scanmate/ink'
-import type { BinaryImage, GrayImage, ImageInput, InkOptions } from '@scanmate/ink'
+import type { BinaryImage, GrayImage, ScanmateSource, InkOptions } from '@scanmate/ink'
 
 /**
  * The ink masks every comparison starts from, plus their tolerance bands.
@@ -38,8 +38,8 @@ export interface Masks {
 export const FAINT_INK = 0.25
 
 export async function buildMasks (
-  original: ImageInput,
-  aligned: ImageInput,
+  original: ScanmateSource,
+  aligned: ScanmateSource,
   ink: InkOptions | undefined,
   tolerance: number,
   faintInk = FAINT_INK,

@@ -1,6 +1,6 @@
 import { createRandom } from '../deterministic-sampling'
 import { boxBlurRaster, warpRaster } from '../geometric-transform'
-import type { Matrix3, Rect } from '../plane-geometry'
+import type { Matrix3, ScanmateRect } from '../plane-geometry'
 import { invert, multiply, scaling, translation } from '../plane-geometry'
 import type { Raster } from '../raster-codec'
 
@@ -23,13 +23,13 @@ export interface DocumentOptions {
   height?:       number
   seed?:         number
   /** Where a signature would go. Left empty by {@link createSyntheticDocument}. */
-  signatureBox?: Rect
+  signatureBox?: ScanmateRect
 }
 
 export interface SyntheticDocument {
   raster:  Raster
   /** Rectangles a caller may want to inspect later: the signature box, the tick boxes. */
-  regions: Record<string, Rect>
+  regions: Record<string, ScanmateRect>
 }
 
 export interface ScanOptions {
@@ -116,16 +116,16 @@ export function createSyntheticDocument (options: DocumentOptions = {}): Synthet
 
   y = tableTop + rows * rowHeight + unit(46)
 
-  const regions: Record<string, Rect> = {}
+  const regions: Record<string, ScanmateRect> = {}
   const boxSize = Math.max(6, Math.round(unit(18)))
   for (let i = 0; i < 3; i++) {
-    const box: Rect = { x: margin + i * unit(150), y, width: boxSize, height: boxSize }
+    const box: ScanmateRect = { x: margin + i * unit(150), y, width: boxSize, height: boxSize }
     strokeRect(page, box, Math.max(1, unit(2)), 30)
     regions[`tick-${i + 1}`] = box
   }
   y += unit(70)
 
-  const signature: Rect = options.signatureBox ?? {
+  const signature: ScanmateRect = options.signatureBox ?? {
     x:      margin,
     y,
     width:  Math.round((right - margin) * 0.55),
@@ -145,7 +145,7 @@ export function createSyntheticDocument (options: DocumentOptions = {}): Synthet
 }
 
 /** Scribble inside a rectangle, the way a signature crosses a signature box. */
-export function drawSignature (page: Raster, box: Rect, seed = 7): void {
+export function drawSignature (page: Raster, box: ScanmateRect, seed = 7): void {
   const random = createRandom(seed)
   const points = 9
   const baseline = box.y + box.height * 0.62
@@ -162,7 +162,7 @@ export function drawSignature (page: Raster, box: Rect, seed = 7): void {
 }
 
 /** Fill a tick box, the way a pen does. */
-export function drawTick (page: Raster, box: Rect): void {
+export function drawTick (page: Raster, box: ScanmateRect): void {
   const { x, y, width, height } = box
   drawLine(page, x + width * 0.15, y + height * 0.5, x + width * 0.42, y + height * 0.82, 3, 20)
   drawLine(page, x + width * 0.42, y + height * 0.82, x + width * 0.88, y + height * 0.12, 3, 20)
@@ -274,7 +274,7 @@ function drawTextLine (
   }
 }
 
-export function fillRect (page: Raster, rect: Rect, value: number): void {
+export function fillRect (page: Raster, rect: ScanmateRect, value: number): void {
   const left = Math.max(0, Math.round(rect.x))
   const top = Math.max(0, Math.round(rect.y))
   const right = Math.min(page.width, Math.round(rect.x + rect.width))
@@ -291,7 +291,7 @@ export function fillRect (page: Raster, rect: Rect, value: number): void {
   }
 }
 
-export function strokeRect (page: Raster, rect: Rect, thickness: number, value: number): void {
+export function strokeRect (page: Raster, rect: ScanmateRect, thickness: number, value: number): void {
   const { x, y, width, height } = rect
   fillRect(page, { x, y, width, height: thickness }, value)
   fillRect(page, { x, y: y + height - thickness, width, height: thickness }, value)

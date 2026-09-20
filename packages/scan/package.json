@@ -1,0 +1,56 @@
+{
+  "name": "@scanmate/scan",
+  "version": "0.0.1",
+  "description": "One class over the whole ScanMate pipeline: compare a returned document with the one that was issued, loading each stage only when it is used.",
+  "license": "MIT",
+  "author": "Eduardo Russo",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/russoedu/scanmate.git",
+    "directory": "packages/scan"
+  },
+  "homepage": "https://github.com/russoedu/scanmate/tree/main/packages/scan#readme",
+  "bugs": {
+    "url": "https://github.com/russoedu/scanmate/issues"
+  },
+  "keywords": [
+    "scan",
+    "pdf",
+    "ocr",
+    "document",
+    "comparison",
+    "pipeline"
+  ],
+  "type": "module",
+  "main": "./dist/index.esm.js",
+  "module": "./dist/index.esm.js",
+  "types": "./dist/src/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/index.esm.js",
+      "default": "./dist/index.esm.js"
+    }
+  },
+  "files": [
+    "dist",
+    "!**/*.tsbuildinfo",
+    "!**/*.d.ts.map",
+    "!**/*.js.map"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@scanmate/align": "^0.0.1",
+    "@scanmate/audit": "^0.0.1",
+    "@scanmate/diff": "^0.0.1",
+    "@scanmate/enhance": "^0.0.1",
+    "@scanmate/extract": "^0.0.1",
+    "@scanmate/find": "^0.0.1",
+    "@scanmate/ink": "^0.0.1",
+    "@scanmate/merge": "^0.0.1",
+    "@scanmate/ocr": "^0.0.1"
+  }
+}

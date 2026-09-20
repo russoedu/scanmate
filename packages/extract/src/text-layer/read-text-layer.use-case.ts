@@ -1,6 +1,5 @@
 import type { PDFPageProxy } from 'pdfjs-dist/legacy/build/pdf.mjs'
-
-import type { TextItem } from './text-item.contract'
+import type { PdfTextRun } from '@scanmate/ink'
 
 /**
  * A page's text layer: the plain text, and every run of it with its position.
@@ -21,7 +20,7 @@ const DEFAULT_DESCENT = -0.2
 export interface TextLayer {
   /** Runs joined, with line ends as newlines and the whole trimmed. Empty when there is no text. */
   text:  string
-  items: TextItem[]
+  items: PdfTextRun[]
 }
 
 export async function readTextLayer (page: PDFPageProxy): Promise<TextLayer> {
@@ -30,7 +29,7 @@ export async function readTextLayer (page: PDFPageProxy): Promise<TextLayer> {
   const styles = content.styles as Record<string, { ascent?: number, descent?: number } | undefined>
 
   let text = ''
-  const items: TextItem[] = []
+  const items: PdfTextRun[] = []
 
   for (const item of content.items) {
     if (!('str' in item)) continue

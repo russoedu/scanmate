@@ -16,7 +16,7 @@
  */
 
 export { diffPage, diffPages } from './change-detection'
-export type { Change, CoordinateUnits, DiffOptions, ExpectedChange, ExpectedResult, InkProbe, PageDiff, ProbeRect, RegionInkMetrics } from './change-detection'
+export type { Change, ComparedPage, CoordinateUnits, DiffOptions, ExpectedChange, ExpectedResult, InkProbe, PageDiff, ProbeRect, RegionInkMetrics } from './change-detection'
 
 export { compareRegions, diffDocument, renderDiff } from './region-comparison'
 export type { DocumentDiff, Region, RegionOptions, RegionReport } from './region-comparison'

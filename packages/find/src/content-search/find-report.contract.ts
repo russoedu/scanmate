@@ -1,4 +1,5 @@
-import type { Rect } from '@scanmate/ink'
+import type { ReadPage } from '@scanmate/ocr'
+import type { ScanmateRect } from '@scanmate/ink'
 import type { NormaliseOptions } from '@scanmate/ocr'
 
 /** Text that must be on a page of the returned document - the brief's `{ page, content }`. */
@@ -27,7 +28,7 @@ export type FoundBy = 'in-place' | 'on-page' | 'none'
 /** One place the original prints the content, and whether the scan reads it there. */
 export interface Occurrence {
   /** Where, in points from the top-left. */
-  box:     Rect
+  box:     ScanmateRect
   /** The scan's reading of that place contains it. */
   intact:  boolean
   /** That reading, widened to whole words, when intact. */
@@ -52,7 +53,7 @@ export interface ContentResult {
   /** The original prints it on this page. */
   printedInOriginal: boolean
   /** Where the original first prints it, in points from the top-left; `null` when it does not. */
-  box:               Rect | null
+  box:               ScanmateRect | null
   /** Every place the original prints it, in page order, each checked in the scan. */
   occurrences:       Occurrence[]
   /** Every page of the scan whose text contains it - one other than `page` means pages moved. */
@@ -67,10 +68,16 @@ export interface PageFind {
   warnings: string[]
 }
 
-export interface FindReport {
-  /** Every expected content was found on its page. */
+/** A page with what the search found on it. */
+export type SearchedPage<Page extends ReadPage = ReadPage> = Page & { find: PageFind }
+
+export interface FindReport<Page extends ReadPage = ReadPage> {
+  /** Every expected content was found on its page, and no page was missing. */
   allFound:        boolean
   /** Every expected content was found where the original prints it. */
   allIdentifiable: boolean
-  pages:           PageFind[]
+  /** The pages handed in, each carrying what was looked for on it. */
+  pages:           Array<SearchedPage<Page>>
+  /** Content expected on a page that was not given; there is no page to report it on. */
+  warnings:        string[]
 }
