@@ -89,6 +89,22 @@ describe('settleDisputes', () => {
     expect(settlement).toMatchObject({ verdict: 'unsettled', because: 'sides-disagree' })
   })
 
+  it('marks a disagreement steady when each side read the same thing every time', async () => {
+    // What a substituted glyph looks like: neither side wavers, and they differ.
+    const printed = 'Account 4412-9087-3355'
+    const altered = 'Account 4412-9987-3355'
+    const settlement = await settle(scripted([printed, printed, printed, altered, altered, altered]))
+
+    expect(settlement).toMatchObject({ verdict: 'unsettled', because: 'sides-disagree', steady: true })
+  })
+
+  it('does not mark a wandering disagreement steady', async () => {
+    // What a degraded read looks like: the engine guesses differently each pass.
+    const settlement = await settle(scripted(['Account 4412-9087-3355', 'Account 44l2-9087-3355', 'Account 4412-9O87-3355', 'Accoun 4472', 'A 4472-9081', 'Account 4472-9081-3356']))
+
+    expect(settlement).toMatchObject({ verdict: 'unsettled', steady: false })
+  })
+
   it('says so when a side could not be read at all', async () => {
     const settlement = await settle(scripted(['', '', '', 'Accoun 4472', 'A 4472-9081', '']))
 

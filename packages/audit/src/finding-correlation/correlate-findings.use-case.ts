@@ -128,7 +128,7 @@ function textFinding (difference: TextDifference, settlement?: Settlement): Audi
     kind,
     box:          boxOf(difference),
     corroborated: false,
-    summary:      unsettled ? `${summary} - the ink is identical and re-reading could not settle it` : summary,
+    summary:      unsettled ? `${summary} - the ink is identical and re-reading could not settle it${settlement?.steady ?? false ? ', though each side read the same thing every time' : ''}` : summary,
     text:         [difference],
     pixels:       null,
   }

@@ -94,6 +94,12 @@ OCR misreads small, faint and sideways print constantly - `W-9` comes back as `W
 4. **Read both sides again, and compare them with each other.** Three passes over the original's crop and the scan's. If the two read alike, the pages carry the same glyphs however wrongly they were read - a systematic misreading misreads the original exactly as it misreads the scan, so it cancels. Not reported; it lands in `noise`.
 5. **Otherwise, unsettled** - reported as `text-unsettled`, in its own colour.
 
+A settlement also records whether the disagreement was **steady**: each side read the same thing on every pass, and the two still differed. A degraded read wavers; a substituted glyph does not. It does not change the verdict - a blemish in the same place reads consistently too - but a caller who knows their own documents can act on it:
+
+```ts
+audit.pages[0].audit.settled[0]   // { verdict: 'unsettled', because: 'sides-disagree', steady: true, readings }
+```
+
 Disagreement between the two sides never condemns a run on its own. The original is a clean render and the scan has been printed, posted and scanned, so it reads worse by nature; treating that as evidence turns ordinary degradation into an accusation.
 
 On the returned W-9 above, ten disagreements: six settled as misreadings, three unsettled, and one changed - the forged digit.
