@@ -43,12 +43,24 @@ function resolves (from: string, specifier: string): boolean {
   return candidates.some(candidate => existsSync(candidate))
 }
 
-const named = readdirSync(packages, { withFileTypes: true })
-  .filter(entry => entry.isDirectory())
+/**
+ * Only what this run built.
+ *
+ * `nx affected` on a pull request builds the projects it touched and their
+ * dependencies, so a package with no `dist` was not built here rather than
+ * broken - asserting about it would fail every PR that did not happen to touch
+ * it. On main every project is built, so nothing escapes the check there.
+ */
+const built = readdirSync(packages, { withFileTypes: true })
+  .filter(entry => entry.isDirectory() && existsSync(join(packages, entry.name, 'dist')))
   .map(entry => entry.name)
 
 describe('what the packages publish', () => {
-  it.each(named)('%s: every specifier in its declarations resolves', name => {
+  it('has a built package to check at all', () => {
+    expect(built).not.toEqual([])
+  })
+
+  it.each(built)('%s: every specifier in its declarations resolves', name => {
     const manifest = JSON.parse(readFileSync(join(packages, name, 'package.json'), 'utf8')) as { types?: string }
     const dist = join(packages, name, 'dist')
     const entry = join(packages, name, (manifest.types ?? '').replace(/^\.\//, ''))
@@ -56,15 +68,14 @@ describe('what the packages publish', () => {
 
     // Everything is collected rather than asserted one at a time, so a failure
     // lists every specifier that does not resolve instead of only the first.
-    const built = existsSync(dist)
     // What `types` names has to be there, or a consumer gets nothing at all.
-    const typed = built && existsSync(entry)
-    if (!built) broken.push('there is no dist - the package was not built')
-    if (built && !typed) broken.push(`types names ${manifest.types}, which was not emitted`)
-    if (typed)
+    if (existsSync(entry)) {
       for (const file of declarations(dist))
         for (const [, specifier] of readFileSync(file, 'utf8').matchAll(/from\s+['"](\.[^'"]+)['"]/g))
           if (!resolves(file, specifier)) broken.push(`${file.slice(dist.length + 1)} -> ${specifier}`)
+    } else {
+      broken.push(`types names ${manifest.types}, which was not emitted`)
+    }
 
     expect(broken).toEqual([])
   })
