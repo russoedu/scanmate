@@ -108,6 +108,13 @@ export interface TextDifference {
    * the match threshold (`'text'`). Always `'text'` for missing and added.
    */
   reason:     'numbers' | 'text'
+  /**
+   * The scan's ink here was matched against the original's own glyphs, and they
+   * are not the same glyphs. A difference carrying this was *seen* rather than
+   * read, so it stands on its own; one without it is a reading, and a reading
+   * disagreeing with identical ink is a misreading.
+   */
+  verified?:  boolean
   /** Where on the page, in points from the top-left. */
   x:          number
   y:          number

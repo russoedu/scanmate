@@ -16,14 +16,14 @@
  */
 
 export { diffPage, diffPages } from './change-detection'
-export type { Change, CoordinateUnits, DiffOptions, ExpectedChange, ExpectedResult, PageDiff, RegionInkMetrics } from './change-detection'
+export type { Change, CoordinateUnits, DiffOptions, ExpectedChange, ExpectedResult, InkProbe, PageDiff, ProbeRect, RegionInkMetrics } from './change-detection'
 
 export { compareRegions, diffDocument, renderDiff } from './region-comparison'
 export type { DocumentDiff, Region, RegionOptions, RegionReport } from './region-comparison'
 
 // --- Building blocks ---
 
-export { annotateOverlay, composeSideBySide, connectedComponents, EXPECTED_MARGIN, IDENTIFIED, labelComponents, measureRegionInk, mergeBoxes, MISSING, NOT_IDENTIFIED, UNEXPECTED } from './change-detection'
-export type { Annotation, Component, LabelledComponents, LabelOptions, MergedBox, RegionInk, RegionInkOptions, Rgba } from './change-detection'
-export { buildMasks, measureRegion, paintOverlay } from './region-comparison'
+export { annotateOverlay, composePanels, composeSideBySide, connectedComponents, EXPECTED_MARGIN, IDENTIFIED, labelComponents, measureRegionInk, mergeBoxes, MISSING, NOT_IDENTIFIED, REFERENCE, UNEXPECTED } from './change-detection'
+export type { Annotation, Component, Panel, LabelledComponents, LabelOptions, MergedBox, RegionInk, RegionInkOptions, Rgba } from './change-detection'
+export { buildMasks, measureRegion, OVERLAY_DIFFERENT, OVERLAY_SHARED, paintOverlay } from './region-comparison'
 export type { Masks } from './region-comparison'

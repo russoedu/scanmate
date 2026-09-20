@@ -31,8 +31,10 @@ import { printPolarity } from './print-polarity.policy'
  *
  * Only the digits of a figure are checked, against the ten digits: a full stop
  * read as a comma is how a figure is written, not what it says. A run whose
- * glyphs cannot be told apart, or whose digits the page prints too few of
- * elsewhere, is left to the reading.
+ * glyphs cannot be told apart is left to the reading, and so is a run on a page
+ * that prints too few digits in that face for every rival to be represented -
+ * a digit whose own template is missing could otherwise be confirmed as the one
+ * it replaced, simply for lacking anything better to match.
  */
 
 /** What a figure's characters are checked against: the ten digits, and only those. */
@@ -50,6 +52,19 @@ export const FIGURE_CHARACTERS = '0123456789'
 const MIN_MARGIN = 0.12
 /** A rival has to match this well before it can overturn what the original prints. */
 const MIN_SCORE = 0.5
+/**
+ * ...and the printed glyph has to match at least this well before the ink can be
+ * called unchanged. A digit that genuinely changed may still beat the rivals the
+ * page happens to print, and confirming it on that basis would be the one error
+ * this check must never make.
+ */
+const MIN_PRINTED_SCORE = 0.7
+/**
+ * Distinct characters the page must print in this face and size before a run is
+ * checked at all. Fewer than this and the digit actually on the scan may have no
+ * template to win with, which turns a change into a confirmation.
+ */
+const MIN_RIVALS = 8
 /** ...and the printed glyph has to match no better than this: a near-perfect match is not a forgery. */
 const MAX_PRINTED_SCORE = 0.85
 /**
@@ -67,6 +82,10 @@ export interface VerifyOptions {
   minMargin?:  number
   /** How well a rival must match before a character counts as changed. Default `0.5`. */
   minScore?:   number
+  /** How well the printed glyph must match before the ink counts as unchanged. Default `0.7`. */
+  minPrinted?: number
+  /** Characters the page must print in this face and size for the run to be checked. Default `8`. */
+  minRivals?:  number
   /** How badly the printed glyph must match for a character to count as changed. Default `0.85`. */
   maxPrinted?: number
   /** Digits in a row before a group is treated as a figure. Default `2`. */
@@ -122,7 +141,15 @@ export function verifyPrintedRun (
   templates: Templates,
   options: VerifyOptions = {},
 ): PrintVerification | null {
-  const { minMargin = MIN_MARGIN, minScore = MIN_SCORE, maxPrinted = MAX_PRINTED_SCORE, minDigits = 2, characters = FIGURE_CHARACTERS } = options
+  const {
+    minMargin = MIN_MARGIN,
+    minScore = MIN_SCORE,
+    maxPrinted = MAX_PRINTED_SCORE,
+    minPrinted = MIN_PRINTED_SCORE,
+    minRivals = MIN_RIVALS,
+    minDigits = 2,
+    characters = FIGURE_CHARACTERS,
+  } = options
   const printed = [...run.text].filter(character => character.trim() !== '')
   const wanted = figureCells(printed, minDigits)
   if (wanted.size === 0) return null
@@ -134,7 +161,7 @@ export function verifyPrintedRun (
 
   // Rivals: every character the page prints in this face and size that a figure could use.
   const rivals = [...characters].filter(character => templates.has(templateKey(run, character)))
-  if (rivals.length < 3) return null
+  if (rivals.length < minRivals) return null
 
   // How soft this scan's print is, measured where the answer is known: each cell
   // against the very glyph the original prints there.
@@ -168,7 +195,7 @@ export function verifyPrintedRun (
     // Undecided unless one of the two wins clearly, and a change has to look like
     // the character it is being read as, not merely less like the printed one.
     const changed = rival.score >= printedScore + minMargin && rival.score >= minScore && printedScore <= maxPrinted
-    const unchanged = printedScore >= rival.score + minMargin
+    const unchanged = printedScore >= rival.score + minMargin && printedScore >= minPrinted
     scored.push({
       at:         index,
       printed:    printed[index],

@@ -104,7 +104,7 @@ past the box they are given: a descender below the rule, a flourish out to the
 side. Without it that ink is reported as a mark nobody expected. Regions claim
 ink **together**, so one stroke running through two fields is not left over as
 unexpected either. What a region *reports* is still the rectangle it was given;
-the band is drawn in orange on the overlay so a reviewer can see the allowance.
+the band is drawn in pink on the overlay so a reviewer can see the allowance.
 
 **Form rules are discounted**: a component spanning at least 90% of the region
 and no thicker than 0.6 mm is the box's own printed rule showing through a
@@ -118,17 +118,59 @@ Each region also reports its shape — how many separate changes, the largest,
 the bounds as a share of the box, how much of the ink touches the border — so a
 caller can tell a signature from a stray line without looking at the picture.
 
-## The overlay and the side-by-side
+## Probes: measuring ink where nothing changed
 
-The overlay is the classic three-colour picture: red where ink was added, blue
-where it was lost, grey where the two agree. With `annotate`, the report is
-drawn on it — green for a region filled in, amber for one left empty, orange for
-the margin band, magenta around every unexpected change.
+Everything above starts from a change and asks where it is. `probes` asks the
+opposite question — *how much ink is here?* — at rectangles the caller names,
+changed or not, and answers with added, lost and shared ink in square
+millimetres.
+
+It exists for one job: settling whether a reading that disagrees is a change or
+a misreading. OCR mangles small, faint and sideways print, and a reader's
+disagreement is not evidence that the paper differs. Identical ink under a word
+means identical characters, whatever they were read as. `@scanmate/audit` sends
+every text difference through here, and drops the ones the ink does not support.
+
+```ts
+const [page] = await diffPages(pages, expected, {
+  probes: differences.map(d => ({ page: d.page, x: d.x, y: d.y, width: d.width, height: d.height })),
+})
+page.probes[0]   // { rect, addedInk: 0.04, lostInk: 0.02, sharedInk: 12.8 }
+```
+
+A probe is measured on the same masks as everything else, so it is forgiven the
+same misregistration and reads in the same units.
+
+## The overlay and the panels
+
+The overlay is the picture of the comparison itself: violet (`#7F00FC`) where
+the two pages' ink differs — added by the scan or lost from the print — and grey
+where they agree. Violet rather than red because red means "changed" everywhere
+else in the palette, and one colour cannot mean two things on the same page.
+
+One colour for both directions is deliberate. Which side the ink came from is a
+question for the report, where `added` and `missing` are listed separately and
+measured in millimetres; on the picture it would be a second colour carrying a
+distinction the eye does not need at this zoom. With `annotate`, the report is
+drawn on it in the palette the whole pipeline shares:
+
+| colour | meaning |
+|---|---|
+| blue `#0017FC` | the place in question, as the original poses it |
+| green `#00FC11` | a region filled in |
+| red `#FC0027` | a region left empty or covered, a figure or content that changed |
+| pink `#F500FC` | the margin band where ink still counts as a region's |
+| orange `#FF8A00` | ink added where nothing was expected |
+| cyan `#00C8FC` | printed ink the scan lost |
 
 `sideBySide` puts the original and the aligned scan next to each other with the
-same boxes on both halves, which is what a reviewer actually wants: not "what
-changed" in the abstract, but "here is the line as printed, and here is the line
-as it came back".
+same places boxed on both halves — not "what changed" in the abstract, but
+"here is the line as printed, and here is the line as it came back". The
+original's half is drawn in blue alone: a verdict belongs to the copy that came
+back, not to the document that asked the question.
+
+`composePanels` is the same machinery with the count left open, which is how
+`@scanmate/audit` adds the overlay itself as a third panel.
 
 ## Constants
 
@@ -148,11 +190,15 @@ as it came back".
 | `regionOverlap` | `0.5` | Share of a change's ink that must fall inside a region. |
 | `maxChanges` | `50` | Cap on a confetti page; the report says it was capped. |
 | `assumeDpi` | `150` | Used when the page does not say. |
+| `probes` | none | Rectangles to measure the ink at, changed or not. |
 
 ## What it does not do
 
 - It does not read. A changed digit of the same size is invisible here by
   construction — that is `@scanmate/ocr`'s print check.
+- A probe reports ink, not meaning. That the ink is identical says the
+  characters are identical; it says nothing about whether they are the right
+  characters, which is what the reading is for.
 - It does not align. Both images must already be on one canvas; it refuses
   mismatched sizes rather than guessing.
 - It does not judge a document. It reports what changed and where;

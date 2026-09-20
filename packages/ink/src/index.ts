@@ -28,7 +28,7 @@
 // --- Images: the shapes, their constructors, and the codec ---
 
 export { cloneRaster, createBinary, createGray, createRaster, isRaster } from './raster-codec'
-export type { BinaryImage, GrayImage, ImageInput, Raster } from './raster-codec'
+export type { BinaryImage, GrayImage, ImageInput, Raster, Rgba } from './raster-codec'
 
 /**
  * The codec: libvips through sharp, so asynchronous. Roughly 20x faster at
@@ -94,4 +94,5 @@ export { createSyntheticDocument, drawSignature, drawTick, simulateScan } from '
 export type { DocumentOptions, ScanOptions, SimulatedScan, SyntheticDocument } from './synthetic-document'
 
 /** Drawing primitives for building fixtures. Consumed by sibling specs and `@scanmate/diff`. */
-export { drawLine, fillRect, strokeRect } from './synthetic-document'
+export { drawLabel, drawLine, fillRect, labelSize, strokeRect } from './synthetic-document'
+export type { LabelOptions } from './synthetic-document'

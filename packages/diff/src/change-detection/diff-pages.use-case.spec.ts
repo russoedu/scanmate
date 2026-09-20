@@ -2,7 +2,7 @@ import { alignScan } from '@scanmate/align'
 import { cloneRaster, createSyntheticDocument, decodeImage, drawSignature, drawTick, fillRect, IDENTITY, simulateScan } from '@scanmate/ink'
 import type { AlignedPage, Raster, Rect, StageEvent } from '@scanmate/ink'
 
-import { IDENTIFIED, NOT_IDENTIFIED, UNEXPECTED } from './annotate-overlay.use-case'
+import { IDENTIFIED, NOT_IDENTIFIED, REFERENCE, UNEXPECTED } from './annotate-overlay.use-case'
 import { diffPage, diffPages } from './diff-pages.use-case'
 import type { ExpectedChange } from './page-diff.contract'
 
@@ -245,7 +245,7 @@ describe('diffPage', () => {
     expect(hasColour(annotated.diffRaster, UNEXPECTED)).toBe(true)
   })
 
-  it('puts the original and the aligned scan side by side, boxed alike, when asked', async () => {
+  it('puts the original and the aligned scan side by side: where on the left, what on the right', async () => {
     const raster = signed()
     drawTick(raster, TICK)
     const expected = [expect_('signature', SIGNATURE), expect_('stamp', FORM.regions.stamp)]
@@ -259,9 +259,10 @@ describe('diffPage', () => {
     expect(pair!.height).toBe(FORM.raster.height)
     expect(pair!.width).toBeGreaterThan(2 * half)
     const gutter = pair!.width - 2 * half
-    // The signature's box, identified, on the original's half and at the same place on the scan's.
+    // The same box on both halves: on the original it is the area in question,
+    // on the scan it is the answer - this one was signed.
     const corner = { x: Math.round(SIGNATURE.x - 2), y: Math.round(SIGNATURE.y - 2) }
-    expect(at(corner.x, corner.y)).toEqual(IDENTIFIED.slice(0, 3))
+    expect(at(corner.x, corner.y)).toEqual(REFERENCE.slice(0, 3))
     expect(at(corner.x + half + gutter, corner.y)).toEqual(IDENTIFIED.slice(0, 3))
     expect(hasColour(pair!, NOT_IDENTIFIED)).toBe(true)
     expect(hasColour(pair!, UNEXPECTED)).toBe(true)

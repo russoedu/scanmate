@@ -28,7 +28,7 @@ changes[0].expected          // [{ id, identified, addedInk, overfilled, ink: { 
 changes[0].unexpected        // [{ x, y, width, height, inkArea, pixels }]
 changes[0].missing           // printed ink the scan lost
 changes[0].sideBySideImage   // original and scan, boxed alike
-changes[0].diffImage         // the overlay: red added, blue lost, grey agreed
+changes[0].diffImage         // the overlay: violet where the ink differs, grey where it agrees
 ```
 
 Rectangles are in PDF points from the page's top-left by default, the same frame `@scanmate/extract` reports text in; `units: 'pixels'` switches to the original's rendered pixels.
@@ -44,7 +44,7 @@ Rectangles are in PDF points from the page's top-left by default, the same frame
 
 A region is **identified** when it has at least `minFillArea` (2 mm²) of new ink and is not **overfilled** — covered or struck through, which `maxFill` (0.5) draws the line on. Form rules showing through a slight misregistration are discounted: a component spanning 90% of the region and no thicker than 0.6 mm is the box's own printed line.
 
-People sign past the box they are given, so each region also claims the ink within `expectedMargin` (6 points) of it, and the regions claim it **together**, so one stroke running through two fields is not left over as an unexpected mark. What a region reports is still the rectangle it was given; the band is drawn in orange.
+People sign past the box they are given, so each region also claims the ink within `expectedMargin` (6 points) of it, and the regions claim it **together**, so one stroke running through two fields is not left over as an unexpected mark. What a region reports is still the rectangle it was given; the band is drawn in pink.
 
 Each region reports its shape too — how many separate changes, the largest, the bounds as a share of the box, how much ink touches the border — so a signature can be told from a stray line without looking at the picture.
 
@@ -69,6 +69,7 @@ Each region reports its shape too — how many separate changes, the largest, th
 | `output` | `'png'` | `'none'` keeps rasters only. |
 | `annotate` | `false` | Draw the report onto the overlay. |
 | `sideBySide` | `false` | Also compose the two pages side by side. |
+| `probes` | none | Rectangles to measure the ink at, changed or not - added, lost and shared, in mm². |
 
 ## Building blocks
 

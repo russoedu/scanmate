@@ -1,21 +1,37 @@
 import { alignPages } from '@scanmate/align'
 import { A4, createSyntheticPdf, extractPages, extractPair } from '@scanmate/extract'
 import type { SyntheticPdfPage } from '@scanmate/extract'
-import { cloneRaster, createSyntheticDocument, drawSignature, drawTick, IDENTITY, simulateScan } from '@scanmate/ink'
+import { cloneRaster, createSyntheticDocument, drawLabel, drawSignature, drawTick, IDENTITY, labelSize, simulateScan } from '@scanmate/ink'
 import type { Raster, StageEvent } from '@scanmate/ink'
 import type { OcrEngine, OcrWord, PositionedText, ReadablePage, RecognisedText } from '@scanmate/ocr'
 
 import { auditPages } from './audit-pages.use-case'
 
+const LABEL = { scale: 2, color: [20, 20, 20, 255] } as const
 const FORM = createSyntheticDocument({ width: 600, height: 780, seed: 5 })
 const SIGNATURE = FORM.regions.signature
 const TICK = FORM.regions['tick-1']
 
 /** The form's printed text, as its text layer would place it. At 72 dpi points and pixels coincide. */
 const ITEMS: PositionedText[] = [
-  { text: 'Order Confirmation', x: 40, y: 30, width: 150, height: 14 },
-  { text: 'Total 1,250.00', x: 400, y: 30, width: 90, height: 14 },
+  { text: 'Order Confirmation', x: 40, y: 30, width: labelSize('Order Confirmation', LABEL).width, height: 14 },
+  { text: 'Total 1,250.00', x: 400, y: 30, width: labelSize('Total 1,250.00', LABEL).width, height: 14 },
 ]
+
+/**
+ * The form with its text actually printed on it, the total as given.
+ *
+ * The text has to be on the paper, not only in the text layer: a difference is
+ * only a finding once the ink agrees, so a fixture that alters an amount has to
+ * alter the ink that prints it.
+ */
+function printedForm (total: string): Raster {
+  const raster = cloneRaster(FORM.raster)
+  drawLabel(raster, ITEMS[0].text, { x: ITEMS[0].x, y: ITEMS[0].y + 2 }, LABEL)
+  drawLabel(raster, `Total ${total}`, { x: ITEMS[1].x, y: ITEMS[1].y + 2 }, LABEL)
+
+  return raster
+}
 
 function word (text: string, x: number, y: number, width: number): OcrWord {
   return { text, confidence: 92, x, y: y + 2, width, height: 10 }
@@ -37,7 +53,7 @@ function reads (words: OcrWord[]): OcrEngine {
 const AS_PRINTED = [word('Order', 41, 30, 45), word('Confirmation', 90, 30, 95), word('Total', 401, 30, 35), word('1,250.00', 440, 30, 48)]
 
 function page (aligned: Raster): ReadablePage {
-  const side = { raster: FORM.raster, image: null, width: 600, height: 780, dpi: 72 }
+  const side = { raster: PRINTED, image: null, width: 600, height: 780, dpi: 72 }
 
   return {
     page:     1,
@@ -48,8 +64,15 @@ function page (aligned: Raster): ReadablePage {
   }
 }
 
-function signed (): Raster {
-  const raster = cloneRaster(FORM.raster)
+const PRINTED = printedForm('1,250.00')
+
+/** The returned copy with the total overwritten, digit for digit, in place. */
+function altered (): Raster {
+  return printedForm('7,250.00')
+}
+
+function signed (base: Raster = PRINTED): Raster {
+  const raster = cloneRaster(base)
   drawSignature(raster, SIGNATURE, 4)
 
   return raster
@@ -82,7 +105,7 @@ describe('auditPages', () => {
   })
 
   it('merges what each comparison saw: an altered amount from the text, a stray tick from both', async () => {
-    const raster = signed()
+    const raster = signed(altered())
     drawTick(raster, TICK)
     // The amount reads differently; the tick reads as a word where the original has none.
     const read = [...AS_PRINTED.slice(0, 3), word('7,250.00', 440, 30, 48), word('X', TICK.x + TICK.width / 2 - 3, TICK.y + TICK.height / 2 - 7, 6)]
@@ -97,7 +120,7 @@ describe('auditPages', () => {
 
   it('reports an expected region left empty, and required content that is not there', async () => {
     const read = [...AS_PRINTED.slice(0, 3), word('7,250.00', 440, 30, 48)]
-    const audit = await auditPages([page(cloneRaster(FORM.raster))], {
+    const audit = await auditPages([page(altered())], {
       expected: EXPECTED,
       content:  [{ page: 1, content: ['Total 1,250.00', 'Order Confirmation'] }],
       ocr:      { engine: reads(read), targetDpi: null, recheck: false },
@@ -118,14 +141,15 @@ describe('auditPages', () => {
     expect(audit.pages[0].reasons[0]).toMatch(/too poorly to trust/)
   })
 
-  it('draws the original and the scan side by side with the findings, and encodes it', async () => {
+  it('draws the original, the scan and the overlay side by side with the findings, and encodes it', async () => {
     const raster = signed()
     drawTick(raster, TICK)
     const audit = await auditPages([page(raster)], { expected: EXPECTED, ocr: { engine: reads(AS_PRINTED), targetDpi: null, recheck: false } })
     const [result] = audit.pages
 
-    expect(result.evidenceRaster.width).toBeGreaterThan(1200)
-    expect(result.evidenceRaster.height).toBe(780)
+    // Three panels - the original, the scan, the overlay - and a legend along the foot.
+    expect(result.evidenceRaster.width).toBeGreaterThan(600 * 3)
+    expect(result.evidenceRaster.height).toBeGreaterThan(780)
     expect(result.evidenceImage).toBeInstanceOf(Uint8Array)
     expect(result.pixels.diffImage).toBeInstanceOf(Uint8Array)
   })

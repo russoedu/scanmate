@@ -3,12 +3,12 @@ import type { AlignedPage, BinaryImage, Rect } from '@scanmate/ink'
 
 import { buildMasks, measureRegion, paintOverlay } from '../region-comparison'
 import type { Masks } from '../region-comparison'
-import { annotateOverlay, EXPECTED_MARGIN, IDENTIFIED, MISSING, NOT_IDENTIFIED, UNEXPECTED } from './annotate-overlay.use-case'
+import { annotateOverlay, EXPECTED_MARGIN, IDENTIFIED, MISSING, NOT_IDENTIFIED, REFERENCE, UNEXPECTED } from './annotate-overlay.use-case'
 import type { Annotation } from './annotate-overlay.use-case'
 import { connectedComponents } from './connected-components.use-case'
 import { mergeBoxes } from './merge-boxes.use-case'
 import type { MergedBox } from './merge-boxes.use-case'
-import type { Change, DiffOptions, ExpectedChange, ExpectedResult, PageDiff } from './page-diff.contract'
+import type { Change, DiffOptions, ExpectedChange, ExpectedResult, InkProbe, PageDiff } from './page-diff.contract'
 import { measureRegionInk } from './region-ink.use-case'
 import { composeSideBySide } from './side-by-side.use-case'
 
@@ -41,7 +41,10 @@ export async function diffPages (
     const started = Date.now()
     onProgress?.({ stage: 'diff', phase: 'start', page: page.page, index, total: pages.length })
 
-    const result = await diffPage(page, expected.filter(e => e.page === page.page), options)
+    const result = await diffPage(page, expected.filter(e => e.page === page.page), {
+      ...options,
+      probes: (options.probes ?? []).filter(probe => probe.page === undefined || probe.page === page.page),
+    })
     results.push(result)
 
     onProgress?.({
@@ -79,6 +82,7 @@ export async function diffPage (
     regionOverlap = 0.5,
     expectedMargin = 6,
     maxChanges = 50,
+    probes = [],
     output = 'png',
     annotate = false,
     sideBySide = false,
@@ -149,6 +153,19 @@ export async function diffPage (
     }
   })
 
+  // What the ink does where the caller asked, changed or not.
+  const measured: InkProbe[] = probes.map((probe) => {
+    const rect = scaleRect(probe, toPixels)
+    const ink = inkWithin(rect, masks)
+
+    return {
+      rect,
+      addedInk:  ink.added * mm2PerPixel,
+      lostInk:   ink.lost * mm2PerPixel,
+      sharedInk: ink.shared * mm2PerPixel,
+    }
+  }).map((probe, i) => ({ ...probe, rect: probes[i] }))
+
   const truncated = outside.length > maxChanges || lost.length > maxChanges
   const toChange = (box: MergedBox): Change => ({
     x:       box.x / toPixels,
@@ -161,25 +178,32 @@ export async function diffPage (
   const unexpected = outside.slice(0, maxChanges).map(box => toChange(box))
   const missing = lost.slice(0, maxChanges).map(box => toChange(box))
 
+  // The band first, so a region's own outline draws over it where they meet.
+  const margins: Annotation[] = expectedMargin > 0 ? regions.map(region => ({ rect: region.claim, color: EXPECTED_MARGIN })) : []
+  const verdicts: Annotation[] = regions.map((region, i) => ({
+    rect:  grow(region.rect, 2),
+    color: expectedResults[i].identified ? IDENTIFIED : NOT_IDENTIFIED,
+  }))
   const reported: Annotation[] = [
-    // The band first, so a region's own outline draws over it where they meet.
-    ...(expectedMargin > 0 ? regions.map(region => ({ rect: region.claim, color: EXPECTED_MARGIN })) : []),
-    ...regions.map((region, i) => ({
-      rect:  grow(region.rect, 2),
-      color: expectedResults[i].identified ? IDENTIFIED : NOT_IDENTIFIED,
-    })),
+    ...margins,
+    ...verdicts,
     ...outside.slice(0, maxChanges).map(box => ({ rect: grow(box, 4), color: UNEXPECTED })),
   ]
+  // On the original, every region is simply the area in question; the answers belong to the scan.
+  const asAsked: Annotation[] = regions.map(region => ({ rect: grow(region.rect, 2), color: REFERENCE }))
 
   const diffRaster = paintOverlay(masks)
   if (annotate) annotateOverlay(diffRaster, reported)
 
   // Lines about a point thick at any dpi, so the boxes read the same on every page.
+  const losses: Annotation[] = lost.slice(0, maxChanges).map(box => ({ rect: grow(box, 4), color: MISSING }))
   const sideBySideRaster = sideBySide
-    ? composeSideBySide(page.original.raster, page.aligned.raster, [
-        ...reported,
-        ...lost.slice(0, maxChanges).map(box => ({ rect: grow(box, 4), color: MISSING })),
-      ], Math.max(2, Math.round(dpi / 72)), Math.max(4, Math.round(dpi / 12)))
+    ? composeSideBySide(page.original.raster, page.aligned.raster, {
+        // Left: where the questions are, and the ink the scan lost, which is the original's.
+        original: [...asAsked, ...losses],
+        // Right: the answers.
+        scanned:  [...reported, ...losses],
+      }, Math.max(2, Math.round(dpi / 72)), Math.max(4, Math.round(dpi / 12)))
     : null
 
   const whole = measureRegion({ id: '__page__', rect: { x: 0, y: 0, width: masks.width, height: masks.height } }, masks, 0)
@@ -192,6 +216,7 @@ export async function diffPage (
     sideBySideRaster,
     sideBySideImage: sideBySideRaster === null || output === 'none' ? null : await encodeImage(sideBySideRaster, { format: output }),
     expected:        expectedResults,
+    probes:          measured,
     unexpected,
     missing,
     truncated,
@@ -260,4 +285,28 @@ function scaleRect (rect: Rect, factor: number): Rect {
 
 function grow (rect: Rect, by: number): Rect {
   return { x: rect.x - by, y: rect.y - by, width: rect.width + 2 * by, height: rect.height + 2 * by }
+}
+
+/** Added, lost and shared ink inside one rectangle of the page, in pixels. */
+function inkWithin (rect: Rect, masks: Masks): { added: number, lost: number, shared: number } {
+  const left = Math.max(0, Math.floor(rect.x))
+  const top = Math.max(0, Math.floor(rect.y))
+  const right = Math.min(masks.width, Math.ceil(rect.x + rect.width))
+  const bottom = Math.min(masks.height, Math.ceil(rect.y + rect.height))
+  let added = 0
+  let lost = 0
+  let shared = 0
+
+  for (let y = top; y < bottom; y++) {
+    const row = y * masks.width
+    for (let x = left; x < right; x++) {
+      const scan = masks.scan.data[row + x] === 1
+      const print = masks.original.data[row + x] === 1
+      if (scan && masks.originalDilated.data[row + x] === 0) added++
+      if (print && masks.scanDilated.data[row + x] === 0) lost++
+      if (scan && print) shared++
+    }
+  }
+
+  return { added, lost, shared }
 }

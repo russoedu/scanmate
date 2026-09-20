@@ -141,7 +141,7 @@ see it either. The print check reads it for what it is.*
 ```mermaid
 flowchart TD
   A[printed run with a figure] --> B[cut into characters<br/>by the paper between them]
-  B --> C{as many groups<br/>as characters?}
+  B --> C{as many groups as characters,<br/>and ≥ 8 of the ten digits<br/>printed in this face?}
   C -->|no| D[not verifiable — left to the reading]
   C -->|yes| E[measure how soft this scan is:<br/>each cell against its own print]
   E --> F[for each digit cell]
@@ -149,13 +149,16 @@ flowchart TD
   F --> H[match against every other digit<br/>the page prints in that face and size]
   G --> I{printed ahead<br/>by ≥ 0.12?}
   H --> I
-  I -->|yes| J[this digit is as printed]
+  I -->|yes| J{and matching ≥ 0.7<br/>in its own right?}
+  J -->|yes| J2[this digit is as printed]
+  J -->|no| M
   I -->|no| K{rival ahead by ≥ 0.12,<br/>matching ≥ 0.5,<br/>printed ≤ 0.85?}
   K -->|yes| L[this digit was changed]
   K -->|no| M[undecided]
 ```
 
-Four things make this work:
+Six things make this work, and the last three are there because the check's
+worst possible error is not missing a forgery — it is *confirming* one:
 
 1. **Segmentation from the original's own rendering.** A generated PDF leaves a
    column of paper between characters, so a column profile of the run finds
@@ -173,6 +176,24 @@ Four things make this work:
 4. **The print is softened to the scan's sharpness** before any comparison, by
    the amount that best fits the cells whose answer is known. Without this a
    blurred 0 matches a crisp 8 as well as it matches a crisp 0.
+5. **The rival set has to be nearly complete** — at least 8 of the ten digits,
+   in that face and size — before a run is checked at all. A page that prints
+   only a handful of digits may not print the one that is actually on the scan,
+   and a digit with no template to lose to wins by default: a `7` resembles the
+   `1` it replaced more than it resembles any of the three digits that page
+   happens to print. Abstaining is the honest answer; confirming would be a
+   forgery signed off by the tool that was meant to catch it.
+6. **A confirmation needs an absolute match, not just a relative one.** Beating
+   the rivals is not enough; the scan's ink must match the original's own print
+   at **0.7** or better before the digit is called unchanged. Genuine digits
+   score 0.89–0.97 even at 90 dpi, so this costs nothing real.
+
+And the answer is applied **only to the cells it decided**. The check looks at
+digits; it has no opinion about letters, and none about a cell too soft to call.
+So its verdict is merged into the reading character by character rather than
+replacing it — otherwise clearing a misread digit would quietly clear a changed
+letter beside it, and a cell left undecided would be reported as though it had
+been confirmed.
 
 Correlation is Pearson, on both glyphs scaled to 16 pixels tall, with the
 template slid one pixel each way to absorb a cell landing a fraction out. It is
@@ -185,7 +206,7 @@ Pages 1 and 2 of three real returned documents, every printed digit:
 
 | content resolution | figures verified | reported different |
 |---|---|---|
-| 125 dpi | 36 of 40 | 0 |
+| 125 dpi | 35 of 40 | 0 |
 | 117 dpi | 34 of 40 | 0 |
 | 90 dpi | 1 of 40 | 0 |
 
@@ -220,6 +241,8 @@ hiding exactly the substitutions a forger would make.
 | `printCheck.minMargin` | `0.12` | How far a glyph match must win by. |
 | `printCheck.minScore` | `0.5` | How well a rival must match to overturn the print. |
 | `printCheck.maxPrinted` | `0.85` | A near-perfect match to the print is not a forgery. |
+| `printCheck.minPrinted` | `0.7` | How well the print must match before the ink is called unchanged. |
+| `printCheck.minRivals` | `8` | Digits the page must print in that face before a run is checked. |
 | `printCheck.minDigits` | `2` | Digits in a row before it counts as a figure. |
 | — | `0.2` | Share of a word's box that must be dark to call it printed. |
 | — | `4` pt | Smallest word height that is not a speck. |
@@ -232,3 +255,6 @@ hiding exactly the substitutions a forger would make.
   much larger set, and a changed word changes the ink, which the pixel
   comparison sees.
 - It does not check that required content is present. That is `@scanmate/find`.
+- It does not check a figure on a page too sparse to judge it, or one printed
+  too small to segment — 90 dpi is below the floor. It says so (`checked`
+  counts what it looked at) rather than reporting a verdict it cannot support.

@@ -31,7 +31,17 @@ export async function auditPages<Page extends ReadablePage> (pages: readonly Pag
   const { expected = [], content, minTextScore = 0.85, output = 'png', onProgress } = options
 
   const reading = await ocrPages(pages, { ...options.ocr, onProgress })
-  const pixels = await diffPages(pages, expected, { ...options.diff, units: 'points', output, sideBySide: false, onProgress })
+
+  // Every text difference is also a place to measure the ink at: identical ink
+  // under a word settles that the print is identical, whatever was read there.
+  const probes = pages.flatMap((page, position) => reading.pages[position].differences.map(difference => ({
+    page:   page.page,
+    x:      difference.x,
+    y:      difference.y,
+    width:  difference.width,
+    height: difference.height,
+  })))
+  const pixels = await diffPages(pages, expected, { ...options.diff, units: 'points', output, sideBySide: false, probes, onProgress })
   const found = content === undefined ? null : findContent(reading, content, options.find)
 
   const audits: PageAudit[] = []
@@ -42,19 +52,27 @@ export async function auditPages<Page extends ReadablePage> (pages: readonly Pag
     const text = reading.pages[position]
     const diff = pixels[position]
     const required: ContentResult[] = found?.pages.filter(p => p.page === page.page).flatMap(p => p.content) ?? []
-    const { findings, explained } = correlateFindings({ text: text.differences, pixels: diff, content: required })
+    const { findings, explained, noise } = correlateFindings({ text: text.differences, pixels: diff, content: required, probes: diff.probes })
 
     const reasons = findings.map(f => f.summary)
     if (text.score < minTextScore)
       reasons.push(`the text reads too poorly to trust (score ${text.score.toFixed(2)} below ${minTextScore}): changes may have gone unseen`)
 
-    const evidenceRaster = renderEvidence(page.original.raster, page.aligned.raster, page.original.dpi ?? 150, diff.expected, findings, options.diff?.expectedMargin)
+    const evidenceRaster = renderEvidence(page.original.raster, page.aligned.raster, {
+      dpi:            page.original.dpi ?? 150,
+      expected:       diff.expected,
+      findings,
+      content:        required,
+      overlay:        diff.diffRaster,
+      expectedMargin: options.diff?.expectedMargin,
+    })
     audits.push({
       page:          page.page,
       verdict:       reasons.length === 0 ? 'pass' : 'review',
       reasons,
       findings,
       explained,
+      noise,
       text,
       pixels:        diff,
       content:       required,

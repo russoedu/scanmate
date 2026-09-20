@@ -1,4 +1,4 @@
-import type { Change, ExpectedResult, PageDiff } from '@scanmate/diff'
+import type { Change, ExpectedResult, InkProbe, PageDiff } from '@scanmate/diff'
 import type { ContentResult } from '@scanmate/find'
 import type { Rect } from '@scanmate/ink'
 import type { TextDifference } from '@scanmate/ocr'
@@ -24,6 +24,8 @@ import type { AuditFinding, ExplainedDifference } from './audit-finding.contract
 export interface Correlation {
   findings:  AuditFinding[]
   explained: ExplainedDifference[]
+  /** Differences the ink says are not differences: the print is identical, the reading was not. */
+  noise:     TextDifference[]
 }
 
 export interface CorrelationInput {
@@ -33,12 +35,25 @@ export interface CorrelationInput {
   pixels:   Pick<PageDiff, 'expected' | 'unexpected' | 'missing'>
   /** Required content checked on this page, if any. */
   content?: readonly ContentResult[]
+  /**
+   * The ink measured at each text difference's own box, in the same order as
+   * `text`. Where the ink is identical, the characters are identical however
+   * they were read, and the difference is set aside as noise.
+   */
+  probes?:  readonly InkProbe[]
 }
 
 /** Points of slack when deciding two boxes are at the same place. */
 const SLACK = 1.5
 
-export function correlateFindings ({ text, pixels, content = [] }: CorrelationInput): Correlation {
+/**
+ * Ink at a text difference, in square millimetres, below which the print is
+ * taken to be identical. A glyph of 9 pt text covers roughly 1 mm2, so a
+ * changed character moves several times this; scanner grain does not.
+ */
+const INK_EVIDENCE = 0.3
+
+export function correlateFindings ({ text, pixels, content = [], probes = [] }: CorrelationInput): Correlation {
   const explained: ExplainedDifference[] = []
   const open: TextDifference[] = []
   for (const difference of text) {
@@ -68,8 +83,20 @@ export function correlateFindings ({ text, pixels, content = [] }: CorrelationIn
       ? `Printed ink lost, and with it "${words.map(w => w.expected).join(' ')}"`
       : `Printed ink lost (${change.inkArea.toFixed(1)} mm2)`))
   }
-  // What the pixels did not see: a substituted character, a misread word.
-  for (const difference of open) if (!used.has(difference)) findings.push(textFinding(difference))
+  // What the pixels did not see. A difference the print check *saw* - the scan's
+  // ink matched against the original's own glyphs, and found to be other glyphs -
+  // stands on its own. Every other one is a reading, and a reading needs the ink
+  // to agree that something changed: identical ink under a word means identical
+  // print, and a reading that disagrees with identical print is a misreading,
+  // which is most of what OCR does to small, faint or sideways type.
+  const noise: TextDifference[] = []
+  for (const difference of open) {
+    if (used.has(difference)) continue
+    const probe = probes[text.indexOf(difference)]
+    const changedInk = probe === undefined || probe.addedInk + probe.lostInk >= INK_EVIDENCE
+    if (changedInk || difference.verified === true) findings.push(textFinding(difference))
+    else noise.push(difference)
+  }
 
   for (const region of pixels.expected) {
     if (region.identified) continue
@@ -111,7 +138,7 @@ export function correlateFindings ({ text, pixels, content = [] }: CorrelationIn
     })
   }
 
-  return { findings, explained }
+  return { findings, explained, noise }
 }
 
 /** The expected region that accounts for a text difference, or `null`. */

@@ -1,7 +1,7 @@
 import type { DiffOptions, ExpectedChange, PageDiff } from '@scanmate/diff'
 import type { ContentResult, ExpectedContent, FindOptions } from '@scanmate/find'
 import type { ImageFormat, ProgressCallback, Raster } from '@scanmate/ink'
-import type { OcrOptions, PageOcr } from '@scanmate/ocr'
+import type { OcrOptions, PageOcr, TextDifference } from '@scanmate/ocr'
 
 import type { AuditFinding, ExplainedDifference, FindingKind } from '../finding-correlation'
 
@@ -36,6 +36,8 @@ export interface PageAudit {
   reasons:        string[]
   /** Everything to look at, text and pixels together. */
   findings:       AuditFinding[]
+  /** Reading differences the ink says are not differences: identical print, read wrong. */
+  noise:          TextDifference[]
   /** Text differences accounted for by an expected region - kept for transparency, not counted. */
   explained:      ExplainedDifference[]
   /** The full reading of the page: both texts, every measure, every run. */

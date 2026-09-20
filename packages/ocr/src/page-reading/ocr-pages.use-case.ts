@@ -1,7 +1,7 @@
 import { resampleRaster, toGrayscale } from '@scanmate/ink'
 import type { Raster } from '@scanmate/ink'
 
-import { collectTemplates, printPolarity, verifyPrintedRun } from '../print-verification'
+import { collectTemplates, mergeVerifiedFigures, printPolarity, verifyPrintedRun } from '../print-verification'
 import type { PrintedRun } from '../print-verification'
 import { createTesseractEngine } from '../ocr-engine'
 import type { OcrEngine, RecognisedText } from '../ocr-engine'
@@ -126,6 +126,7 @@ async function readPage (page: ReadablePage, engine: OcrEngine, options: OcrOpti
   // Figures are matched against the original's own glyphs, which settles what no
   // reading of a returned scan can: whether this is still the digit that was printed.
   const printChecks = { checked: 0, different: 0 }
+  const seenChanged = new Set<number>()
   if (printCheck !== false && useLayer) {
     const scanGray = toGrayscale(page.aligned.raster)
     const printed: PrintedRun[] = items.map(item => ({ ...item }))
@@ -134,12 +135,15 @@ async function readPage (page: ReadablePage, engine: OcrEngine, options: OcrOpti
       const verified = verifyPrintedRun(originalGray, scanGray, originalDpi, run, templates, printCheck)
       if (verified === null) continue
       printChecks.checked++
-      if (!verified.agrees) printChecks.different++
-      claims.found[r] = verified.agrees ? run.text : verified.reading
+      if (!verified.agrees) {
+        printChecks.different++
+        seenChanged.add(r)
+      }
+      claims.found[r] = mergeVerifiedFigures(claims.found[r], run, verified)
     }
   }
 
-  const match = judgeRuns(references, claims, rules)
+  const match = judgeRuns(references, claims, rules, seenChanged)
   const runs = references.map((run, r) => ({
     text:      run.text,
     found:     claims.found[r],

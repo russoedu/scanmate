@@ -67,6 +67,37 @@ flowchart TD
 Overlap is judged with 1.5 points of slack, which is about one stroke width at
 scan resolution.
 
+### A reading is not a change until the ink agrees
+
+The rule above leaves one gap, and it is the gap that produces red boxes over
+text a reviewer can see is identical. OCR misreads small, faint and sideways
+print constantly: `W-9` comes back as `W 2] 9`, `Specific Instructions` as
+`[=] O O If 1400`. Nothing changed on the paper; the reader simply failed.
+
+So every leftover text difference is put back to the pixels, at its own box:
+
+```mermaid
+flowchart TD
+  A[leftover text difference] --> B{the print check matched<br/>this run's ink, glyph by glyph,<br/>and found other glyphs?}
+  B -->|yes| F[finding — this was seen, not read]
+  B -->|no| C[measure the ink in its box:<br/>added + lost, in mm²]
+  C --> D{≥ 0.3 mm²?}
+  D -->|yes| F
+  D -->|no| N[noise — identical ink,<br/>so identical print]
+```
+
+`diffPages` takes a `probes` option for exactly this: rectangles to measure
+whether or not anything changed there, returning added, lost and shared ink for
+each. Identical ink under a word means identical characters, however they were
+read, and the difference is set aside as **noise** — reported on the page for
+the curious, never as a finding.
+
+The first branch matters as much as the second. A figure the print check
+matched against the original's own glyphs and found to be *different* glyphs was
+seen rather than read, and needs no second opinion. What it does **not** cover
+is a run it never checked: a difference is exempt because the ink was measured,
+not because the reading happens to contain a digit.
+
 **Explained, not reported**: a signature read as "Ae dhe", the word "Signature"
 written across by a hand that overshot, words over a logo the original prints as
 an image. These are set aside with the region that accounts for them, so the
@@ -117,15 +148,47 @@ numbers rather than adjectives.
 
 ## The evidence page
 
-The original and the aligned scan, side by side, with the same boxes drawn on
-both halves in the same places:
+![The three panels](../assets/evidence.jpg)
 
-- **green** — expected region filled in
-- **orange** — the band around it where ink still counts as that region's
-- **amber** — expected region left empty, or blacked out
-- **magenta** — unexpected mark
-- **blue** — printed ink lost
-- **red** — text reading differently, or required content out of place
+Three panels, the same places boxed on each, because a reviewer is asking three
+different questions and one image cannot answer them in one colour scheme:
+
+| panel | question | what it draws |
+|---|---|---|
+| the original | **where** is the question? | every checked place, all in one colour |
+| the aligned scan | **what** is the answer? | each place in the colour of its verdict |
+| the overlay | **why** should I believe it? | violet where the ink differs, grey where it agrees |
+
+The third panel is what makes a red box arguable rather than an accusation: a
+reviewer can see for themselves that the ink under it is grey — the same ink,
+in the same place — and that only the reading differed. It carries no verdicts
+of its own; repeating the middle panel's answers on it would turn the one
+independent piece of evidence into a restatement of the other two.
+
+It is worth knowing what that panel *cannot* show. A printed digit replaced by
+another of the same size moves about **0.11 mm²** of ink, measured, nearly all
+of it inside the band that forgives misregistration — so a forged figure appears
+there as grey. That is why the glyph check exists, and why a finding never
+depends on the pixels agreeing.
+
+| colour | on the original | on the scan |
+|---|---|---|
+| blue `#0017FC` | every place being asked about | required content that reads correctly |
+| green `#00FC11` | | a field that was filled in |
+| red `#FC0027` | | a field left empty or covered, content or a figure that changed |
+| pink `#F500FC` | | the band where ink still counts as a field's |
+| orange `#FF8A00` | | ink added where nothing was expected |
+| cyan `#00C8FC` | printed ink the scan lost | the same place, where it is not |
+
+The left panel deliberately carries **one** colour. A verdict belongs to the
+returned copy, not to the document that asked the question, and colouring both
+sides by verdict invites a reviewer to read the original as though it were also
+at fault.
+
+A legend runs along the foot, drawn from a 5x7 bitmap font carried in
+`@scanmate/ink` rather than a font file: an evidence page whose legend silently
+vanished in a container with no fonts installed would be worse than a plain one.
+Turn it off with `legend: false`.
 
 Side by side rather than a crop, because the question a reviewer is answering is
 "is this line as it was printed?", which needs both lines in view.
@@ -140,6 +203,8 @@ Side by side rather than a crop, because the question a reviewer is answering is
 | `ocr` / `diff` / `find` | their own defaults | Passed straight through. |
 | `output` | `'png'` | Encoding of the evidence page. |
 | — | `1.5` pt | Slack when deciding two boxes are the same place. |
+| — | `0.3` mm² | Ink at a text difference below which the print counts as identical. A glyph of 9 pt text covers roughly 1 mm², so a changed character moves several times this; scanner grain does not. |
+| `expectedMargin` | `6` pt | How far outside a region its ink still counts - a signature leaves its box. |
 
 ## What it does not do
 
@@ -148,3 +213,7 @@ Side by side rather than a crop, because the question a reviewer is answering is
 - It does not rank findings by severity. A stray tick and a changed total are
   both reported; which matters is the caller's judgement.
 - It does not look at anything but the two documents it was given.
+- It does not treat a reading as evidence on its own. A difference the pixels
+  cannot corroborate is reported as `noise`, not as a finding - which means a
+  change made with no change of ink at all is, by construction, not something
+  this can see.

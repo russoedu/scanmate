@@ -26,6 +26,16 @@ export interface DiffOptions {
   /** Units of `ExpectedChange` rectangles and of every rectangle reported back. Default `'points'`. */
   units?:             CoordinateUnits
   /**
+   * Places to measure the ink at, whether or not anything changed there.
+   *
+   * A reading that disagrees with the original is not by itself a change: OCR
+   * misreads small print, and sideways print, and print on a shaded bar. Asking
+   * what the ink does at the very place the reading disagrees settles it - ink
+   * that is identical there means the characters are identical, whatever was
+   * read. `@scanmate/audit` passes every text difference through here.
+   */
+  probes?:            readonly ProbeRect[]
+  /**
    * How far outside an expected region its ink may still lie, in `units`. Default `6`
    * (2 mm at 72 points to the inch).
    *
@@ -180,6 +190,21 @@ export interface RegionInkMetrics {
 }
 
 /** A change found where nothing was expected, or ink that went missing. */
+/** A place to measure the ink at; `page` selects the page when several are compared. */
+export type ProbeRect = Rect & { page?: number }
+
+/** What the ink does inside one place that was asked about. */
+export interface InkProbe {
+  /** The place asked about, in `units`. */
+  rect:      Rect
+  /** New ink there, in square millimetres. */
+  addedInk:  number
+  /** Printed ink lost there, in square millimetres. */
+  lostInk:   number
+  /** Ink the two pages agree on there, in square millimetres. */
+  sharedInk: number
+}
+
 export interface Change {
   /** Bounding box, in the requested units. */
   x:       number
@@ -194,13 +219,15 @@ export interface Change {
 
 export interface PageDiff {
   page:             number
-  /** The overlay: red added, blue lost, grey agreed - annotated when asked. */
+  /** The overlay: violet where the ink differs, grey where it agrees - annotated when asked. */
   diffRaster:       Raster
   diffImage:        Uint8Array | null
   /** Original and aligned scan side by side with the report boxed on both, when `sideBySide` was asked for. */
   sideBySideRaster: Raster | null
   sideBySideImage:  Uint8Array | null
   expected:         ExpectedResult[]
+  /** The ink at each place `probes` asked about, in the same order. */
+  probes:           InkProbe[]
   /** New ink outside every expected region, merged into one box per change. */
   unexpected:       Change[]
   /**

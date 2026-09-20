@@ -4,9 +4,9 @@
 
 The final audit of a returned document. Every page is read in full and compared pixel by pixel. The two results are merged into one list of findings and a verdict, with a side-by-side image as evidence.
 
-![the evidence page: original and returned scan side by side, findings drawn on both](./assets/evidence.jpg)
+![the evidence page: the original, the returned scan and the overlay side by side, findings drawn on each](./assets/evidence.jpg)
 
-*The evidence page: the original and the returned scan side by side, every finding drawn on both halves. Green a field filled in, orange the room a signature is given to stray, red text that reads differently. Made from the [IRS Form W-9](https://www.irs.gov/pub/irs-pdf/fw9.pdf) (a work of the United States government, in the public domain): filled in as a generator would, printed, signed by hand and scanned crooked.*
+*The evidence page: the original, the returned scan and the overlay of the two, with the same places boxed on each. The original asks the questions in blue; the scan answers each in the colour of its verdict - green filled in, red changed, pink the room a signature is given to stray; the overlay shows violet where the ink differs and grey where it agrees, so a red box can be checked rather than taken on trust. The account number is the only finding: one printed digit replaced by another. Made from the [IRS Form W-9](https://www.irs.gov/pub/irs-pdf/fw9.pdf) (a work of the United States government, in the public domain): filled in as a generator would, printed, signed by hand and scanned crooked.*
 
 ## Install
 
@@ -28,7 +28,7 @@ const audit = await auditPages(await alignPages(pages), {
 audit.verdict                  // 'pass' | 'review'
 audit.pages[0].reasons         // why, one sentence each
 audit.pages[0].findings        // text and pixel findings, merged by place
-audit.pages[0].evidenceImage   // original and scan side by side, findings drawn on both
+audit.pages[0].evidenceImage   // original, scan and overlay side by side, findings drawn on each
 audit.pages[0].text            // the full OCR comparison (@scanmate/ocr)
 audit.pages[0].pixels          // the full pixel comparison (@scanmate/diff)
 ```
@@ -63,15 +63,31 @@ Each finding carries its position in points, a one-sentence summary, and its evi
 
 ## The evidence image
 
-The original and the aligned scan side by side, with the same boxes on both halves:
+Three panels with the same places boxed on each: the original, which says **where** the question is; the aligned scan, which says **what** the answer is; and the overlay of the two, which says **why** - violet where the ink of the two differs, grey where they agree.
 
-- **green**: expected region filled in
-- **amber**: expected region left empty, or blacked out
-- **magenta**: unexpected mark
-- **blue**: printed ink lost
-- **red**: text reading differently, or required content out of place
+The overlay carries no verdicts of its own: what passed and what failed is the middle panel's job. It is worth knowing what it cannot show - a printed digit replaced by another of the same size moves about 0.1 mm² of ink, nearly all of it inside the band that forgives misregistration, so a forged figure appears there as grey. That is exactly why the glyph check exists, and why a finding does not depend on the pixels agreeing.
 
-Corroborated findings are drawn twice as thick.
+| | on the original | on the scan |
+|---|---|---|
+| **blue** | every place being asked about | required content that reads correctly |
+| **green** | | a field that was filled in |
+| **red** | | a field left empty or covered, content or a figure that changed |
+| **pink** | | the band where ink still counts as a field's |
+| **orange** | | ink added where nothing was expected |
+| **cyan** | printed ink the scan lost | the same place, where it is not |
+
+Corroborated findings are drawn twice as thick, and a legend runs along the foot (`legend: false` turns it off).
+
+## A reading is not a change until the ink agrees
+
+OCR misreads small, faint and sideways print constantly - `W-9` comes back as `W 2] 9` - and a reader's disagreement is not evidence that the paper differs. So every text difference the pixels did not already account for is measured at its own box: if the ink there is identical (under 0.3 mm² added or lost), the characters are identical however they were read, and the difference is set aside as `noise` rather than reported.
+
+A figure the print check matched against the original's own glyphs and found to be *different* glyphs is exempt: that one was seen, not read.
+
+```ts
+audit.pages[0].findings   // what is actually wrong
+audit.pages[0].noise      // read differently, printed identically
+```
 
 ## Options
 

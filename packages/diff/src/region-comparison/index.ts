@@ -5,4 +5,4 @@ export { compareRegions, diffDocument, measureRegion } from './compare-regions.u
 export { buildMasks } from './ink-masks.use-case'
 export type { Masks } from './ink-masks.use-case'
 export type { DocumentDiff, Region, RegionOptions, RegionReport } from './region.model'
-export { paintOverlay, renderDiff } from './render-diff.use-case'
+export { OVERLAY_DIFFERENT, OVERLAY_SHARED, paintOverlay, renderDiff } from './render-diff.use-case'
