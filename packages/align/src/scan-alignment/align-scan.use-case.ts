@@ -1,5 +1,5 @@
 import { decodeImage, decompose, encodeImage, inkMap, invert, toGrayscale, warpRaster } from '@scanmate/ink'
-import type { ImageInput, Matrix3, TransformModel } from '@scanmate/ink'
+import type { ScanmateSource, Matrix3, TransformModel } from '@scanmate/ink'
 
 import { estimateCoarse } from '../coarse-estimation'
 import type { AlignOptions, AlignResult, ModelAttempt } from './align-result.contract'
@@ -74,8 +74,8 @@ interface Contender {
  * to align several pages at once, still put this in a worker thread.
  */
 export async function alignScan (
-  original: ImageInput,
-  scanned: ImageInput,
+  original: ScanmateSource,
+  scanned: ScanmateSource,
   options: AlignOptions = {},
 ): Promise<AlignResult> {
   const startedAt = Date.now()
@@ -179,6 +179,8 @@ export async function alignScan (
   return {
     raster,
     image:       output === 'none' ? null : await encodeImage(raster, { format: output, quality }),
+    // The aligned pixels sit on the original's canvas, so they are at its resolution.
+    dpi:         null,
     width:       raster.width,
     height:      raster.height,
     matrix,

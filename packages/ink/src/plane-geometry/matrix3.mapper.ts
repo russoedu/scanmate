@@ -1,4 +1,4 @@
-import type { Matrix3, Point, Rect, TransformModel, TransformSummary } from './geometry.model'
+import type { Matrix3, Point, ScanmateRect, TransformModel, TransformSummary } from './geometry.model'
 
 /**
  * 3x3 homogeneous matrix helpers.
@@ -133,7 +133,7 @@ export function rebase (m: Matrix3, sourceScale: number, targetScale: number): M
 }
 
 /** The four corners of `rect` mapped through `m`, clockwise from the top-left. */
-export function mapRectCorners (m: Matrix3, rect: Rect): Point[] {
+export function mapRectCorners (m: Matrix3, rect: ScanmateRect): Point[] {
   const { x, y, width, height } = rect
 
   return [

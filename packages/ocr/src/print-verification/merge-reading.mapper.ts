@@ -1,5 +1,5 @@
-import type { PrintedRun } from './glyph-templates.use-case'
 import type { PrintVerification } from './verify-print.use-case'
+import type { TextRun } from '@scanmate/ink'
 
 /**
  * Puts what the ink settled into what the scan was read as.
@@ -16,7 +16,7 @@ import type { PrintVerification } from './verify-print.use-case'
  * @param verification - What `verifyPrintedRun` decided about it.
  * @returns The reading with the decided figures settled.
  */
-export function mergeVerifiedFigures (read: string, run: PrintedRun, verification: PrintVerification): string {
+export function mergeVerifiedFigures (read: string, run: TextRun, verification: PrintVerification): string {
   const decided = verification.cells.filter(cell => cell.read !== null)
   if (decided.length === 0) return read
   // Nothing was read here at all, yet the ink shows the glyphs: the ink is the better witness.

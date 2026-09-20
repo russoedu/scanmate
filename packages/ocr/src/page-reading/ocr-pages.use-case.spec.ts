@@ -1,13 +1,12 @@
 import { createRaster, fillRect, IDENTITY } from '@scanmate/ink'
-import type { Raster, StageEvent } from '@scanmate/ink'
+import type { Raster, ReadablePage, StageEvent, TextRun } from '@scanmate/ink'
 
 import type { OcrEngine, OcrWord, RecognisedText } from '../ocr-engine'
 import { matchWords } from './match-words.use-case'
 import { ocrPages } from './ocr-pages.use-case'
-import type { PositionedText, ReadablePage } from './ocr-report.contract'
 
 /** A two-column page, as the original's text layer places it (points). */
-const ITEMS: PositionedText[] = [
+const ITEMS: TextRun[] = [
   { text: 'Customer Details', x: 20, y: 100, width: 90, height: 11 },
   { text: 'Order#', x: 300, y: 100, width: 40, height: 11 },
   { text: 'The Resistance', x: 20, y: 120, width: 80, height: 11 },
@@ -56,7 +55,7 @@ function rereading (answer: (pass: number) => string): OcrEngine {
   return engine
 }
 
-function page (number = 1, items: PositionedText[] = ITEMS): ReadablePage {
+function page (number = 1, items: TextRun[] = ITEMS): ReadablePage {
   const raster: Raster = createRaster(600, 800)
   const side = { raster, image: null, width: 600, height: 800, dpi: 72 }
 
@@ -64,7 +63,7 @@ function page (number = 1, items: PositionedText[] = ITEMS): ReadablePage {
     page:     number,
     original: side,
     scanned:  side,
-    aligned:  { raster, image: null, width: 600, height: 800, matrix: IDENTITY, inverse: IDENTITY, confidence: 0.95 },
+    aligned:  { raster, image: null, dpi: null, width: 600, height: 800, matrix: IDENTITY, inverse: IDENTITY, confidence: 0.95 },
     metadata: { original: { textItems: items } },
   }
 }

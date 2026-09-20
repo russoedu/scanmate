@@ -1,4 +1,4 @@
-import type { Rect } from '@scanmate/ink'
+import type { ScanmateRect } from '@scanmate/ink'
 import { DEFAULT_NORMALISE, normaliseText } from '@scanmate/ocr'
 import type { NormaliseOptions, OcrReport, PageOcr } from '@scanmate/ocr'
 
@@ -115,7 +115,7 @@ function excerptOf (text: string, match: { start: number, end: number }): string
   return text.slice(span.start, span.end)
 }
 
-function union (boxes: readonly Rect[]): Rect {
+function union (boxes: readonly ScanmateRect[]): ScanmateRect {
   const left = Math.min(...boxes.map(b => b.x))
   const top = Math.min(...boxes.map(b => b.y))
 

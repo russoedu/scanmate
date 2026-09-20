@@ -1,6 +1,6 @@
 import { alignScan } from '@scanmate/align'
 import { cloneRaster, createSyntheticDocument, decodeImage, drawSignature, drawTick, fillRect, IDENTITY, simulateScan } from '@scanmate/ink'
-import type { AlignedPage, Raster, Rect, StageEvent } from '@scanmate/ink'
+import type { AlignedPage, Raster, ScanmateRect, StageEvent } from '@scanmate/ink'
 
 import { IDENTIFIED, NOT_IDENTIFIED, REFERENCE, UNEXPECTED } from './annotate-overlay.use-case'
 import { diffPage, diffPages } from './diff-pages.use-case'
@@ -21,11 +21,11 @@ function page (aligned: Raster, dpi = 72, number = 1): AlignedPage {
     page:     number,
     original: side,
     scanned:  { ...side, raster: aligned },
-    aligned:  { raster: aligned, image: null, width: aligned.width, height: aligned.height, matrix: IDENTITY, inverse: IDENTITY, confidence: 1 },
+    aligned:  { raster: aligned, image: null, dpi: null, width: aligned.width, height: aligned.height, matrix: IDENTITY, inverse: IDENTITY, confidence: 1 },
   }
 }
 
-function expect_ (id: string, rect: Rect, pageNumber = 1): ExpectedChange {
+function expect_ (id: string, rect: ScanmateRect, pageNumber = 1): ExpectedChange {
   return { page: pageNumber, id, ...rect }
 }
 

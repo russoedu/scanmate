@@ -1,7 +1,8 @@
 import sharp from 'sharp'
 import type { Sharp } from 'sharp'
 
-import type { ImageInput, Raster } from './raster.model'
+import type { Raster } from './raster.model'
+import type { ScanmateSource } from './source.contract'
 import { asClamped, isRaster, toBytes } from './raster.model'
 
 /**
@@ -109,7 +110,7 @@ export interface ImageMetadata {
  * that may already be decoded - which is what makes it cheap to align one page
  * against several scans: decode once, reuse.
  */
-export async function decodeImage (input: ImageInput, options: DecodeOptions = {}): Promise<Raster> {
+export async function decodeImage (input: ScanmateSource, options: DecodeOptions = {}): Promise<Raster> {
   if (isRaster(input)) return input
 
   const { autoOrient = true, page, background = { r: 255, g: 255, b: 255 }, limitInputPixels } = options
@@ -181,7 +182,7 @@ export async function resampleRaster (image: Raster, width: number, height: numb
 }
 
 /** Read what a file claims about itself without decoding its pixels. */
-export async function readImageMetadata (input: ImageInput): Promise<ImageMetadata> {
+export async function readImageMetadata (input: ScanmateSource): Promise<ImageMetadata> {
   if (isRaster(input))
     throw new TypeError('readImageMetadata needs an encoded image or a path, not a decoded raster')
 
@@ -202,13 +203,13 @@ export async function readImageMetadata (input: ImageInput): Promise<ImageMetada
 }
 
 /** How many pages a source holds. One for an ordinary image, more for a scanner's TIFF. */
-export async function countPages (input: ImageInput): Promise<number> {
+export async function countPages (input: ScanmateSource): Promise<number> {
   const metadata = await readImageMetadata(input)
 
   return metadata.pages
 }
 
-function open (input: Exclude<ImageInput, Raster>): Buffer | string {
+function open (input: Exclude<ScanmateSource, Raster>): Buffer | string {
   if (typeof input === 'string') return input
 
   const bytes = toBytes(input)

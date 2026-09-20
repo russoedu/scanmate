@@ -1,13 +1,14 @@
 import { diffPage, probeInk } from '@scanmate/diff'
 import { encodeImage } from '@scanmate/ink'
 import { createTesseractEngine, DEFAULT_NORMALISE, ocrPages } from '@scanmate/ocr'
-import type { OcrEngine, PageOcr, ReadablePage } from '@scanmate/ocr'
+import type { OcrEngine, PageOcr } from '@scanmate/ocr'
 
 import { renderEvidence } from '../audit-evidence'
 import { settleDisputes } from '../dispute-settlement'
 import { correlateFindings } from '../finding-correlation'
 import type { FindingKind } from '../finding-correlation'
 import type { AuditOptions, AuditReport, PageAudit } from './audit-report.contract'
+import type { ReadablePage } from '@scanmate/ink'
 
 /**
  * The final audit: every aligned page read in full and compared pixel by

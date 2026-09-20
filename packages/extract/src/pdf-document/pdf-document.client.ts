@@ -1,3 +1,4 @@
+import type { ScanmateBinarySource } from '@scanmate/ink'
 import { readFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
@@ -26,7 +27,6 @@ import type { PDFDocumentProxy } from 'pdfjs-dist/legacy/build/pdf.mjs'
  */
 
 /** A path to a PDF, or its bytes. A string is a filesystem path. */
-export type PdfInput = string | URL | Uint8Array | ArrayBuffer
 
 export interface OpenedPdf {
   document:   PDFDocumentProxy
@@ -49,7 +49,7 @@ export function standardFontDirectory (): string {
   return standardFonts
 }
 
-export async function openPdf (input: PdfInput): Promise<OpenedPdf> {
+export async function openPdf (input: ScanmateBinarySource): Promise<OpenedPdf> {
   const bytes = await readBytes(input)
   if (bytes.byteLength === 0) throw new Error('cannot open an empty PDF')
 
@@ -74,7 +74,7 @@ export async function openPdf (input: PdfInput): Promise<OpenedPdf> {
   }
 }
 
-async function readBytes (input: PdfInput): Promise<Uint8Array> {
+async function readBytes (input: ScanmateBinarySource): Promise<Uint8Array> {
   if (typeof input === 'string') return new Uint8Array(await readFile(input))
   if (input instanceof URL) return new Uint8Array(await readFile(fileURLToPath(input)))
   if (input instanceof ArrayBuffer) return new Uint8Array(input)

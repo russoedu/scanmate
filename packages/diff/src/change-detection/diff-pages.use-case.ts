@@ -1,5 +1,5 @@
 import { encodeImage } from '@scanmate/ink'
-import type { AlignedPage, BinaryImage, Rect } from '@scanmate/ink'
+import type { AlignedPage, BinaryImage, ScanmateRect } from '@scanmate/ink'
 
 import { buildMasks, measureRegion, paintOverlay } from '../region-comparison'
 import type { Masks } from '../region-comparison'
@@ -238,7 +238,7 @@ function difference (a: BinaryImage, b: BinaryImage): BinaryImage {
  * Measured on ink, not on box area: a signature that overflows its box by a
  * flourish is still mostly inside it, while its bounding box may not be.
  */
-function inkShareInside (box: MergedBox, regions: readonly Rect[], masks: Masks): number {
+function inkShareInside (box: MergedBox, regions: readonly ScanmateRect[], masks: Masks): number {
   let inside = 0
   const counted = new Set<number>()
   for (const region of regions) {
@@ -265,17 +265,17 @@ function inkShareInside (box: MergedBox, regions: readonly Rect[], masks: Masks)
 }
 
 /** Pixels of a region that lie on the page - what `measureRegion`'s shares are shares of. */
-function pixelArea (rect: Rect, masks: Masks): number {
+function pixelArea (rect: ScanmateRect, masks: Masks): number {
   const width = Math.min(masks.width, Math.ceil(rect.x + rect.width)) - Math.max(0, Math.floor(rect.x))
   const height = Math.min(masks.height, Math.ceil(rect.y + rect.height)) - Math.max(0, Math.floor(rect.y))
 
   return Math.max(0, width) * Math.max(0, height)
 }
 
-function scaleRect (rect: Rect, factor: number): Rect {
+function scaleRect (rect: ScanmateRect, factor: number): ScanmateRect {
   return { x: rect.x * factor, y: rect.y * factor, width: rect.width * factor, height: rect.height * factor }
 }
 
-function grow (rect: Rect, by: number): Rect {
+function grow (rect: ScanmateRect, by: number): ScanmateRect {
   return { x: rect.x - by, y: rect.y - by, width: rect.width + 2 * by, height: rect.height + 2 * by }
 }

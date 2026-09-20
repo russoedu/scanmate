@@ -1,8 +1,8 @@
 import type { InkProbe } from '@scanmate/diff'
 import { toGrayscale } from '@scanmate/ink'
-import type { GrayImage, Raster } from '@scanmate/ink'
+import type { GrayImage, Raster, TextRun } from '@scanmate/ink'
 import { collectTemplates, judgeRun, printPolarity, readRun, verifyPrintedRun } from '@scanmate/ocr'
-import type { MatchOptions, OcrEngine, PrintedRun, RecheckPass, TextDifference } from '@scanmate/ocr'
+import type { MatchOptions, OcrEngine, RecheckPass, TextDifference } from '@scanmate/ocr'
 
 /**
  * Settling an argument between the reading and the pixels.
@@ -130,7 +130,7 @@ export interface SettlementInput {
    * disputed run can be matched character by character against the faces and
    * sizes the page itself prints. Without it that step is skipped.
    */
-  runs?:        readonly PrintedRun[]
+  runs?:        readonly TextRun[]
   /** How each side is read. Default {@link SETTLEMENT_PASSES}. */
   passes?:      readonly RecheckPass[]
   /** Readings that must agree before a side is believed. Default `2`. */

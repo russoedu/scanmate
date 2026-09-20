@@ -1,4 +1,4 @@
-import type { Raster, Rect, Rgba } from '@scanmate/ink'
+import type { Raster, ScanmateRect, Rgba } from '@scanmate/ink'
 
 /**
  * Outline what the report says onto the overlay, so the picture and the numbers
@@ -34,7 +34,7 @@ export const UNEXPECTED: Rgba = [255, 138, 0, 255]
 export const MISSING: Rgba = [0, 200, 252, 255]
 
 export interface Annotation {
-  rect:  Rect
+  rect:  ScanmateRect
   color: Rgba
 }
 
@@ -49,7 +49,7 @@ export function annotateOverlay (overlay: Raster, annotations: readonly Annotati
 }
 
 /** Fill a rectangle, clipped to the raster - an outline grown past the page edge draws what fits. */
-function fill (raster: Raster, rect: Rect, color: Rgba): void {
+function fill (raster: Raster, rect: ScanmateRect, color: Rgba): void {
   const left = Math.max(0, Math.round(rect.x))
   const top = Math.max(0, Math.round(rect.y))
   const right = Math.min(raster.width, Math.round(rect.x + rect.width))

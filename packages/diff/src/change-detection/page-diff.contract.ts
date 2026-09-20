@@ -1,4 +1,4 @@
-import type { ImageFormat, InkOptions, ProgressCallback, Raster, Rect } from '@scanmate/ink'
+import type { ImageFormat, InkOptions, ProgressCallback, Raster, ScanmateRect } from '@scanmate/ink'
 
 import type { Masks } from '../region-comparison'
 
@@ -185,7 +185,7 @@ export interface RegionInkMetrics {
   /** Ink in the largest change, in square millimetres. */
   largestArea: number
   /** Box around all of it, in the requested units; `null` when there is none. */
-  bounds:      Rect | null
+  bounds:      ScanmateRect | null
   /** `bounds` as a share of the region's width and height. */
   widthRatio:  number
   heightRatio: number
@@ -203,12 +203,12 @@ export interface RegionInkMetrics {
 
 /** A change found where nothing was expected, or ink that went missing. */
 /** A place to measure the ink at; `page` selects the page when several are compared. */
-export type ProbeRect = Rect & { page?: number }
+export type ProbeRect = ScanmateRect & { page?: number }
 
 /** What the ink does inside one place that was asked about. */
 export interface InkProbe {
   /** The place asked about, in `units`. */
-  rect:      Rect
+  rect:      ScanmateRect
   /** New ink there, in square millimetres. */
   addedInk:  number
   /** Printed ink lost there, in square millimetres. */

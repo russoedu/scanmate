@@ -2,7 +2,7 @@ import { composePanels, EXPECTED_MARGIN, IDENTIFIED, MISSING, NOT_IDENTIFIED, OV
 import type { Annotation, ExpectedResult, Panel, Rgba } from '@scanmate/diff'
 import type { ContentResult } from '@scanmate/find'
 import { createRaster, drawLabel, labelSize } from '@scanmate/ink'
-import type { Raster, Rect } from '@scanmate/ink'
+import type { Raster, ScanmateRect } from '@scanmate/ink'
 
 import type { AuditFinding, FindingKind } from '../finding-correlation'
 
@@ -78,7 +78,7 @@ export function renderEvidence (original: Raster, aligned: Raster, options: Evid
   const { dpi, expected = [], findings = [], content = [], overlay = null, expectedMargin = 6, legend = true } = options
   const toPixels = dpi / 72
   const line = Math.max(2, Math.round(dpi / 72))
-  const box = (rect: Rect, by = 2): Rect => grow(scale(rect, toPixels), by)
+  const box = (rect: ScanmateRect, by = 2): ScanmateRect => grow(scale(rect, toPixels), by)
 
   // The original: every place being asked about, in one colour. Where, not what.
   const asked: Annotation[] = [
@@ -118,13 +118,13 @@ export function renderEvidence (original: Raster, aligned: Raster, options: Evid
 }
 
 /** The findings that have a place on the page, each with it. */
-function boxed (findings: readonly AuditFinding[]): Array<[AuditFinding, Rect]> {
-  return findings.flatMap(finding => (finding.box === null ? [] : [[finding, finding.box] as [AuditFinding, Rect]]))
+function boxed (findings: readonly AuditFinding[]): Array<[AuditFinding, ScanmateRect]> {
+  return findings.flatMap(finding => (finding.box === null ? [] : [[finding, finding.box] as [AuditFinding, ScanmateRect]]))
 }
 
 /** Where the original prints one piece of required content, or where it should be. */
-function places (result: ContentResult): Rect[] {
-  const boxes = result.occurrences.map(occurrence => occurrence.box).filter((rect): rect is Rect => rect !== null)
+function places (result: ContentResult): ScanmateRect[] {
+  const boxes = result.occurrences.map(occurrence => occurrence.box).filter((rect): rect is ScanmateRect => rect !== null)
 
   return boxes.length > 0 ? boxes : (result.box === null ? [] : [result.box])
 }
@@ -171,7 +171,7 @@ function withLegend (page: Raster, line: number, hasOverlay: boolean): Raster {
   return strip
 }
 
-function fill (raster: Raster, rect: Rect, colour: Rgba): void {
+function fill (raster: Raster, rect: ScanmateRect, colour: Rgba): void {
   const left = Math.max(0, Math.round(rect.x))
   const top = Math.max(0, Math.round(rect.y))
   const right = Math.min(raster.width, Math.round(rect.x + rect.width))
@@ -180,10 +180,10 @@ function fill (raster: Raster, rect: Rect, colour: Rgba): void {
     for (let x = left; x < right; x++) raster.data.set(colour, (y * raster.width + x) * 4)
 }
 
-function scale (r: Rect, by: number): Rect {
+function scale (r: ScanmateRect, by: number): ScanmateRect {
   return { x: r.x * by, y: r.y * by, width: r.width * by, height: r.height * by }
 }
 
-function grow (r: Rect, by: number): Rect {
+function grow (r: ScanmateRect, by: number): ScanmateRect {
   return { x: r.x - by, y: r.y - by, width: r.width + 2 * by, height: r.height + 2 * by }
 }

@@ -1,5 +1,5 @@
 import type { Change, ExpectedResult } from '@scanmate/diff'
-import type { Rect } from '@scanmate/ink'
+import type { ScanmateRect } from '@scanmate/ink'
 import type { TextDifference } from '@scanmate/ocr'
 
 /**
@@ -31,7 +31,7 @@ export type FindingKind =
 export interface AuditFinding {
   kind:         FindingKind
   /** Where, in points from the page's top-left; `null` for content the original never places. */
-  box:          Rect | null
+  box:          ScanmateRect | null
   /** Both the reading and the pixels saw it - the strongest kind of finding. */
   corroborated: boolean
   /** One sentence for whoever reviews it. */

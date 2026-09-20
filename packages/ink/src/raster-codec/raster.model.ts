@@ -1,3 +1,4 @@
+import type { ScanmateSource } from './source.contract'
 /**
  * Core data types.
  *
@@ -36,12 +37,6 @@ export interface BinaryImage {
   height: number
   data:   Uint8Array
 }
-
-/**
- * Anything the library accepts as an image: encoded bytes in any format libvips
- * reads, a path to such a file, or an already-decoded raster.
- */
-export type ImageInput = Raster | Uint8Array | ArrayBuffer | string
 
 /** Allocate an opaque RGBA raster, filled with `fill` (white by default). */
 export function createRaster (width: number, height: number, fill: [number, number, number, number] = [255, 255, 255, 255]): Raster {
@@ -94,7 +89,7 @@ export function isRaster (value: unknown): value is Raster {
 }
 
 /** Narrow any accepted input to the bytes of an encoded image, or `null` if it is already decoded. */
-export function toBytes (input: ImageInput): Uint8Array | null {
+export function toBytes (input: ScanmateSource): Uint8Array | null {
   if (isRaster(input)) return null
   if (typeof input === 'string')
     throw new TypeError('a path is not bytes; the codec opens paths itself')

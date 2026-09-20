@@ -1,10 +1,10 @@
-import type { BinaryImage, Rect } from '@scanmate/ink'
+import type { BinaryImage, ScanmateRect } from '@scanmate/ink'
 
 import { measureRegionInk } from './region-ink.use-case'
 import type { RegionInkOptions } from './region-ink.use-case'
 
 const OPTIONS: RegionInkOptions = { mergeGap: 6, minChangePixels: 8, lineSpan: 0.9, lineThickness: 2, lineThicknessRatio: 0.04, edgeBand: 0.03 }
-const REGION: Rect = { x: 20, y: 20, width: 200, height: 60 }
+const REGION: ScanmateRect = { x: 20, y: 20, width: 200, height: 60 }
 
 function mask (paint: (set: (x: number, y: number) => void) => void): BinaryImage {
   const width = 260

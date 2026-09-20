@@ -2,8 +2,9 @@ import { inspectPage } from '../page-inspection'
 import type { PageMetadata } from '../page-inspection'
 import { selectPages } from '../page-extraction'
 import { openPdf } from '../pdf-document'
-import type { OpenedPdf, PdfInput } from '../pdf-document'
+import type { OpenedPdf } from '../pdf-document'
 import type { DocumentInfo, DocumentInspection, InspectedPage, InspectOptions } from './document-inspection.contract'
+import type { ScanmateBinarySource } from '@scanmate/ink'
 
 /**
  * What a PDF is, before anything is rendered: how many pages, what size, which
@@ -15,7 +16,7 @@ import type { DocumentInfo, DocumentInspection, InspectedPage, InspectOptions } 
  * as does a page whose size is not a positive finite number - nothing later can
  * make sense of it.
  */
-export async function inspectDocument (pdf: PdfInput, options: InspectOptions = {}): Promise<DocumentInspection> {
+export async function inspectDocument (pdf: ScanmateBinarySource, options: InspectOptions = {}): Promise<DocumentInspection> {
   const { pages: selection, metadata = false } = options
 
   const opened = await openPdf(pdf)

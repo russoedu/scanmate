@@ -1,4 +1,4 @@
-import type { Rect } from '../plane-geometry'
+import type { ScanmateRect } from '../plane-geometry'
 import type { Raster } from '../raster-codec'
 
 /**
@@ -96,7 +96,7 @@ export function labelSize (text: string, options: LabelOptions = {}): { width: n
  * @param options - Scale and colour.
  * @returns The box the label occupies.
  */
-export function drawLabel (raster: Raster, text: string, at: { x: number, y: number }, options: LabelOptions = {}): Rect {
+export function drawLabel (raster: Raster, text: string, at: { x: number, y: number }, options: LabelOptions = {}): ScanmateRect {
   const scale = Math.max(1, Math.round(options.scale ?? 2))
   const color = options.color ?? [0, 0, 0, 255]
   const left = Math.round(at.x)

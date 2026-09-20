@@ -1,12 +1,12 @@
 import { EncryptedPDFError, PDFDocument } from '@cantoo/pdf-lib'
 import type { PDFImage } from '@cantoo/pdf-lib'
 import { decodeImage, encodeImage, readImageMetadata } from '@scanmate/ink'
-import type { ImageMetadata, Raster } from '@scanmate/ink'
+import type { ImageMetadata, Raster, ScanmateSource } from '@scanmate/ink'
 
 import { placeImage, resolveDpi } from '../page-placement'
 import type { PageSize } from '../page-placement'
 import { MergeSourceError, readSource } from '../source-reading'
-import type { MergeSource, ResolvedSource, SourceKind } from '../source-reading'
+import type { ResolvedSource, SourceKind } from '../source-reading'
 import type { Embedding, MergedPage, MergeOptions, MergeResult } from './merge-result.contract'
 
 /**
@@ -23,7 +23,7 @@ import type { Embedding, MergedPage, MergeOptions, MergeResult } from './merge-r
  * becomes one document in upload order, and a pipeline's aligned or enhanced
  * pages become one evidence file.
  */
-export async function mergeDocuments (sources: readonly MergeSource[], options: MergeOptions = {}): Promise<MergeResult> {
+export async function mergeDocuments (sources: readonly ScanmateSource[], options: MergeOptions = {}): Promise<MergeResult> {
   const { pageSize = 'image', margin = 0, imageDpi = 150, encoding = 'png', quality = 92, passThrough = true, metadata, onProgress } = options
   if (sources.length === 0) throw new RangeError('nothing to merge')
 

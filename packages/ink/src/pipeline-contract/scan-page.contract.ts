@@ -1,5 +1,6 @@
 import type { Matrix3 } from '../plane-geometry'
 import type { Raster } from '../raster-codec'
+import type { TextRun } from './text-run.contract'
 
 /**
  * The shapes the pipeline stages hand one another.
@@ -38,12 +39,7 @@ export interface ScanPage {
  * stage that only needs the aligned pixels and the transform asks for this, so
  * it stays independent of the aligner that produced them.
  */
-export interface AlignedImage {
-  /** The scan resampled onto the original's canvas, same width and height as the original. */
-  raster:     Raster
-  image:      Uint8Array | null
-  width:      number
-  height:     number
+export interface AlignedImage extends PageImage {
   /** Maps original coordinates to scanned coordinates. */
   matrix:     Matrix3
   /** Maps scanned coordinates back to original coordinates. */
@@ -55,4 +51,17 @@ export interface AlignedImage {
 /** A {@link ScanPage} with the scan put back on the original's canvas. */
 export interface AlignedPage<Aligned extends AlignedImage = AlignedImage> extends ScanPage {
   aligned: Aligned
+}
+
+/**
+ * A page a reader can work on: aligned, optionally cleaned, and optionally
+ * carrying the original's own text layer.
+ *
+ * Only the original's text layer is ever used. A scan's own text layer is
+ * ignored, deliberately - hidden or stale text must not vouch for what the
+ * paper shows.
+ */
+export type ReadablePage = AlignedPage & {
+  enhanced?: PageImage
+  metadata?: { original?: { textItems?: readonly TextRun[] | null } }
 }

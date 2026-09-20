@@ -1,8 +1,7 @@
 import { resampleRaster, toGrayscale } from '@scanmate/ink'
-import type { Raster } from '@scanmate/ink'
+import type { Raster, ReadablePage, TextRun } from '@scanmate/ink'
 
 import { collectTemplates, mergeVerifiedFigures, printPolarity, verifyPrintedRun } from '../print-verification'
-import type { PrintedRun } from '../print-verification'
 import { createTesseractEngine } from '../ocr-engine'
 import type { OcrEngine, RecognisedText } from '../ocr-engine'
 import { DEFAULT_NORMALISE } from '../text-normalisation'
@@ -10,7 +9,7 @@ import { compareTexts } from '../text-similarity'
 import { claimWords, judgeRun, judgeRuns } from './match-words.use-case'
 import type { MatchOptions, Reference } from './match-words.use-case'
 import { recheckRun } from './recheck-run.use-case'
-import type { OcrOptions, OcrReport, PageOcr, PlacedText, ReadablePage, SideText } from './ocr-report.contract'
+import type { OcrOptions, OcrReport, PageOcr, PlacedText, SideText } from './ocr-report.contract'
 
 /**
  * Read every aligned page and say how closely the scan's text matches the
@@ -129,7 +128,7 @@ async function readPage (page: ReadablePage, engine: OcrEngine, options: OcrOpti
   const seenChanged = new Set<number>()
   if (printCheck !== false && useLayer) {
     const scanGray = toGrayscale(page.aligned.raster)
-    const printed: PrintedRun[] = items.map(item => ({ ...item }))
+    const printed: TextRun[] = items.map(item => ({ ...item }))
     const templates = collectTemplates(originalGray, originalDpi, printed)
     for (const [r, run] of printed.entries()) {
       const verified = verifyPrintedRun(originalGray, scanGray, originalDpi, run, templates, printCheck)

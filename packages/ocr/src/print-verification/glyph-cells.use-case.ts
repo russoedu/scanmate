@@ -1,4 +1,4 @@
-import type { GrayImage } from '@scanmate/ink'
+import type { GrayImage, ScanmateOrientedRect } from '@scanmate/ink'
 
 /**
  * Where each printed character sits inside a run, found in the original's own
@@ -27,16 +27,6 @@ import type { GrayImage } from '@scanmate/ink'
  * says, and quarter turns are the only ones handled - anything between would
  * need the crop resampled, and is left unverifiable instead of guessed at.
  */
-
-/** A rectangle in PDF points from the page's top-left corner. */
-export interface Box {
-  x:      number
-  y:      number
-  width:  number
-  height: number
-  /** Degrees the run is turned by, if it is; only quarter turns are handled. */
-  angle?: number
-}
 
 /**
  * The least a pixel may stand out from the paper around it and still count as
@@ -69,7 +59,7 @@ export interface CellOptions {
  * @param options - Contrast against the run's paper, column joining, and polarity.
  * @returns One box per character, or `null` when they cannot be told apart.
  */
-export function glyphCells (page: GrayImage, dpi: number, run: Box, count: number, options: CellOptions = {}): Box[] | null {
+export function glyphCells (page: GrayImage, dpi: number, run: ScanmateOrientedRect, count: number, options: CellOptions = {}): ScanmateOrientedRect[] | null {
   const profile = profileOf(page, dpi, run, count, options)
   if (profile === null) return null
 
@@ -88,7 +78,7 @@ export function glyphCells (page: GrayImage, dpi: number, run: Box, count: numbe
  * @param options - Contrast against the run's paper, column joining, and polarity.
  * @returns One box per word, or `null` when the words cannot be told apart.
  */
-export function glyphWords (page: GrayImage, dpi: number, run: Box, counts: readonly number[], options: CellOptions = {}): Box[] | null {
+export function glyphWords (page: GrayImage, dpi: number, run: ScanmateOrientedRect, counts: readonly number[], options: CellOptions = {}): ScanmateOrientedRect[] | null {
   const total = counts.reduce((sum, count) => sum + count, 0)
   const profile = profileOf(page, dpi, run, total, options)
   if (profile === null) return null
@@ -104,7 +94,7 @@ export function glyphWords (page: GrayImage, dpi: number, run: Box, counts: read
     .map(gap => gap.at)
     .toSorted((a, b) => a - b)
 
-  const words: Box[] = []
+  const words: ScanmateOrientedRect[] = []
   let from = 0
   for (const cut of [...gaps, groups.length]) {
     const first = groups[from]
@@ -127,7 +117,7 @@ export function glyphWords (page: GrayImage, dpi: number, run: Box, counts: read
  * @returns The profile and the frame to read boxes back out of, or `null` when
  *   the run is turned by something other than a quarter turn, or is too small.
  */
-function profileOf (page: GrayImage, dpi: number, run: Box, count: number, options: CellOptions): Profile | null {
+function profileOf (page: GrayImage, dpi: number, run: ScanmateOrientedRect, count: number, options: CellOptions): Profile | null {
   const { contrast = CONTRAST, lightOnDark = false } = options
   if (count <= 0) return null
 
@@ -184,7 +174,7 @@ interface Profile {
 }
 
 /** A span of the profile, back in page points. */
-function boxOf (run: Box, profile: Profile, group: { start: number, end: number }): Box {
+function boxOf (run: ScanmateOrientedRect, profile: Profile, group: { start: number, end: number }): ScanmateOrientedRect {
   const steps = profile.along === 'x' ? profile.right - profile.left : profile.bottom - profile.top
   const start = profile.reverse ? steps - 1 - group.end : group.start
   const end = profile.reverse ? steps - 1 - group.start : group.end
@@ -250,7 +240,7 @@ function groupsOf (inked: readonly boolean[], join: number): { start: number, en
  * @returns One entry per printed character, spaces excluded, or `null` when not
  *   even the words could be told apart.
  */
-export function placeGlyphs (page: GrayImage, dpi: number, run: Box, text: string, options: CellOptions = {}): Array<Box | null> | null {
+export function placeGlyphs (page: GrayImage, dpi: number, run: ScanmateOrientedRect, text: string, options: CellOptions = {}): Array<ScanmateOrientedRect | null> | null {
   const characters = [...text].filter(character => character.trim() !== '')
   const whole = glyphCells(page, dpi, run, characters.length, options)
   if (whole !== null) return whole
@@ -260,7 +250,7 @@ export function placeGlyphs (page: GrayImage, dpi: number, run: Box, text: strin
   const boxes = glyphWords(page, dpi, run, words.map(word => [...word].length), options)
   if (boxes === null) return null
 
-  const cells: Array<Box | null> = []
+  const cells: Array<ScanmateOrientedRect | null> = []
   for (const [index, word] of words.entries()) {
     const letters = [...word].length
     const placed = glyphCells(page, dpi, { ...boxes[index], angle: run.angle }, letters, options)

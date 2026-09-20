@@ -23,7 +23,7 @@
 export { mergeDocuments } from './document-merge'
 export type { Embedding, MergedPage, MergeOptions, MergeResult } from './document-merge'
 export { MergeSourceError } from './source-reading'
-export type { ImageWithResolution, MergeSource, SourceKind } from './source-reading'
+export type { SourceKind } from './source-reading'
 export type { PageSize } from './page-placement'
 
 // --- Building blocks ---

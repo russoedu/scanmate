@@ -19,11 +19,23 @@ export interface Point {
 }
 
 /** An axis-aligned rectangle in pixel coordinates. `x`/`y` are the top-left corner. */
-export interface Rect {
+export interface ScanmateRect {
   x:      number
   y:      number
   width:  number
   height: number
+}
+
+/**
+ * A rectangle that may be turned.
+ *
+ * Only quarter turns mean anything downstream: a column profile can be read
+ * along either axis, but anything between would need the crop resampled, and
+ * the glyph checks leave those unverifiable rather than guess.
+ */
+export interface ScanmateOrientedRect extends ScanmateRect {
+  /** Degrees clockwise from left-to-right. Absent or `0` for ordinary text. */
+  angle?: number
 }
 
 /** Which family of transform to fit. Fewer degrees of freedom is more robust; more is more expressive. */

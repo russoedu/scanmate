@@ -1,5 +1,5 @@
 import { coverage } from '@scanmate/ink'
-import type { ImageInput, Rect } from '@scanmate/ink'
+import type { ScanmateSource, ScanmateRect } from '@scanmate/ink'
 import { buildMasks } from './ink-masks.use-case'
 import type { Masks } from './ink-masks.use-case'
 import type { DocumentDiff, Region, RegionOptions, RegionReport } from './region.model'
@@ -28,8 +28,8 @@ import type { DocumentDiff, Region, RegionOptions, RegionReport } from './region
  * every rectangle then names a different part of the page in each image.
  */
 export async function compareRegions (
-  original: ImageInput,
-  aligned: ImageInput,
+  original: ScanmateSource,
+  aligned: ScanmateSource,
   regions: readonly Region[],
   options: RegionOptions = {},
 ): Promise<RegionReport[]> {
@@ -41,14 +41,14 @@ export async function compareRegions (
 
 /** Page-wide added/removed ink, plus per-region detail for any regions supplied. */
 export async function diffDocument (
-  original: ImageInput,
-  aligned: ImageInput,
+  original: ScanmateSource,
+  aligned: ScanmateSource,
   regions: readonly Region[] = [],
   options: RegionOptions = {},
 ): Promise<DocumentDiff> {
   const { tolerance = 2, threshold = 0.02, ink, faintInk } = options
   const masks = await buildMasks(original, aligned, ink, tolerance, faintInk)
-  const full: Rect = { x: 0, y: 0, width: masks.width, height: masks.height }
+  const full: ScanmateRect = { x: 0, y: 0, width: masks.width, height: masks.height }
   const whole = measureRegion({ id: '__document__', rect: full }, masks, threshold)
 
   return {

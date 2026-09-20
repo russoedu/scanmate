@@ -1,4 +1,3 @@
-import type { PdfInput } from '../pdf-document'
 import { openPdf } from '../pdf-document'
 import { inspectPage } from '../page-inspection'
 import { DEFAULT_DPI_LIMITS, pairDpi, renderPage } from '../page-rendering'
@@ -6,6 +5,7 @@ import type { ExtractPairOptions, PairedDocument, PairedPage } from './extract-r
 import { planPairs } from './page-pairing.policy'
 import type { PairingPlan } from './page-pairing.policy'
 import { selectPages } from './page-selection.mapper'
+import type { ScanmateBinarySource } from '@scanmate/ink'
 
 /**
  * An original PDF and the scan that came back, page by page, rendered so the two
@@ -19,14 +19,14 @@ import { selectPages } from './page-selection.mapper'
  * pages that found no partner.
  */
 export function extractPairStream (
-  pdfs: { original: PdfInput, scanned: PdfInput },
+  pdfs: { original: ScanmateBinarySource, scanned: ScanmateBinarySource },
   options: ExtractPairOptions = {},
 ): AsyncGenerator<PairedPage> {
   return pairStream(pdfs, options, () => {})
 }
 
 export async function extractPair (
-  pdfs: { original: PdfInput, scanned: PdfInput },
+  pdfs: { original: ScanmateBinarySource, scanned: ScanmateBinarySource },
   options: ExtractPairOptions = {},
 ): Promise<PairedDocument> {
   let planned: { plan: PairingPlan, counts: PairedDocument['pageCount'] } | undefined
@@ -40,7 +40,7 @@ export async function extractPair (
 
 /** The shared generator. `onPlan` receives the pairing before the first page renders. */
 async function * pairStream (
-  pdfs: { original: PdfInput, scanned: PdfInput },
+  pdfs: { original: ScanmateBinarySource, scanned: ScanmateBinarySource },
   options: ExtractPairOptions,
   onPlan: (plan: PairingPlan, counts: PairedDocument['pageCount']) => void,
 ): AsyncGenerator<PairedPage> {

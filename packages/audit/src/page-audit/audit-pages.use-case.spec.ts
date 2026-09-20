@@ -2,8 +2,8 @@ import { alignPages } from '@scanmate/align'
 import { A4, createSyntheticPdf, extractPages, extractPair } from '@scanmate/extract'
 import type { SyntheticPdfPage } from '@scanmate/extract'
 import { cloneRaster, createSyntheticDocument, drawLabel, drawSignature, drawTick, IDENTITY, labelSize, simulateScan } from '@scanmate/ink'
-import type { Raster, StageEvent } from '@scanmate/ink'
-import type { OcrEngine, OcrWord, PositionedText, ReadablePage, RecognisedText } from '@scanmate/ocr'
+import type { Raster, ReadablePage, StageEvent, TextRun } from '@scanmate/ink'
+import type { OcrEngine, OcrWord, RecognisedText } from '@scanmate/ocr'
 
 import { auditPages } from './audit-pages.use-case'
 
@@ -13,7 +13,7 @@ const SIGNATURE = FORM.regions.signature
 const TICK = FORM.regions['tick-1']
 
 /** The form's printed text, as its text layer would place it. At 72 dpi points and pixels coincide. */
-const ITEMS: PositionedText[] = [
+const ITEMS: TextRun[] = [
   { text: 'Order Confirmation', x: 40, y: 30, width: labelSize('Order Confirmation', LABEL).width, height: 14 },
   { text: 'Total 1,250.00', x: 400, y: 30, width: labelSize('Total 1,250.00', LABEL).width, height: 14 },
 ]
@@ -59,7 +59,7 @@ function page (aligned: Raster): ReadablePage {
     page:     1,
     original: side,
     scanned:  { ...side, raster: aligned },
-    aligned:  { raster: aligned, image: null, width: 600, height: 780, matrix: IDENTITY, inverse: IDENTITY, confidence: 0.95 },
+    aligned:  { raster: aligned, image: null, dpi: null, width: 600, height: 780, matrix: IDENTITY, inverse: IDENTITY, confidence: 0.95 },
     metadata: { original: { textItems: ITEMS } },
   }
 }

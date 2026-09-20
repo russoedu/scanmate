@@ -1,5 +1,5 @@
 import { decodeImage, encodeImage, isRaster, readImageMetadata, resampleRaster } from '@scanmate/ink'
-import type { ImageInput } from '@scanmate/ink'
+import type { ScanmateSource } from '@scanmate/ink'
 
 import { enhanceRaster } from '../illumination-correction'
 import type { EnhanceResult, EnhanceScanOptions } from './enhance-result.contract'
@@ -13,7 +13,7 @@ import type { EnhanceResult, EnhanceScanOptions } from './enhance-result.contrac
  * libvips and are asynchronous; the cleaning runs to completion on the calling
  * thread.
  */
-export async function enhanceScan (input: ImageInput, options: EnhanceScanOptions = {}): Promise<EnhanceResult> {
+export async function enhanceScan (input: ScanmateSource, options: EnhanceScanOptions = {}): Promise<EnhanceResult> {
   const { output = 'png', quality = 92, targetDpi = 300, dpi: given, ...enhance } = options
 
   const decoded = await decodeImage(input)
@@ -36,7 +36,7 @@ export async function enhanceScan (input: ImageInput, options: EnhanceScanOption
 }
 
 /** The density an encoded file records; unknown for a raster, or for a file that records none. */
-async function recordedDpi (input: ImageInput): Promise<number | null> {
+async function recordedDpi (input: ScanmateSource): Promise<number | null> {
   if (isRaster(input)) return null
   const { density } = await readImageMetadata(input)
 

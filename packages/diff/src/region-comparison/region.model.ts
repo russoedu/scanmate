@@ -1,9 +1,9 @@
-import type { InkOptions, Rect } from '@scanmate/ink'
+import type { InkOptions, ScanmateRect } from '@scanmate/ink'
 
 export interface Region {
   id:         string
   /** In the *original's* pixel coordinates - the whole point of aligning first. */
-  rect:       Rect
+  rect:       ScanmateRect
   /** Fraction of the region that must be new ink before `filled` is true. Overrides the global default. */
   threshold?: number
 }
@@ -27,7 +27,7 @@ export interface RegionOptions {
 
 export interface RegionReport {
   id:          string
-  rect:        Rect
+  rect:        ScanmateRect
   /** Ink coverage of the region in the original, in `[0, 1]`. */
   originalInk: number
   /** Ink coverage of the region in the aligned scan. */

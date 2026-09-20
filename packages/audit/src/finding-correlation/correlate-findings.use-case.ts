@@ -1,5 +1,5 @@
 import type { Change, ExpectedResult, PageDiff } from '@scanmate/diff'
-import type { Rect } from '@scanmate/ink'
+import type { ScanmateRect } from '@scanmate/ink'
 import type { TextDifference } from '@scanmate/ocr'
 
 import type { Settlement } from '../dispute-settlement'
@@ -53,7 +53,7 @@ export function correlateFindings ({ text, pixels, settled = [] }: CorrelationIn
   }
 
   const used = new Set<TextDifference>()
-  const claim = (box: Rect, kinds: ReadonlyArray<TextDifference['kind']>): TextDifference[] => {
+  const claim = (box: ScanmateRect, kinds: ReadonlyArray<TextDifference['kind']>): TextDifference[] => {
     const hits = open.filter(d => !used.has(d) && kinds.includes(d.kind) && overlaps(d, box))
     for (const hit of hits) used.add(hit)
 
@@ -134,16 +134,16 @@ function textFinding (difference: TextDifference, settlement?: Settlement): Audi
   }
 }
 
-function boxOf (r: Rect): Rect {
+function boxOf (r: ScanmateRect): ScanmateRect {
   return { x: r.x, y: r.y, width: r.width, height: r.height }
 }
 
-function overlaps (a: Rect, b: Rect): boolean {
+function overlaps (a: ScanmateRect, b: ScanmateRect): boolean {
   return a.x < b.x + b.width + SLACK && a.x + a.width + SLACK > b.x && a.y < b.y + b.height + SLACK && a.y + a.height + SLACK > b.y
 }
 
 /** Share of `a`'s area inside `b`. */
-function share (a: Rect, b: Rect): number {
+function share (a: ScanmateRect, b: ScanmateRect): number {
   const width = Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x)
   const height = Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y)
   const area = a.width * a.height

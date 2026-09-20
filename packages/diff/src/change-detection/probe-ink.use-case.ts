@@ -1,4 +1,4 @@
-import type { Rect } from '@scanmate/ink'
+import type { ScanmateRect } from '@scanmate/ink'
 
 import type { Masks } from '../region-comparison'
 import type { CoordinateUnits, InkProbe } from './page-diff.contract'
@@ -23,7 +23,7 @@ import type { CoordinateUnits, InkProbe } from './page-diff.contract'
  */
 export function probeInk (
   masks: Masks,
-  rects: readonly Rect[],
+  rects: readonly ScanmateRect[],
   options: { dpi?: number, units?: CoordinateUnits } = {},
 ): InkProbe[] {
   const { dpi = 150, units = 'points' } = options
@@ -44,7 +44,7 @@ export function probeInk (
 }
 
 /** Added, lost and shared ink inside one rectangle of the page, in pixels. */
-export function inkWithin (rect: Rect, masks: Masks): { added: number, lost: number, shared: number } {
+export function inkWithin (rect: ScanmateRect, masks: Masks): { added: number, lost: number, shared: number } {
   const left = Math.max(0, Math.floor(rect.x))
   const top = Math.max(0, Math.floor(rect.y))
   const right = Math.min(masks.width, Math.ceil(rect.x + rect.width))

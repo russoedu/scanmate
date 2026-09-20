@@ -39,7 +39,8 @@ correlation(inkA, inkB)                                  // how well two pages' 
 | **frequency** | `fft1d`, `fft2d`, and the helpers phase correlation needs. |
 | **deterministic sampling** | `createRandom`, `gaussian` — so RANSAC and BRIEF give the same answer every run. |
 | **synthetic documents** | `createSyntheticDocument`, `drawSignature`, `drawTick`, `simulateScan`, `fillRect`, `drawLine`, `strokeRect`. |
-| **pipeline contracts** | `PageImage`, `ScanPage`, `AlignedPage`, `StageEvent`, `ProgressCallback`, `Rect`, `Matrix3`. |
+| **pipeline contracts** | `PageImage`, `ScanPage`, `AlignedPage`, `ReadablePage`, `TextRun`, `PdfTextRun`, `StageEvent`, `ProgressCallback`, `ScanmateRect`, `ScanmateOrientedRect`, `Matrix3`. |
+| **what a stage accepts** | `ScanmateSource`, `ScanmateBinarySource`, `ImageWithResolution` - one union for every stage, instead of one per package. |
 
 ## The two ideas that matter
 

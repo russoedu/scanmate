@@ -1,11 +1,10 @@
-import type { PositionedText } from '@scanmate/ocr'
-
 import { checkRegions, locateAnchor, regionsFromAnchor, resolveRegions } from './anchor-regions.use-case'
+import type { TextRun } from '@scanmate/ink'
 
 const PAGE = { width: 595, height: 842 }
 
 /** The signature page of an order form, as its text layer places it. */
-const ITEMS: PositionedText[] = [
+const ITEMS: TextRun[] = [
   { text: 'For and on behalf of', x: 25, y: 182, width: 90, height: 10 },
   { text: 'Customer', x: 118, y: 182, width: 40, height: 10 },
   { text: 'Name', x: 31, y: 205, width: 29, height: 10 },
