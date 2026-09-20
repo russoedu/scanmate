@@ -131,6 +131,19 @@ a scanner, so it reads as printed almost always. On the returned W-9 that branch
 called three runs changed, of which two were `I am` read as `1am` and `FormW9`
 read as `FormW3.`, with nothing whatever having happened to either.
 
+**A steady disagreement is not the same as an unsteady one.** Three passes a
+side, each side internally unanimous, the two differing, is a different state
+from passes that wander — `380.00`, `380.90`, `38O.00`. A degraded read wavers
+because the engine is guessing at damaged ink; a substituted glyph does not,
+because it is a different character and reads like one every time. The
+settlement records which it saw as `steady`, and says so in the finding.
+
+It does not change the verdict, and deliberately: a blemish in the same place on
+every pass reads consistently too, so steadiness is a signal and not a proof. A
+caller who knows their own documents can act on it; this package will not. On
+the returned W-9 none of the unsettled runs are steady — `W 2] 9` and
+`® | page on` are exactly the wandering kind.
+
 **And "we could not tell" is reported as itself.** The alternative is to keep
 changing the reading until the two agree, which finds agreement whether or not
 it is there: on a 93 dpi scan, accepting a run on a single agreeing pass cleared

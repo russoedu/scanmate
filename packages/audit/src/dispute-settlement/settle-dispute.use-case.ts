@@ -111,6 +111,19 @@ export interface Settlement {
   because:    'print-check' | 'ink' | 'glyphs-match' | 'both-sides-alike' | 'sides-disagree' | 'unreadable' | 'not-attempted'
   /** What each pass read off the original's crop, and off the scan's. */
   readings:   { original: string[], scanned: string[] }
+  /**
+   * Each side read the same thing on every pass, and the two still disagreed.
+   *
+   * A degraded read wavers - `380.00`, `380.90`, `38O.00` - because the engine
+   * is guessing at damaged ink. A substituted glyph does not: it is a different
+   * character and reads like one, every time. So a steady disagreement is a
+   * stronger signal than an unsteady one, and worth telling apart.
+   *
+   * It is not proof, which is why it does not change the verdict: a blemish in
+   * the same place on every pass reads consistently too. A caller who knows
+   * their documents can act on it; this package will not.
+   */
+  steady:     boolean
 }
 
 export interface SettlementInput {
@@ -159,17 +172,17 @@ export async function settleDisputes (input: SettlementInput): Promise<Settlemen
     // The glyph check matched this run's ink against the original's own glyphs
     // and found other glyphs. That was seen, not read.
     if (difference.verified === true) {
-      settlements.push({ difference, verdict: 'changed', because: 'print-check', readings: none })
+      settlements.push({ difference, verdict: 'changed', because: 'print-check', readings: none, steady: false })
       continue
     }
     const probe = probes[index]
     if (probe === undefined || probe.addedInk + probe.lostInk >= inkEvidence) {
-      settlements.push({ difference, verdict: 'changed', because: 'ink', readings: none })
+      settlements.push({ difference, verdict: 'changed', because: 'ink', readings: none, steady: false })
       continue
     }
     // Added and missing runs have nothing on one side to read against.
     if (difference.kind !== 'changed' || difference.expected === null) {
-      settlements.push({ difference, verdict: 'unsettled', because: 'not-attempted', readings: none })
+      settlements.push({ difference, verdict: 'unsettled', because: 'not-attempted', readings: none, steady: false })
       continue
     }
     const run = { text: difference.expected, x: difference.x, y: difference.y, width: difference.width, height: difference.height, confidence: null }
@@ -182,13 +195,13 @@ export async function settleDisputes (input: SettlementInput): Promise<Settlemen
       templates ??= collectTemplates(grey.original, original.dpi, runs)
       const matched = verifyPrintedRun(grey.original, grey.scanned, original.dpi, asPrinted, templates, { scope: 'text' })
       if (matched?.agrees === true) {
-        settlements.push({ difference, verdict: 'misread', because: 'glyphs-match', readings: none })
+        settlements.push({ difference, verdict: 'misread', because: 'glyphs-match', readings: none, steady: false })
         continue
       }
     }
 
     if (attempted >= maxDisputes) {
-      settlements.push({ difference, verdict: 'unsettled', because: 'not-attempted', readings: none })
+      settlements.push({ difference, verdict: 'unsettled', because: 'not-attempted', readings: none, steady: false })
       continue
     }
     attempted++
@@ -204,7 +217,7 @@ export async function settleDisputes (input: SettlementInput): Promise<Settlemen
       return other !== undefined && text !== '' && judgeRun(text, other, rules).agrees
     }).length
     if (alike >= quorum) {
-      settlements.push({ difference, verdict: 'misread', because: 'both-sides-alike', readings })
+      settlements.push({ difference, verdict: 'misread', because: 'both-sides-alike', readings, steady: false })
       continue
     }
 
@@ -212,8 +225,22 @@ export async function settleDisputes (input: SettlementInput): Promise<Settlemen
     // degraded copy and reads worse than the original by nature - so it is
     // reported as the open question it is.
     const read = readings.original.some(text => text !== '') && readings.scanned.some(text => text !== '')
-    settlements.push({ difference, verdict: 'unsettled', because: read ? 'sides-disagree' : 'unreadable', readings })
+    settlements.push({
+      difference,
+      verdict: 'unsettled',
+      because: read ? 'sides-disagree' : 'unreadable',
+      readings,
+      steady:  read && unanimous(readings.original, rules) && unanimous(readings.scanned, rules),
+    })
   }
 
   return settlements
+}
+
+/** Every pass on one side read the same thing, and read something. */
+function unanimous (readings: readonly string[], rules: MatchOptions): boolean {
+  const read = readings.filter(text => text !== '')
+  if (read.length < 2) return false
+
+  return read.every(text => judgeRun(read[0], text, rules).agrees)
 }

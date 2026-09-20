@@ -22,6 +22,9 @@ import { printPolarity } from './print-polarity.policy'
 /** Glyph images by face, size and character. */
 export type Templates = ReadonlyMap<string, GrayImage[]>
 
+/** A store still being filled. Readers take {@link Templates}; only the collector writes. */
+export type TemplateStore = Map<string, GrayImage[]>
+
 /** Most glyphs kept per character - more is slower and adds nothing. */
 const PER_CHARACTER = 4
 
@@ -43,9 +46,20 @@ export function templateKey (run: TextRun, character: string): string {
  * @param runs - Its text layer.
  * @returns Glyph images, by {@link templateKey}.
  */
-export function collectTemplates (page: GrayImage, dpi: number, runs: readonly TextRun[]): Templates {
-  const templates = new Map<string, GrayImage[]>()
-
+/**
+ * Folds one page's glyphs into a store that already holds others.
+ *
+ * Templates are filed by face, size and turn, and a PDF renders those
+ * identically wherever they appear - so a glyph from page 4 is as good a
+ * template as one from page 1, and on many documents it is the only one there
+ * is. Measured on a real order confirmation: the face its page-1 total is set
+ * in carries six distinct digits on that page and nine across the document, and
+ * six is below the bar for checking anything at all.
+ *
+ * The per-character cap applies to the store as a whole, so a long document
+ * costs no more memory than a short one.
+ */
+export function collectInto (templates: TemplateStore, page: GrayImage, dpi: number, runs: readonly TextRun[]): Templates {
   for (const run of runs) {
     const characters = [...run.text].filter(character => character.trim() !== '')
     const lightOnDark = printPolarity(page, dpi, run) === 'light-on-dark'
@@ -59,6 +73,10 @@ export function collectTemplates (page: GrayImage, dpi: number, runs: readonly T
   }
 
   return templates
+}
+
+export function collectTemplates (page: GrayImage, dpi: number, runs: readonly TextRun[]): Templates {
+  return collectInto(new Map(), page, dpi, runs)
 }
 
 /** Files one glyph under its key, up to the few that are worth keeping. */

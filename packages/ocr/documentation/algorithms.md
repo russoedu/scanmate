@@ -183,10 +183,28 @@ worst possible error is not missing a forgery — it is *confirming* one:
 2. **The printed candidate is the original's ink at that exact place** — same
    face, same size, same position. A scan of it correlates highly however grey
    or grainy it is.
-3. **The rivals come from the page itself.** Every other digit the document
-   prints in that face and size, collected once per page. Nothing is rendered,
-   no font is embedded, and a face the page never prints has no rivals — so
-   nothing is claimed about it.
+3. **The rivals come from the document itself.** Every other character it
+   prints in that face and size, gathered from **every page** before any page is
+   read. Nothing is rendered, no font is embedded, and a face the document never
+   prints has no rivals — so nothing is claimed about it.
+
+   Across the document, not per page, because a figure is often set in a face
+   its own page uses for little else, and a run cannot be checked against rivals
+   that are not there. Measured on a real order confirmation: the face its
+   page-1 total is set in carries **six** distinct digits on that page and
+   **nine** across the document — and six is below the bar for checking anything
+   at all. The same face at the same size renders identically on every page, so
+   a glyph from page 4 is as good a template as one from page 1.
+
+   What that is worth, on the same three scans: figures checked went from 36 to
+   38, from 34 to 35, and — on the 93 dpi scan, where almost nothing could be
+   checked before — from 0 to 4. False calls stayed at none. A page-1 total that
+   could not be checked at all is now checked, and a digit substituted into it
+   from elsewhere in the same run is reported, at a margin of 0.131.
+
+   Each page's greyscale is released as soon as its glyphs are taken, so the
+   gathering holds one page of pixels at a time rather than the document, and
+   the per-character cap applies to the store as a whole.
 4. **The print is softened to the scan's sharpness** before any comparison, by
    the amount that best fits the cells whose answer is known. Without this a
    blurred 0 matches a crisp 8 as well as it matches a crisp 0.
@@ -220,9 +238,9 @@ Pages 1 and 2 of three real returned documents, every printed digit:
 
 | content resolution | figures verified | reported different |
 |---|---|---|
-| 125 dpi | 35 of 40 | 0 |
+| 125 dpi | 38 of 40 | 0 |
 | 117 dpi | 34 of 40 | 0 |
-| 90 dpi | 1 of 40 | 0 |
+| 90 dpi | 4 of 40 | 0 |
 
 And on the forged page above, the rival won by **0.17**, where a genuine digit's
 own print wins by 0.13 or more. At 90 dpi, where a badly scanned digit does lose

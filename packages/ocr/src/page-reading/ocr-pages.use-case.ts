@@ -1,7 +1,8 @@
 import { resampleRaster, toGrayscale } from '@scanmate/ink'
 import type { Raster, ReadablePage, TextRun } from '@scanmate/ink'
 
-import { collectTemplates, mergeVerifiedFigures, printPolarity, verifyPrintedRun } from '../print-verification'
+import { collectInto, mergeVerifiedFigures, printPolarity, verifyPrintedRun } from '../print-verification'
+import type { TemplateStore, Templates } from '../print-verification'
 import { createTesseractEngine } from '../ocr-engine'
 import type { OcrEngine, RecognisedText } from '../ocr-engine'
 import { DEFAULT_NORMALISE } from '../text-normalisation'
@@ -28,13 +29,33 @@ import type { OcrOptions, OcrReport, PageOcr, PlacedText, ReadPage, SideText } f
 export async function ocrPages<Page extends ReadablePage> (pages: readonly Page[], options: OcrOptions = {}): Promise<OcrReport<Page>> {
   const engine = options.engine ?? await createTesseractEngine(options.tesseract)
   try {
+    // The glyphs of the whole document, gathered before any page is read.
+    //
+    // A page's own figures are often set in a face it uses for little else, and
+    // a run cannot be checked against rivals that are not there - on a real
+    // order confirmation the face of the page-1 total carries six distinct
+    // digits on that page and nine across the document, and six is below the
+    // bar for checking anything at all. The same face at the same size renders
+    // identically on every page, so a glyph from page 4 is as good a template
+    // as one from page 1.
+    //
+    // Each page's greyscale is dropped as soon as its glyphs are taken, so this
+    // holds one page of pixels at a time, not the document.
+    const templates: TemplateStore = new Map()
+    if (options.printCheck !== false)
+      for (const page of pages) {
+        const items = page.metadata?.original?.textItems
+        if (items === undefined || items === null || items.length === 0) continue
+        collectInto(templates, toGrayscale(page.original.raster), page.original.dpi ?? options.assumeDpi ?? 150, items)
+      }
+
     const results: Array<ReadPage<Page>> = []
     for (const [position, page] of pages.entries()) {
       const index = position + 1
       const started = Date.now()
       options.onProgress?.({ stage: 'ocr', phase: 'start', page: page.page, index, total: pages.length })
 
-      const result = await readPage(page, engine, options)
+      const result = await readPage(page, engine, options, templates)
       results.push({ ...page, text: result })
 
       options.onProgress?.({
@@ -62,7 +83,7 @@ export async function ocrPages<Page extends ReadablePage> (pages: readonly Page[
   }
 }
 
-async function readPage (page: ReadablePage, engine: OcrEngine, options: OcrOptions): Promise<PageOcr> {
+async function readPage (page: ReadablePage, engine: OcrEngine, options: OcrOptions, templates: Templates): Promise<PageOcr> {
   const {
     original: originalSource = 'auto',
     targetDpi = 300,
@@ -130,7 +151,6 @@ async function readPage (page: ReadablePage, engine: OcrEngine, options: OcrOpti
   if (printCheck !== false && useLayer) {
     const scanGray = toGrayscale(page.aligned.raster)
     const printed: TextRun[] = items.map(item => ({ ...item }))
-    const templates = collectTemplates(originalGray, originalDpi, printed)
     for (const [r, run] of printed.entries()) {
       const verified = verifyPrintedRun(originalGray, scanGray, originalDpi, run, templates, printCheck)
       if (verified === null) continue
