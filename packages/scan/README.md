@@ -115,6 +115,32 @@ Remembering every stage is the point of the class and also its largest risk. A t
 
 So: **`Scanmate` is a short-lived per-document object, not a service singleton.** One per document, `dispose()` when done. A long-lived instance in a request handler is a leak.
 
+For a document longer than a handful of pages, take it a few pages at a time. `extract.pages` selects the range, and disposing between batches bounds the peak to one batch rather than the whole document:
+
+```ts
+import { inspectDocument } from '@scanmate/extract'
+
+// Reads the page dictionaries and renders nothing, so it costs almost nothing.
+const { pageCount } = await inspectDocument('issued.pdf')
+
+for (let first = 1; first <= pageCount; first += 4) {
+  const range = `${first}-${Math.min(first + 3, pageCount)}`
+  const scan = new Scanmate('issued.pdf', 'returned.pdf', { extract: { pages: range } })
+  try {
+    const report = await scan.audit()
+    await file(report)          // keep the verdicts, let the pixels go
+  } finally {
+    await scan.dispose()
+  }
+}
+```
+
+The count matters: a range running past the last page is a `RangeError`, not a quietly empty batch - asking for page 9 of an 8-page document is exactly the mistake this pipeline exists to catch.
+
+The cost is re-opening the PDF per batch, which is small next to the rasters. Page numbers stay the original's throughout, so the batches join back up by `page`.
+
+There is deliberately **no `keep` option**. One was typed, exported and documented in 0.2.0 and 0.2.1, and read by nothing - so a caller who set it believed they had bounded their memory and had not. It was removed in 0.4.0 rather than left standing as a promise. Dropping consumed rasters is not a small change either: every stage hands pages back, so each report *carries* the page objects and through them their pixels, and separating the two means `PageImage.raster` becoming nullable for every package and every consumer. Batching works today and costs nobody a null check.
+
 ## This is the convenient door, not the only one
 
 Every stage is still its own package and still worth using directly - `alignPages`, `diffPages`, `ocrPages`, `auditPages` and the rest take plain arguments and return plain results. Reach for this class when you want the pipeline; reach for a stage when you want that stage.
