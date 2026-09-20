@@ -109,7 +109,7 @@ audit.pages[0].settled[0]   // { verdict: 'misread', because: 'both-sides-alike'
 ```ts
 import { findContent } from '@scanmate/find'
 
-const found = findContent(audit.pages[0].text, [{ page: 1, content: ['Account 4412-9087-3355'] }])
+const found = findContent(audit.pages, [{ page: 1, content: ['Account 4412-9087-3355'] }])
 ```
 
 ## Options

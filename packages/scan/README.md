@@ -1,6 +1,12 @@
+![scanmate scan](./assets/scanmate-scan.svg)
+
 # `@scanmate/scan`
 
 One class over the whole pipeline: hand it the document you issued and the one that came back, and ask it questions.
+
+![one session: the scan as it came, aligned, enhanced, and the overlay](./assets/stages.jpg)
+
+*One page through one session, top to bottom: the returned scan as it arrived - crooked and offset - then put back on the original's canvas, then cleaned for reading, then the overlay of the two, violet where the ink differs. Made from the [IRS Form W-9](https://www.irs.gov/pub/irs-pdf/fw9.pdf) (a work of the United States government, in the public domain): filled in as a generator would, printed, signed by hand and scanned crooked.*
 
 ```bash
 npm install @scanmate/scan
@@ -19,8 +25,9 @@ const scan = new Scanmate('fw9-issued.pdf', 'fw9-returned.pdf', {
 
 const report = await scan.audit()
 report.verdict                     // 'pass' | 'review'
-report.pages[0].reasons            // why, one sentence each
-report.pages[0].evidenceImage      // original, scan and overlay, findings drawn
+report.pages[0].audit.reasons      // why, one sentence each
+report.pages[0].audit.evidenceImage   // original, scan and overlay, findings drawn
+report.pages[0].aligned.raster     // the page itself is still there
 
 await scan.dispose()
 ```
@@ -81,7 +88,7 @@ scan.loaded            // which stage packages have loaded
 Either side may be a path, a `URL`, bytes, a decoded raster - or an **array** of those, which is merged into one PDF first. That is how a returned document usually arrives: eight photographs of a signed contract.
 
 ```ts
-new Scanmate('issued.pdf', ['page-1.jpg', 'page-2.jpg', 'page-3.jpg'])
+new Scanmate('fw9-issued.pdf', ['page-1.jpg', 'page-2.jpg', 'page-3.jpg'])
 ```
 
 Whether a side is a PDF is decided by its first five bytes, not its file extension. Two images never open a PDF library at all.
@@ -114,4 +121,6 @@ Every stage is still its own package and still worth using directly - `alignPage
 
 ## How it decides
 
-The stages make the decisions; this package only sequences them. Each one documents its own reasoning, with the measurements behind every constant, in its `documentation/algorithms.md`.
+The stages make the decisions; this package only sequences them - and each documents its own reasoning, with the measurements behind every constant, in its own `documentation/algorithms.md`.
+
+[`documentation/algorithms.md`](./documentation/algorithms.md) covers the sequencing itself: what runs in what order, what is remembered and when it is dropped, exactly what loads for a given call, how one OCR engine is shared, and why an audit makes the next three questions free.

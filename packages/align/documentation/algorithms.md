@@ -2,7 +2,7 @@
 
 A returned scan is never the page that was sent. It is turned by a degree or
 two, a few percent larger or smaller, shifted, and lit unevenly. Every later
-question — *was this box signed?*, *does this figure still read 27,211,380.00?*
+question — *was this box signed?*, *does this account still read 4412-9087-3355?*
 — is a question about a place on the page, and a place only means something
 once both images agree where it is.
 
