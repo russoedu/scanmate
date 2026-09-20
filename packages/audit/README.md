@@ -89,12 +89,13 @@ OCR misreads small, faint and sideways print constantly - `W-9` comes back as `W
 
 1. **The glyph check.** If the printed run's ink was matched against the original's own glyphs and found to be *other* glyphs, that was seen rather than read. Changed.
 2. **The ink at that run.** If 0.3 mm² or more moved there, changed.
-3. **Read both sides again, and compare them with each other.** Three passes over the original's crop and the scan's. If the two read alike, the pages carry the same glyphs however wrongly they were read - a systematic misreading misreads the original exactly as it misreads the scan, so it cancels. Not reported; it lands in `noise`.
-4. **Otherwise, unsettled** - reported as `text-unsettled`, in its own colour.
+3. **Match the run's glyphs, letters and digits alike,** against the faces the page itself prints. Every glyph the one printed? Then the pages carry the same characters and the reading was simply wrong. A glyph that fails to match does *not* condemn the run: over 327 runs of four real documents that call was wrong about one time in eighty, which is fine for dismissing an argument and disgraceful for starting one.
+4. **Read both sides again, and compare them with each other.** Three passes over the original's crop and the scan's. If the two read alike, the pages carry the same glyphs however wrongly they were read - a systematic misreading misreads the original exactly as it misreads the scan, so it cancels. Not reported; it lands in `noise`.
+5. **Otherwise, unsettled** - reported as `text-unsettled`, in its own colour.
 
 Disagreement between the two sides never condemns a run on its own. The original is a clean render and the scan has been printed, posted and scanned, so it reads worse by nature; treating that as evidence turns ordinary degradation into an accusation.
 
-On the returned W-9 above, ten disagreements: five settled as misreadings, four unsettled, and one changed - the forged digit.
+On the returned W-9 above, ten disagreements: six settled as misreadings, three unsettled, and one changed - the forged digit.
 
 ```ts
 audit.pages[0].settled[0]   // { verdict: 'misread', because: 'both-sides-alike', readings: { original, scanned } }

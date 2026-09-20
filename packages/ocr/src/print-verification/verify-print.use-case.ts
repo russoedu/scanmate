@@ -1,7 +1,7 @@
 import { resizeGray } from '@scanmate/ink'
 import type { GrayImage } from '@scanmate/ink'
 
-import { glyphCells } from './glyph-cells.use-case'
+import { placeGlyphs } from './glyph-cells.use-case'
 import { cut, templateKey } from './glyph-templates.use-case'
 import type { PrintedRun, Templates } from './glyph-templates.use-case'
 import { printPolarity } from './print-polarity.policy'
@@ -29,16 +29,43 @@ import { printPolarity } from './print-polarity.policy'
  * to win by a margin to pass, and a rival has to win by a margin to count as a
  * change; anything in between is left undecided rather than guessed at.
  *
- * Only the digits of a figure are checked, against the ten digits: a full stop
- * read as a comma is how a figure is written, not what it says. A run whose
- * glyphs cannot be told apart is left to the reading, and so is a run on a page
- * that prints too few digits in that face for every rival to be represented -
- * a digit whose own template is missing could otherwise be confirmed as the one
- * it replaced, simply for lacking anything better to match.
+ * A run whose glyphs cannot be told apart is left to the reading, and so is a
+ * run on a page that prints too few characters in that face for the rivals to
+ * be represented - a glyph whose own template is missing could otherwise be
+ * confirmed as the one it replaced, simply for lacking anything better to
+ * match.
+ *
+ * **Two scopes.** `'figures'` checks the digits of a figure against the ten
+ * digits, and nothing else: a full stop read as a comma is how a figure is
+ * written, not what it says. It is cheap enough to run over every printed run
+ * of a page, which is how a changed amount is caught even when the reading
+ * never noticed.
+ *
+ * `'text'` checks every character against letters and digits alike. The rival
+ * set is six times larger and the work grows with it, so this is not for a
+ * whole page - it is for one run somebody is already arguing about, where the
+ * reading disagrees and the ink at that run says nothing moved. There it
+ * answers the question the reading could not: are these the same glyphs?
+ *
+ * Its two answers are not worth the same. Swept over 327 runs of four real
+ * documents, `'text'` called four unchanged runs changed - a `t` read as a `k`,
+ * a `g` as a `t` - where `'figures'` has never made a false call on any scan
+ * measured here. Letters at 8 pt through a scanner are simply more confusable
+ * than digits, and the margin that separates the ten does not separate the
+ * sixty-two. So `agrees === true` is good evidence that a run is untouched, and
+ * `agrees === false` is a reason to look closer rather than a verdict; callers
+ * are expected to use it to clear a dispute, not to open one.
  */
 
 /** What a figure's characters are checked against: the ten digits, and only those. */
 export const FIGURE_CHARACTERS = '0123456789'
+/**
+ * What a run of text is checked against, under `scope: 'text'`: letters and
+ * digits. Punctuation is left out deliberately - a comma and a full stop differ
+ * by a few pixels at these sizes, and telling them apart is neither reliable
+ * nor worth reporting.
+ */
+export const TEXT_CHARACTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
 /**
  * How much better the winner must correlate than the runner-up for the cell to
  * be decided either way.
@@ -61,10 +88,15 @@ const MIN_SCORE = 0.5
 const MIN_PRINTED_SCORE = 0.7
 /**
  * Distinct characters the page must print in this face and size before a run is
- * checked at all. Fewer than this and the digit actually on the scan may have no
- * template to win with, which turns a change into a confirmation.
+ * checked at all. Fewer than this and the character actually on the scan may
+ * have no template to win with, which turns a change into a confirmation.
+ *
+ * Eight of the ten digits for a figure. For text the alphabet is far larger and
+ * no page prints all of it, so the bar is what a page of ordinary prose prints
+ * comfortably and a lone heading in a display face does not.
  */
 const MIN_RIVALS = 8
+const MIN_TEXT_RIVALS = 24
 /** ...and the printed glyph has to match no better than this: a near-perfect match is not a forgery. */
 const MAX_PRINTED_SCORE = 0.85
 /**
@@ -84,8 +116,14 @@ export interface VerifyOptions {
   minScore?:   number
   /** How well the printed glyph must match before the ink counts as unchanged. Default `0.7`. */
   minPrinted?: number
-  /** Characters the page must print in this face and size for the run to be checked. Default `8`. */
+  /** Characters the page must print in this face and size for the run to be checked. Default `8`, or `24` for text. */
   minRivals?:  number
+  /**
+   * What to check: the digits of a figure (`'figures'`, the default, cheap
+   * enough for a whole page), or every letter and digit of the run (`'text'`,
+   * for a single run under dispute).
+   */
+  scope?:      'figures' | 'text'
   /** How badly the printed glyph must match for a character to count as changed. Default `0.85`. */
   maxPrinted?: number
   /** Digits in a row before a group is treated as a figure. Default `2`. */
@@ -142,21 +180,22 @@ export function verifyPrintedRun (
   options: VerifyOptions = {},
 ): PrintVerification | null {
   const {
+    scope = 'figures',
     minMargin = MIN_MARGIN,
     minScore = MIN_SCORE,
     maxPrinted = MAX_PRINTED_SCORE,
     minPrinted = MIN_PRINTED_SCORE,
-    minRivals = MIN_RIVALS,
+    minRivals = scope === 'text' ? MIN_TEXT_RIVALS : MIN_RIVALS,
     minDigits = 2,
-    characters = FIGURE_CHARACTERS,
+    characters = scope === 'text' ? TEXT_CHARACTERS : FIGURE_CHARACTERS,
   } = options
   const printed = [...run.text].filter(character => character.trim() !== '')
-  const wanted = figureCells(printed, minDigits)
+  const wanted = scope === 'text' ? textCells(printed, characters) : figureCells(printed, minDigits)
   if (wanted.size === 0) return null
 
   // A total on a shaded bar is printed light on dark; turned round, it is a figure like any other.
   const lightOnDark = printPolarity(original, dpi, run) === 'light-on-dark'
-  const cells = glyphCells(original, dpi, run, printed.length, { lightOnDark })
+  const cells = placeGlyphs(original, dpi, run, run.text, { lightOnDark })
   if (cells === null) return null
 
   // Rivals: every character the page prints in this face and size that a figure could use.
@@ -166,7 +205,11 @@ export function verifyPrintedRun (
   // How soft this scan's print is, measured where the answer is known: each cell
   // against the very glyph the original prints there.
   const pairs = [...wanted]
-    .map(index => ({ glyph: cut(scan, dpi, cells[index], lightOnDark), printed: cut(original, dpi, cells[index], lightOnDark) }))
+    .flatMap((index) => {
+      const cell = cells[index]
+
+      return cell === null ? [] : [{ glyph: cut(scan, dpi, cell, lightOnDark), printed: cut(original, dpi, cell, lightOnDark) }]
+    })
     .filter((pair): pair is { glyph: GrayImage, printed: GrayImage } => pair.glyph !== null && pair.printed !== null)
   const softening = softeningFor(pairs)
 
@@ -179,6 +222,7 @@ export function verifyPrintedRun (
     // The cell exactly: a margin would bring in the neighbouring glyphs, which
     // both crops share, and shared ink correlates whatever the character is.
     const cell = cells[index]
+    if (cell === null) continue
     const glyph = cut(scan, dpi, cell, lightOnDark)
     // The original's own ink here: the same glyph, at the same size, in the same place.
     const asPrinted = cut(original, dpi, cell, lightOnDark)
@@ -227,6 +271,14 @@ export function verifyPrintedRun (
  * Only digits: a full stop read as a comma is how a figure is written, not what
  * it says, and at the size these are printed the two are a pixel apart.
  */
+/** Every cell the character set covers: under `'text'`, the letters and digits of the run. */
+function textCells (printed: readonly string[], characters: string): Set<number> {
+  const wanted = new Set<number>()
+  for (const [index, character] of printed.entries()) if (characters.includes(character)) wanted.add(index)
+
+  return wanted
+}
+
 function figureCells (printed: readonly string[], minDigits: number): Set<number> {
   const wanted = new Set<number>()
   let group: number[] = []

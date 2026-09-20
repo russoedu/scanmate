@@ -87,6 +87,7 @@ export async function auditPages<Page extends ReadablePage> (pages: readonly Pag
         original:    { raster: page.original.raster, dpi },
         scanned:     { raster: page.aligned.raster, dpi },
         engine,
+        runs:        page.metadata?.original?.textItems ?? [],
         rules:       {
           normalise:         options.ocr?.normalise ?? DEFAULT_NORMALISE,
           matchThreshold:    options.ocr?.matchThreshold ?? 0.8,

@@ -1,6 +1,6 @@
 import type { GrayImage } from '@scanmate/ink'
 
-import { glyphCells } from './glyph-cells.use-case'
+import { placeGlyphs } from './glyph-cells.use-case'
 import type { Box } from './glyph-cells.use-case'
 import { printPolarity } from './print-polarity.policy'
 
@@ -33,7 +33,12 @@ const PER_CHARACTER = 4
 
 /** The key a run's glyphs are filed under. */
 export function templateKey (run: PrintedRun, character: string): string {
-  return `${run.fontName ?? ''}|${Math.round((run.fontSize ?? run.height) * 2) / 2}|${character}`
+  // The turn belongs in the key: a glyph printed up the margin and the same
+  // glyph printed across the page are different pictures, and matching one
+  // against the other would compare a letter with its own rotation.
+  const turn = ((Math.round((run.angle ?? 0) / 90) % 4) + 4) % 4
+
+  return `${run.fontName ?? ''}|${Math.round((run.fontSize ?? run.height) * 2) / 2}|${turn}|${character}`
 }
 
 /**
@@ -50,10 +55,13 @@ export function collectTemplates (page: GrayImage, dpi: number, runs: readonly P
   for (const run of runs) {
     const characters = [...run.text].filter(character => character.trim() !== '')
     const lightOnDark = printPolarity(page, dpi, run) === 'light-on-dark'
-    const cells = glyphCells(page, dpi, run, characters.length, { lightOnDark })
+    const cells = placeGlyphs(page, dpi, run, run.text, { lightOnDark })
     if (cells === null) continue
 
-    for (const [index, character] of characters.entries()) keep(templates, templateKey(run, character), cut(page, dpi, cells[index], lightOnDark))
+    for (const [index, character] of characters.entries()) {
+      const cell = cells[index]
+      if (cell !== null) keep(templates, templateKey(run, character), cut(page, dpi, cell, lightOnDark))
+    }
   }
 
   return templates

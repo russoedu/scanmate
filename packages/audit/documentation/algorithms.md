@@ -95,11 +95,27 @@ flowchart TD
   B -->|yes| C[changed]
   B -->|no| D{ink moved at this run,<br/>≥ 0.3 mm²?}
   D -->|yes| C
-  D -->|no| E[read the original's crop<br/>and the scan's, pass for pass]
+  D -->|no| M[match this run's glyphs,<br/>letters and digits alike]
+  M --> N{every glyph is<br/>the one printed?}
+  N -->|yes| G[misread — not reported]
+  N -->|no, or it could not be placed| E[read the original's crop<br/>and the scan's, pass for pass]
   E --> F{the two sides<br/>read alike?}
-  F -->|yes| G[misread — not reported]
+  F -->|yes| G
   F -->|no| H[unsettled — reported<br/>in its own colour]
 ```
+
+**The glyph match comes before the re-reading** because it is the better
+instrument and the cheaper one: it asks *are these the same glyphs?* of the ink
+itself, where re-reading asks an engine what it sees and hopes the answer is
+stable. It settles the W-9's certification line — fifty-two characters the
+reading mangled into `1am` — in about 120 ms.
+
+**It may clear a run; it may not condemn one.** Swept over 327 runs of four real
+documents it called about one in eighty changed that had not changed, a `t` read
+as a `k`. That is a fine rate for dismissing an argument and a disgraceful one
+for starting it, so a glyph that fails to match sends the run on rather than
+reporting it. Digits keep their own verdict, from the page-wide figures check,
+which has made no false call on any scan measured here.
 
 **Why compare the two readings with each other** rather than with the text
 layer: a systematic misreading — a face, a size, a resolution the engine handles
@@ -121,8 +137,12 @@ it is there: on a 93 dpi scan, accepting a run on a single agreeing pass cleared
 4 of 61 forged digits. Three passes a side, two must agree, and what is left
 over is a finding of its own kind — `text-unsettled`, drawn in olive.
 
-On the returned W-9 above, ten disagreements: five settled as misreadings, four
-unsettled, one changed — the forged digit, caught by the glyph check.
+On the returned W-9 above, ten disagreements: six settled as misreadings — five
+because both sides read alike, one because its glyphs matched — three unsettled,
+and one changed, the forged digit. The three that remain are unsettleable on
+this document rather than unlucky: two are printed up the margin, where the page
+prints too little sideways text to offer rivals, and one is in a face the page
+uses nowhere else.
 
 What this leaves uncovered is a change too small to move 0.3 mm² of ink in a run
 the glyph check does not cover; it checks figures, not letters. Such a run lands

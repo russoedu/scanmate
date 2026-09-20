@@ -15,6 +15,17 @@ import type { GrayImage } from '@scanmate/ink'
  * When the groups do not come to the number of characters expected - glyphs
  * that touch, a comma that merges with the digit beside it - the run is left
  * alone rather than guessed at: the caller can only verify what it can place.
+ * That is all-or-nothing over a whole run, which costs more the longer the run
+ * is: one pair of touching letters in a 52-character sentence loses the other
+ * fifty. `glyphWords` splits a run at its spaces first - the widest gaps in the
+ * same profile - so a sentence is verified word by word and only the word that
+ * will not segment is given up.
+ *
+ * **Direction.** A run's characters advance along the run, which is not always
+ * left to right: a form's margin instruction is often printed at a right angle
+ * to the page. The profile is taken along whichever axis the run's `angle`
+ * says, and quarter turns are the only ones handled - anything between would
+ * need the crop resampled, and is left unverifiable instead of guessed at.
  */
 
 /** A rectangle in PDF points from the page's top-left corner. */
@@ -23,6 +34,8 @@ export interface Box {
   y:      number
   width:  number
   height: number
+  /** Degrees the run is turned by, if it is; only quarter turns are handled. */
+  angle?: number
 }
 
 /**
@@ -57,15 +70,81 @@ export interface CellOptions {
  * @returns One box per character, or `null` when they cannot be told apart.
  */
 export function glyphCells (page: GrayImage, dpi: number, run: Box, count: number, options: CellOptions = {}): Box[] | null {
-  const { contrast = CONTRAST, join = JOIN, lightOnDark = false } = options
+  const profile = profileOf(page, dpi, run, count, options)
+  if (profile === null) return null
+
+  const groups = fitGroups(profile.inked, options.join ?? JOIN, count)
+
+  return groups === null ? null : groups.map(group => boxOf(run, profile, group))
+}
+
+/**
+ * The box of each word of a run, in order, split at the run's own spaces.
+ *
+ * @param page - The original page, greyscale.
+ * @param dpi - What that page was rendered at.
+ * @param run - The run's box, in points, with its angle.
+ * @param counts - Characters in each word, in order, spaces excluded.
+ * @param options - Contrast against the run's paper, column joining, and polarity.
+ * @returns One box per word, or `null` when the words cannot be told apart.
+ */
+export function glyphWords (page: GrayImage, dpi: number, run: Box, counts: readonly number[], options: CellOptions = {}): Box[] | null {
+  const total = counts.reduce((sum, count) => sum + count, 0)
+  const profile = profileOf(page, dpi, run, total, options)
+  if (profile === null) return null
+  if (counts.length === 1) return [{ ...run }]
+
+  // The widest gaps are the spaces: as many cuts as the run has spaces.
+  const groups = groupsOf(profile.inked, options.join ?? JOIN)
+  if (groups.length < counts.length) return null
+  const gaps = groups.slice(1)
+    .map((group, index) => ({ at: index + 1, gap: group.start - groups[index].end }))
+    .toSorted((a, b) => b.gap - a.gap)
+    .slice(0, counts.length - 1)
+    .map(gap => gap.at)
+    .toSorted((a, b) => a - b)
+
+  const words: Box[] = []
+  let from = 0
+  for (const cut of [...gaps, groups.length]) {
+    const first = groups[from]
+    const last = groups[cut - 1]
+    if (first === undefined || last === undefined) return null
+    // A word holding fewer groups than it has characters has glyphs that run
+    // together, and nothing inside it can be placed - but that is that word's
+    // problem. Its box is still returned, and it is the caller who finds the
+    // letters unplaceable, one word at a time.
+    words.push(boxOf(run, profile, { start: first.start, end: last.end }))
+    from = cut
+  }
+
+  return words
+}
+
+/**
+ * How much ink stands in each step along the run, in the run's own direction.
+ *
+ * @returns The profile and the frame to read boxes back out of, or `null` when
+ *   the run is turned by something other than a quarter turn, or is too small.
+ */
+function profileOf (page: GrayImage, dpi: number, run: Box, count: number, options: CellOptions): Profile | null {
+  const { contrast = CONTRAST, lightOnDark = false } = options
   if (count <= 0) return null
+
+  const turn = Math.round(((run.angle ?? 0) % 360 + 360) % 360 / 90) % 4
+  if (Math.abs((((run.angle ?? 0) % 360) + 360) % 360 - turn * 90) > 1) return null
+  const along: 'x' | 'y' = turn % 2 === 0 ? 'x' : 'y'
+  // A quarter turn one way advances up the page, the other way down.
+  const reverse = turn === 2 || turn === 3
 
   const s = dpi / 72
   const left = Math.max(0, Math.floor(run.x * s))
   const right = Math.min(page.width, Math.ceil((run.x + run.width) * s))
   const top = Math.max(0, Math.floor(run.y * s))
   const bottom = Math.min(page.height, Math.ceil((run.y + run.height) * s))
-  if (right - left < count || bottom - top < 2) return null
+  const steps = along === 'x' ? right - left : bottom - top
+  const across = along === 'x' ? bottom - top : right - left
+  if (steps < count || across < 2) return null
 
   // The paper this run is printed on: most of its box is background. How far the
   // glyphs stand from it is the run's own contrast, and half of that separates
@@ -78,17 +157,45 @@ export function glyphCells (page: GrayImage, dpi: number, run: Box, count: numbe
   const darkest = sorted[Math.floor(sorted.length * (lightOnDark ? 0.98 : 0.02))]
   const threshold = Math.max(contrast, Math.abs(darkest - paper) / 2)
 
-  // Where ink stands in each column of the run.
   const inked: boolean[] = []
-  for (let x = left; x < right; x++) {
+  for (let step = 0; step < steps; step++) {
     let dark = 0
-    for (let y = top; y < bottom; y++) {
+    for (let other = 0; other < across; other++) {
+      const x = left + (along === 'x' ? step : other)
+      const y = top + (along === 'x' ? other : step)
       const difference = lightOnDark ? page.data[y * page.width + x] - paper : paper - page.data[y * page.width + x]
       if (difference > threshold) dark++
     }
     inked.push(dark > 0)
   }
 
+  return { inked: reverse ? inked.toReversed() : inked, along, reverse, left, top, right, bottom, s }
+}
+
+interface Profile {
+  inked:   boolean[]
+  along:   'x' | 'y'
+  reverse: boolean
+  left:    number
+  top:     number
+  right:   number
+  bottom:  number
+  s:       number
+}
+
+/** A span of the profile, back in page points. */
+function boxOf (run: Box, profile: Profile, group: { start: number, end: number }): Box {
+  const steps = profile.along === 'x' ? profile.right - profile.left : profile.bottom - profile.top
+  const start = profile.reverse ? steps - 1 - group.end : group.start
+  const end = profile.reverse ? steps - 1 - group.start : group.end
+
+  return profile.along === 'x'
+    ? { x: (profile.left + start) / profile.s, y: run.y, width: (end - start + 1) / profile.s, height: run.height, angle: run.angle }
+    : { x: run.x, y: (profile.top + start) / profile.s, width: run.width, height: (end - start + 1) / profile.s, angle: run.angle }
+}
+
+/** The groups of inked steps, closed up until there are exactly `count` of them. */
+function fitGroups (inked: readonly boolean[], join: number, count: number): { start: number, end: number }[] | null {
   let groups = groupsOf(inked, join)
   // Characters printed in two parts - an i, a colon, a percent sign - read as
   // more groups than there are characters; the narrowest gaps close first.
@@ -102,14 +209,8 @@ export function glyphCells (page: GrayImage, dpi: number, run: Box, count: numbe
       ...groups.slice(narrowest.at + 1),
     ]
   }
-  if (groups.length !== count) return null
 
-  return groups.map(group => ({
-    x:      (left + group.start) / s,
-    y:      run.y,
-    width:  (group.end - group.start + 1) / s,
-    height: run.height,
-  }))
+  return groups.length === count ? groups : null
 }
 
 /** Runs of inked columns, separated by more than `join` empty ones. */
@@ -130,4 +231,41 @@ function groupsOf (inked: readonly boolean[], join: number): { start: number, en
   if (start !== -1) groups.push({ start, end: last })
 
   return groups
+}
+
+/**
+ * Where every character of a run sits, or `null` where it could not be placed.
+ *
+ * The whole run is tried first, which is what a figure wants: short, its glyphs
+ * separate, and nothing gained by taking it apart. When that fails the run is
+ * split at its spaces and each word placed on its own, so one pair of touching
+ * letters costs its own word rather than the sentence around it - on the W-9's
+ * certification line, two characters rather than fifty-two.
+ *
+ * @param page - The original page, greyscale.
+ * @param dpi - What that page was rendered at.
+ * @param run - The run's box, in points, with its angle.
+ * @param text - What the run prints; spaces divide the words.
+ * @param options - Contrast against the run's paper, column joining, and polarity.
+ * @returns One entry per printed character, spaces excluded, or `null` when not
+ *   even the words could be told apart.
+ */
+export function placeGlyphs (page: GrayImage, dpi: number, run: Box, text: string, options: CellOptions = {}): Array<Box | null> | null {
+  const characters = [...text].filter(character => character.trim() !== '')
+  const whole = glyphCells(page, dpi, run, characters.length, options)
+  if (whole !== null) return whole
+
+  const words = text.split(/\s+/).filter(word => word !== '')
+  if (words.length < 2) return null
+  const boxes = glyphWords(page, dpi, run, words.map(word => [...word].length), options)
+  if (boxes === null) return null
+
+  const cells: Array<Box | null> = []
+  for (const [index, word] of words.entries()) {
+    const letters = [...word].length
+    const placed = glyphCells(page, dpi, { ...boxes[index], angle: run.angle }, letters, options)
+    for (let letter = 0; letter < letters; letter++) cells.push(placed === null ? null : placed[letter])
+  }
+
+  return cells.length === characters.length ? cells : null
 }

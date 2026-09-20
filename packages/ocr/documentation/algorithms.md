@@ -161,11 +161,25 @@ Six things make this work, and the last three are there because the check's
 worst possible error is not missing a forgery — it is *confirming* one:
 
 1. **Segmentation from the original's own rendering.** A generated PDF leaves a
-   column of paper between characters, so a column profile of the run finds
-   them. No font metrics, no advance widths, no kerning — a text layer does not
-   carry those, and every face does them differently. The ink threshold is set
-   against the run's **own** background, so a white figure on a coloured total
-   bar segments as readily as black on white.
+   column of paper between characters, so a profile of the run finds them. No
+   font metrics, no advance widths, no kerning — a text layer does not carry
+   those, and every face does them differently. The ink threshold is set against
+   the run's **own** background, so a white figure on a coloured total bar
+   segments as readily as black on white.
+
+   The profile is taken **along the run**, which is not always left to right: a
+   form's margin instruction is often printed at a right angle to the page, and
+   a column profile of that reads one tall smear. Quarter turns are handled;
+   anything between would need the crop resampled and is left unverifiable. The
+   turn goes into the template key as well, so a letter is never matched against
+   its own rotation.
+
+   A run that will not segment is placed **word by word** instead. All-or-nothing
+   over a whole run costs more the longer the run is: on the W-9's certification
+   line, one pair of touching letters lost the other fifty. Splitting at the
+   run's own spaces — the widest gaps in the same profile — placed 45 of those 52
+   characters, and lifted the rivals available on that page from 37 to 50, since
+   templates are collected the same way.
 2. **The printed candidate is the original's ink at that exact place** — same
    face, same size, same position. A scan of it correlates highly however grey
    or grainy it is.
@@ -215,6 +229,38 @@ own print wins by 0.13 or more. At 90 dpi, where a badly scanned digit does lose
 to a rival, it loses by 0.03 or less — which is why the margin is 0.12 and why
 everything closer is left undecided rather than guessed at.
 
+### Two scopes: figures everywhere, letters where it is asked
+
+The check above runs over **every** printed run of the page, against the ten
+digits. That is cheap enough to do page-wide and it is where the value is: an
+amount, an account number, a date.
+
+Letters are a second scope, and deliberately not page-wide — the rival set is
+six times larger and so is the work. It is used on **one run already in
+dispute**, where the reading disagrees with the original and the ink at that run
+says nothing moved. `@scanmate/audit` asks for it there.
+
+Its two answers are not worth the same, and this is measured rather than
+assumed. Swept over every run of four real documents — 327 runs, about 1700
+glyph cells:
+
+| document | runs verified | called changed | of which false |
+|---|---|---|---|
+| honest W-9, 200 dpi | 88 (921 cells) | 0 | — |
+| forged W-9, 200 dpi | 80 | 3 | 2 |
+| OCF scan, 125 dpi | 69 | 0 | — |
+| OCF scan, 117 dpi | 90 | 2 | 2 |
+
+A `t` read as a `k`, a `g` as a `t`. Roughly one run in eighty, where the
+figures scope has never made a false call on any scan measured here. Letters at
+8 pt through a scanner are simply more confusable than digits, and the margin
+that separates the ten does not separate the sixty-two.
+
+So the letter scope is used to **clear** a dispute and never to open one:
+`agrees === true` is good evidence a run is untouched, `agrees === false` sends
+it on to be looked at another way. One run in eighty is a fine rate for
+dismissing an argument and a disgraceful one for starting it.
+
 ## Scoring the page
 
 After matching, the claimed text is assembled in the original's order and
@@ -244,6 +290,7 @@ hiding exactly the substitutions a forger would make.
 | `printCheck.minPrinted` | `0.7` | How well the print must match before the ink is called unchanged. |
 | `printCheck.minRivals` | `8` | Digits the page must print in that face before a run is checked. |
 | `printCheck.minDigits` | `2` | Digits in a row before it counts as a figure. |
+| `printCheck.scope` | `'figures'` | `'text'` checks letters too, for one disputed run. |
 | — | `0.2` | Share of a word's box that must be dark to call it printed. |
 | — | `4` pt | Smallest word height that is not a speck. |
 

@@ -1,8 +1,8 @@
 import type { InkProbe } from '@scanmate/diff'
 import { toGrayscale } from '@scanmate/ink'
-import type { Raster } from '@scanmate/ink'
-import { judgeRun, printPolarity, readRun } from '@scanmate/ocr'
-import type { MatchOptions, OcrEngine, RecheckPass, TextDifference } from '@scanmate/ocr'
+import type { GrayImage, Raster } from '@scanmate/ink'
+import { collectTemplates, judgeRun, printPolarity, readRun, verifyPrintedRun } from '@scanmate/ocr'
+import type { MatchOptions, OcrEngine, PrintedRun, RecheckPass, TextDifference } from '@scanmate/ocr'
 
 /**
  * Settling an argument between the reading and the pixels.
@@ -33,12 +33,37 @@ import type { MatchOptions, OcrEngine, RecheckPass, TextDifference } from '@scan
  *          | no
  *   ink moved at this run (>= 0.3 mm2)? ---------- yes -> changed
  *          | no
+ *   match this run's glyphs, letters and all
+ *          |
+ *   every glyph is the one printed? -------------- yes -> misread
+ *          | no, or it could not be placed
  *   read both crops, pass for pass
  *          |
  *   the two sides read alike? -------------------- yes -> misread
  *          | no
  *                                                         unsettled
  * ```
+ *
+ * The glyph match is tried before the re-reading because it is the better
+ * instrument and it is cheaper: it asks *are these the same glyphs?* of the ink
+ * itself, where re-reading asks an engine to say what it sees and hopes the
+ * answer is stable. The page-wide check covers figures only - it is run over
+ * every printed run and the rival set for letters is six times larger - so here,
+ * on one run somebody is already arguing about, it is run again against letters
+ * and digits alike.
+ *
+ * **It may clear a run; it may not condemn one.** Letters are far more
+ * confusable than digits at the size real print arrives in, and the margin that
+ * separates a digit from its rivals does not separate a `t` from a `k` or a `g`
+ * from a `t`. Swept over every run of four real documents - 327 runs, about
+ * 1700 glyph cells - matching against letters called four runs changed that had
+ * not changed, roughly one run in eighty, while the honest W-9's own 921 cells
+ * produced none. One in eighty is a fine rate for *clearing* a dispute and a
+ * disgraceful one for opening an accusation, so a glyph that fails to match
+ * sends the run on to the re-reading instead of condemning it. Digits keep
+ * their own verdict: the figures check runs over the whole page, its rivals are
+ * ten glyphs rather than sixty-two, and it has never made a false call on any
+ * scan measured here.
  *
  * Only agreement between the sides clears a run; disagreement never condemns
  * one. That asymmetry is deliberate, and it is the correction of an earlier
@@ -83,7 +108,7 @@ export interface Settlement {
   difference: TextDifference
   verdict:    Verdict
   /** What settled it, in one word, for the report to quote. */
-  because:    'print-check' | 'ink' | 'both-sides-alike' | 'sides-disagree' | 'unreadable' | 'not-attempted'
+  because:    'print-check' | 'ink' | 'glyphs-match' | 'both-sides-alike' | 'sides-disagree' | 'unreadable' | 'not-attempted'
   /** What each pass read off the original's crop, and off the scan's. */
   readings:   { original: string[], scanned: string[] }
 }
@@ -100,6 +125,12 @@ export interface SettlementInput {
   engine:       OcrEngine
   /** The matching rules the page was judged by, so the same rule settles it. */
   rules:        MatchOptions
+  /**
+   * The original's text layer. Glyph templates are collected from it, so a
+   * disputed run can be matched character by character against the faces and
+   * sizes the page itself prints. Without it that step is skipped.
+   */
+  runs?:        readonly PrintedRun[]
   /** How each side is read. Default {@link SETTLEMENT_PASSES}. */
   passes?:      readonly RecheckPass[]
   /** Readings that must agree before a side is believed. Default `2`. */
@@ -112,11 +143,15 @@ export interface SettlementInput {
 
 export async function settleDisputes (input: SettlementInput): Promise<Settlement[]> {
   const {
-    differences, probes, original, scanned, engine, rules,
+    differences, probes, original, scanned, engine, rules, runs = [],
     passes = SETTLEMENT_PASSES, quorum = QUORUM, inkEvidence = INK_EVIDENCE, maxDisputes = 40,
   } = input
   const settlements: Settlement[] = []
-  const grey = { original: null as ReturnType<typeof toGrayscale> | null }
+  const grey: { original: GrayImage | null, scanned: GrayImage | null } = { original: null, scanned: null }
+  let templates: ReturnType<typeof collectTemplates> | null = null
+  // The run as the original's text layer has it: the face, the size and the
+  // turn, which a difference's bare rectangle does not carry.
+  const printed = new Map(runs.map(run => [`${run.text}|${Math.round(run.x)}|${Math.round(run.y)}`, run]))
   let attempted = 0
 
   for (const [index, difference] of differences.entries()) {
@@ -137,14 +172,26 @@ export async function settleDisputes (input: SettlementInput): Promise<Settlemen
       settlements.push({ difference, verdict: 'unsettled', because: 'not-attempted', readings: none })
       continue
     }
+    const run = { text: difference.expected, x: difference.x, y: difference.y, width: difference.width, height: difference.height, confidence: null }
+    grey.original ??= toGrayscale(original.raster)
+
+    // The glyphs themselves, where the page prints enough of that face to say.
+    const asPrinted = printed.get(`${difference.expected}|${Math.round(difference.x)}|${Math.round(difference.y)}`)
+    if (asPrinted !== undefined && runs.length > 0) {
+      grey.scanned ??= toGrayscale(scanned.raster)
+      templates ??= collectTemplates(grey.original, original.dpi, runs)
+      const matched = verifyPrintedRun(grey.original, grey.scanned, original.dpi, asPrinted, templates, { scope: 'text' })
+      if (matched?.agrees === true) {
+        settlements.push({ difference, verdict: 'misread', because: 'glyphs-match', readings: none })
+        continue
+      }
+    }
+
     if (attempted >= maxDisputes) {
       settlements.push({ difference, verdict: 'unsettled', because: 'not-attempted', readings: none })
       continue
     }
-
     attempted++
-    const run = { text: difference.expected, x: difference.x, y: difference.y, width: difference.width, height: difference.height, confidence: null }
-    grey.original ??= toGrayscale(original.raster)
     const polarity = printPolarity(grey.original, original.dpi, run)
     const readings = {
       original: await readRun(engine, original, run, { ...rules, passes }, polarity),

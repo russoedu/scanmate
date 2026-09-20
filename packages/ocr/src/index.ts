@@ -34,7 +34,7 @@ export type { NormaliseOptions } from './text-normalisation'
 
 // --- Building blocks ---
 
-export { collectTemplates, FIGURE_CHARACTERS, glyphCells, printPolarity, templateKey, verifyPrintedRun } from './print-verification'
+export { collectTemplates, FIGURE_CHARACTERS, glyphCells, glyphWords, placeGlyphs, printPolarity, templateKey, TEXT_CHARACTERS, verifyPrintedRun } from './print-verification'
 export type { Box, CellOptions, PrintedRun, PrintPolarity, PrintVerification, Templates, VerifyOptions } from './print-verification'
 export { claimWords, DEFAULT_RECHECK_PASSES, judgeRun, judgeRuns, matchWords, readRun, recheckRun } from './page-reading'
 export type { Claims, MatchOptions, Recheck, RecheckOptions, RecheckPass, Reference, Verdict, WordMatch } from './page-reading'
