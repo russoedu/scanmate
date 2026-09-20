@@ -167,11 +167,28 @@ the overlay and the evidence page — each four bytes a pixel. Twenty A4 pages a
 20 pages × 6 rasters × (2480 × 3508 × 4 B) ≈ 4 GB
 ```
 
-So `keep: 'reports'` drops rasters a downstream stage has already consumed,
-keeping the numbers, the boxes and the encoded images; `dispose()` clears the
-cache as well as the engine; and the documentation says what the shape of the
-object implies: **`Scanmate` is a short-lived per-document object, not a service
-singleton.** A long-lived instance in a request handler is a leak.
+So `dispose()` clears the cache as well as the engine, and the documentation
+says what the shape of the object implies: **`Scanmate` is a short-lived
+per-document object, not a service singleton.** A long-lived instance in a
+request handler is a leak.
+
+**What bounds it is a session per range of pages**, selected with
+`extract.pages` and disposed between batches, which holds one batch of pixels
+instead of the document. Page numbers are the original's throughout, so the
+batches join back up afterwards.
+
+**There is no `keep` option, and its removal is the point.** One shipped in
+0.2.0 and 0.2.1 - typed, exported, and presented right here as the answer to
+this very warning - and nothing read it. A caller following the documentation to
+bound their memory got `'all'` and no way to know. It went in 0.4.0.
+
+Implementing it rather than removing it runs into this suite's own shape. Every
+stage takes pages and hands pages back, which is what lets them compose without
+adapters - and it means each cached report *carries* the page objects, and
+through them their rasters. The reports and the pixels are not separable the way
+the option implied. Freeing them means `PageImage.raster` becoming nullable in
+`@scanmate/ink`, narrowed by every package and every consumer, including those
+who never asked. Batching costs nobody that, so batching is what is documented.
 
 ## Constants
 
@@ -180,7 +197,6 @@ singleton.** A long-lived instance in a request handler is a leak.
 | `expected` | none | Regions where a change is expected; the default for `diff()` and `audit()`. |
 | `content` | none | Content that must be present; the default for `find()`. |
 | `engine` | none | An engine to use and leave running. |
-| `keep` | `'all'` | `'reports'` drops rasters a later stage has consumed. |
 | `onProgress` | none | One callback for every stage. |
 | `merge` … `audit` | each package's defaults | Passed straight through, per stage. |
 

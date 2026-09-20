@@ -38,7 +38,8 @@ import type { AlignedScanmatePage, EnhancedScanmatePage, ReadableScanmatePage, S
  *
  * **It is a short-lived object, not a service.** It holds every page's pixels so
  * that later stages are cheap, which for a long document is gigabytes. Keep one
- * per document, `dispose()` it, and pass `keep: 'reports'` for anything big.
+ * per document and `dispose()` it; for a long one, take it a few pages at a
+ * time with `extract.pages` and dispose between batches.
  *
  * Two orderings are worth knowing. `audit()` runs the reading and the pixel
  * comparison itself and hands both back, so calling it **first** makes `ocr()`,

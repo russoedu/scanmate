@@ -2,4 +2,4 @@
 
 export { Scanmate } from './scanmate.use-case'
 export { relayAuditProgress } from './progress-relay.mapper'
-export type { AlignedScanmatePage, EnhancedScanmatePage, KeepPolicy, ReadableScanmatePage, ScanmateOptions, ScanmatePageReport } from './scan-session.contract'
+export type { AlignedScanmatePage, EnhancedScanmatePage, ReadableScanmatePage, ScanmateOptions, ScanmatePageReport } from './scan-session.contract'

@@ -25,19 +25,25 @@ export type EnhancedScanmatePage = AlignedScanmatePage & { enhanced: EnhancedIma
  */
 export type ReadableScanmatePage = AlignedScanmatePage & { enhanced?: EnhancedImage }
 
-/**
- * How much of each stage's pixels to keep once a later stage has consumed them.
+/*
+ * There is deliberately no `keep` option here.
  *
- * Memoising is the point of this class and also its largest risk: a twenty-page
- * A4 pair at 300 dpi holds the original, the scan, the alignment, perhaps an
- * enhanced copy, the overlay and the evidence page, each four bytes a pixel -
- * several gigabytes before anything has gone wrong.
+ * One shipped in 0.2.0 and 0.2.1: typed, exported, and documented as the answer
+ * to the memory warning - and read by nothing, so a caller who set it believed
+ * they had bounded their memory and had not. An option that is accepted and
+ * ignored is worse than one that is absent, so it is gone rather than left
+ * standing as a promise.
  *
- * `'all'` keeps everything, which is right for one page and for exploring.
- * `'reports'` drops rasters a downstream stage has already read, keeping the
- * numbers, the boxes and the encoded images. Use it for anything long.
+ * Dropping consumed rasters is not a small change either, and the reason is
+ * this suite's own shape: every stage takes pages and hands pages back, so each
+ * cached report *carries* the page objects and through them their pixels. The
+ * reports and the rasters are not separable the way such an option implies.
+ * Freeing them means `PageImage.raster` becoming nullable in `@scanmate/ink`,
+ * which every package and every consumer would then have to narrow - including
+ * the ones that never asked for it.
+ *
+ * What bounds memory today is a session per range of pages. See the README.
  */
-export type KeepPolicy = 'all' | 'reports'
 
 export interface ScanmateOptions {
   /** Regions where a change is expected. The default for `diff()` and `audit()`. */
@@ -48,8 +54,6 @@ export interface ScanmateOptions {
   onProgress?: ProgressCallback
   /** An engine to use and leave running. A session never terminates one it did not create. */
   engine?:     OcrEngine
-  /** How much pixel data to keep between stages. Default `'all'`. */
-  keep?:       KeepPolicy
 
   merge?:   Omit<MergeOptions, 'onProgress'>
   extract?: Omit<ExtractPairOptions, 'onProgress'>

@@ -20,7 +20,7 @@
  */
 
 export { Scanmate } from './scan-session'
-export type { AlignedScanmatePage, EnhancedScanmatePage, KeepPolicy, ReadableScanmatePage, ScanmateOptions, ScanmatePageReport } from './scan-session'
+export type { AlignedScanmatePage, EnhancedScanmatePage, ReadableScanmatePage, ScanmateOptions, ScanmatePageReport } from './scan-session'
 export type { ScanmateDocument, ScanmatePage } from './document-input'
 
 // --- Building blocks ---
