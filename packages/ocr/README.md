@@ -19,12 +19,16 @@ import { alignPages } from '@scanmate/align'
 import { extractPair } from '@scanmate/extract'
 import { ocrPages } from '@scanmate/ocr'
 
-const { pages } = await extractPair({ original: 'contract.pdf', scanned: 'returned.pdf' })
+const { pages } = await extractPair({ original: 'fw9-issued.pdf', scanned: 'fw9-returned.pdf' })
 const report = await ocrPages(await alignPages(pages))
 
+// The account number above, read for what it is:
+report.pages[0].differences      // [{ kind: 'changed', expected: 'Account 4412-9087-3355',
+                                 //    found: 'Account 4412-9987-3355', reason: 'numbers',
+                                 //    verified: true, x, y, width, height }]
+report.pages[0].printChecks      // { checked, different }: figures matched against the original's glyphs
 report.score                     // document score, weighted by characters
 report.pages[0].metrics          // levenshtein, jaccard, dice, cosine, CER, WER, word recall, ...
-report.pages[0].differences      // { kind: 'changed' | 'missing' | 'added', expected, found, x, y, ... }
 report.pages[0].original.text    // the original's text
 report.pages[0].scanned.text     // the scan's
 ```

@@ -17,11 +17,14 @@ npm install @scanmate/ink
 ```ts
 import { binarize, correlation, decodeImage, inkMap, toGrayscale, warpRaster } from '@scanmate/ink'
 
-const page = await decodeImage('scan.jpg')          // any format libvips reads, EXIF rotation applied
-const ink = inkMap(toGrayscale(page))               // lighting divided out: stroke against paper
+// The three rows of the picture above, in order:
+const scan = await decodeImage('fw9-returned.jpg')  // any format libvips reads, EXIF rotation applied
+const ink = inkMap(toGrayscale(scan))               // lighting divided out: stroke against paper
 const mask = binarize(ink)                          // Otsu, on the page's own histogram
-const straight = warpRaster(page, matrix, 1700, 2200)   // inverse-mapped, onto a fixed canvas
-correlation(inkA, inkB)                              // how well two pages' ink agrees
+
+// And the rest of the kernel:
+const straight = warpRaster(scan, matrix, 1700, 2200)   // inverse-mapped, onto a fixed canvas
+correlation(inkA, inkB)                                  // how well two pages' ink agrees
 ```
 
 ## What is in it

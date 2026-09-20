@@ -17,8 +17,8 @@ npm install @scanmate/merge
 ```ts
 import { mergeDocuments } from '@scanmate/merge'
 
-// What a person uploaded, page by page, as one document:
-const { pdf, pages } = await mergeDocuments(['page-1.jpg', 'page-2.jpg', 'annex.pdf'])
+// The picture above: three photographed pages, then a PDF, as one document.
+const { pdf, pages } = await mergeDocuments(['page-1.jpg', 'page-2.jpg', 'page-3.jpg', 'fw9-issued.pdf'])
 
 // A pipeline's aligned pages as one evidence file:
 const evidence = await mergeDocuments(

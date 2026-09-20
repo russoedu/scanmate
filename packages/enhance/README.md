@@ -19,11 +19,12 @@ import { enhancePages, enhanceScan } from '@scanmate/enhance'
 
 // A pipeline stage: aligned pages in, each with a cleaned copy alongside.
 const pages = await enhancePages(alignedPages)
-pages[0].enhanced.raster   // the aligned scan, cleaned, at 300 dpi on the original's canvas
+pages[0].aligned.raster    // left above: the scan as it was aligned
+pages[0].enhanced.raster   // right: the same lines cleaned, at 300 dpi on the original's canvas
 pages[0].enhanced.applied  // what was done: clamp points, whether it despeckled, measured noise
 
 // Or one image: a raster, bytes or a path.
-const { raster, dpi } = await enhanceScan('scan.jpg')
+const { raster, dpi } = await enhanceScan('fw9-returned.jpg')
 ```
 
 ## How it works

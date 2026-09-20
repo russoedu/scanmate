@@ -62,10 +62,14 @@ import { auditPages } from '@scanmate/audit'
 import { alignPages } from '@scanmate/align'
 import { extractPair } from '@scanmate/extract'
 
-const { pages } = await extractPair({ original: 'contract.pdf', scanned: 'returned.pdf' })
+const { pages } = await extractPair({ original: 'fw9-issued.pdf', scanned: 'fw9-returned.pdf' })
 const audit = await auditPages(await alignPages(pages), {
-  expected: [{ page: 3, id: 'customer-signature', x: 82, y: 223, width: 480, height: 40 }],
-  content:  [{ page: 1, content: ['Vector Supply Company, Inc.', 'Account 4412-9087-3355'] }],
+  // The W-9's signature row, measured off the form in points from the page's top-left.
+  expected: [
+    { page: 1, id: 'signature', x: 120, y: 577, width: 262, height: 22 },
+    { page: 1, id: 'date',      x: 404, y: 577, width: 171, height: 22 },
+  ],
+  content: [{ page: 1, content: ['Vector Supply Company, Inc.', 'Account 4412-9087-3355'] }],
 })
 
 audit.verdict                    // 'pass' | 'review'

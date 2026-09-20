@@ -18,17 +18,17 @@ npm install @scanmate/extract
 import { extractPages, extractPair, inspectDocument } from '@scanmate/extract'
 
 // What is in this file, without rendering anything:
-const inspection = await inspectDocument('returned.pdf')
+const inspection = await inspectDocument('fw9-returned.pdf')
 inspection.pages[0].metadata?.kind          // 'vector' | 'scanned' | 'scanned-with-text-layer' | 'empty'
 inspection.pages[0].metadata?.effectiveDpi  // what the scan really holds
 
-// One document:
-const pages = await extractPages('contract.pdf', { dpi: 200 })
+// One document - the boxes in the picture above:
+const pages = await extractPages('fw9-issued.pdf', { dpi: 150 })
 pages[0].image.raster                        // decoded RGBA
-pages[0].metadata.textItems                  // runs, in points from the top-left
+pages[0].metadata.textItems                  // every run, in points from the top-left
 
 // Or a pair, ready for @scanmate/align:
-const { pages: pairs, unpaired } = await extractPair({ original: 'contract.pdf', scanned: 'returned.pdf' })
+const { pages: pairs, unpaired } = await extractPair({ original: 'fw9-issued.pdf', scanned: 'fw9-returned.pdf' })
 ```
 
 ## What it decides

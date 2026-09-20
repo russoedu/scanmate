@@ -19,17 +19,18 @@ import { alignPages, alignScan } from '@scanmate/align'
 import { extractPair } from '@scanmate/extract'
 
 // A pair of documents, page by page:
-const { pages } = await extractPair({ original: 'contract.pdf', scanned: 'returned.pdf' })
+const { pages } = await extractPair({ original: 'fw9-issued.pdf', scanned: 'fw9-returned.pdf' })
 const aligned = await alignPages(pages)
 
+aligned[0].scanned.raster         // left above: the scan as it came back
+aligned[0].aligned.raster         // right: the same pixels on the original's canvas
 aligned[0].aligned.confidence     // 0-1: how well the ink agrees after warping
 aligned[0].aligned.transform      // model, scale, rotation, shear, translation
 aligned[0].aligned.matrix         // original coordinates -> scan coordinates
 aligned[0].aligned.inverse        // and back
-aligned[0].aligned.raster         // the scan, on the original's canvas
 
 // Or two images on their own:
-const result = await alignScan('page.png', 'scan.jpg')
+const result = await alignScan('fw9-page-1.png', 'fw9-returned.jpg')
 ```
 
 ## How it works, briefly
