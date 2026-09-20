@@ -209,12 +209,13 @@ depends on the pixels agreeing.
 
 | colour | on the original | on the scan |
 |---|---|---|
-| blue `#0017FC` | every place being asked about | required content that reads correctly |
+| blue `#0017FC` | every place being asked about | |
 | green `#00FC11` | | a field that was filled in |
-| red `#FC0027` | | a field left empty or covered, content or a figure that changed |
+| red `#FC0027` | | a field left empty or covered, or a run that changed |
 | pink `#F500FC` | | the band where ink still counts as a field's |
 | orange `#FF8A00` | | ink added where nothing was expected |
 | cyan `#00C8FC` | printed ink the scan lost | the same place, where it is not |
+| olive `#C8A000` | | read differently, ink identical, nothing could settle it |
 
 The left panel deliberately carries **one** colour. A verdict belongs to the
 returned copy, not to the document that asked the question, and colouring both
