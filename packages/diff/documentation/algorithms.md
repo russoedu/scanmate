@@ -12,10 +12,10 @@ rectangle in PDF points means the same place on both.
 ![the original and the returned scan side by side, with the signer fields outlined](../assets/side-by-side.jpg)
 
 *Made from the [IRS Form W-9](https://www.irs.gov/pub/irs-pdf/fw9.pdf) (public
-domain): filled in, printed, signed and scanned crooked. Green: a field that
-was filled in. Orange: the band around it where ink still counts as that
-field's. Magenta would mark a change nobody expected, blue printed ink the scan
-lost.*
+domain): filled in, printed, signed and scanned crooked. Blue: the place in
+question, as the original poses it. Green: a field that was filled in. Pink: the
+band around it where ink still counts as that field's. Orange would mark ink
+nobody expected, cyan printed ink the scan lost.*
 
 ## The shape of it
 

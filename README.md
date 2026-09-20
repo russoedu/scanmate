@@ -92,6 +92,7 @@ audit.pages[0].original          // the page itself is still there
 Each package documents its own algorithms — what every step measures, the
 decision flows, and every constant with the measurement behind it:
 
+- [scan](packages/scan/documentation/algorithms.md) — what runs when, what is remembered, and what loads
 - [audit](packages/audit/documentation/algorithms.md) — correlating two comparisons, and the verdict
 - [ocr](packages/ocr/documentation/algorithms.md) — matching by place, the recheck, and verifying figures against the print
 - [diff](packages/diff/documentation/algorithms.md) — ink, tolerance, and deciding a region
