@@ -1,5 +1,7 @@
 import type { ImageFormat, InkOptions, ProgressCallback, Raster, Rect } from '@scanmate/ink'
 
+import type { Masks } from '../region-comparison'
+
 /**
  * Coordinates for regions going in and changes coming out.
  *
@@ -35,6 +37,16 @@ export interface DiffOptions {
    * read. `@scanmate/audit` passes every text difference through here.
    */
   probes?:            readonly ProbeRect[]
+  /**
+   * Keep the ink masks on the result, so the caller can probe places it does
+   * not know about yet.
+   *
+   * The places worth probing are the ones the reading disputes, and the reading
+   * runs alongside this rather than before it - so `probes` cannot name them.
+   * Masks are four binary images the size of the page, about 9 MB for A4 at
+   * 150 dpi, so a caller is expected to drop them as soon as it has asked.
+   */
+  keepMasks?:         boolean
   /**
    * How far outside an expected region its ink may still lie, in `units`. Default `6`
    * (2 mm at 72 points to the inch).
@@ -228,6 +240,8 @@ export interface PageDiff {
   expected:         ExpectedResult[]
   /** The ink at each place `probes` asked about, in the same order. */
   probes:           InkProbe[]
+  /** The ink masks, when `keepMasks` asked for them: for `probeInk`, then dropped. */
+  masks:            Masks | null
   /** New ink outside every expected region, merged into one box per change. */
   unexpected:       Change[]
   /**

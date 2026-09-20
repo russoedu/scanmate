@@ -14,6 +14,7 @@ import type { Raster, Rect, Rgba } from '@scanmate/ink'
  * | pink `#F500FC` | the band around a region where ink still counts as its own |
  * | orange `#FF8A00` | ink added where nothing was expected |
  * | cyan `#00C8FC` | printed ink the scan lost |
+ * | olive `#C8A000` | a disagreement nothing could settle |
  */
 
 export type { Rgba } from '@scanmate/ink'
@@ -23,6 +24,11 @@ export const REFERENCE: Rgba = [0, 23, 252, 255]
 export const IDENTIFIED: Rgba = [0, 252, 17, 255]
 /** Empty, covered, or changed: the answers that need a person. */
 export const NOT_IDENTIFIED: Rgba = [252, 0, 39, 255]
+/**
+ * Neither comparison could settle it. Not red, because red is a statement that
+ * something is wrong and this is a statement that nobody knows.
+ */
+export const UNSETTLED: Rgba = [200, 160, 0, 255]
 export const EXPECTED_MARGIN: Rgba = [245, 0, 252, 255]
 export const UNEXPECTED: Rgba = [255, 138, 0, 255]
 export const MISSING: Rgba = [0, 200, 252, 255]

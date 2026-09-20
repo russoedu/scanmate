@@ -8,6 +8,7 @@ import type { Annotation } from './annotate-overlay.use-case'
 import { connectedComponents } from './connected-components.use-case'
 import { mergeBoxes } from './merge-boxes.use-case'
 import type { MergedBox } from './merge-boxes.use-case'
+import { probeInk } from './probe-ink.use-case'
 import type { Change, DiffOptions, ExpectedChange, ExpectedResult, InkProbe, PageDiff } from './page-diff.contract'
 import { measureRegionInk } from './region-ink.use-case'
 import { composeSideBySide } from './side-by-side.use-case'
@@ -83,6 +84,7 @@ export async function diffPage (
     expectedMargin = 6,
     maxChanges = 50,
     probes = [],
+    keepMasks = false,
     output = 'png',
     annotate = false,
     sideBySide = false,
@@ -154,17 +156,7 @@ export async function diffPage (
   })
 
   // What the ink does where the caller asked, changed or not.
-  const measured: InkProbe[] = probes.map((probe) => {
-    const rect = scaleRect(probe, toPixels)
-    const ink = inkWithin(rect, masks)
-
-    return {
-      rect,
-      addedInk:  ink.added * mm2PerPixel,
-      lostInk:   ink.lost * mm2PerPixel,
-      sharedInk: ink.shared * mm2PerPixel,
-    }
-  }).map((probe, i) => ({ ...probe, rect: probes[i] }))
+  const measured: InkProbe[] = probeInk(masks, probes, { dpi, units })
 
   const truncated = outside.length > maxChanges || lost.length > maxChanges
   const toChange = (box: MergedBox): Change => ({
@@ -217,6 +209,7 @@ export async function diffPage (
     sideBySideImage: sideBySideRaster === null || output === 'none' ? null : await encodeImage(sideBySideRaster, { format: output }),
     expected:        expectedResults,
     probes:          measured,
+    masks:           keepMasks ? masks : null,
     unexpected,
     missing,
     truncated,
@@ -285,28 +278,4 @@ function scaleRect (rect: Rect, factor: number): Rect {
 
 function grow (rect: Rect, by: number): Rect {
   return { x: rect.x - by, y: rect.y - by, width: rect.width + 2 * by, height: rect.height + 2 * by }
-}
-
-/** Added, lost and shared ink inside one rectangle of the page, in pixels. */
-function inkWithin (rect: Rect, masks: Masks): { added: number, lost: number, shared: number } {
-  const left = Math.max(0, Math.floor(rect.x))
-  const top = Math.max(0, Math.floor(rect.y))
-  const right = Math.min(masks.width, Math.ceil(rect.x + rect.width))
-  const bottom = Math.min(masks.height, Math.ceil(rect.y + rect.height))
-  let added = 0
-  let lost = 0
-  let shared = 0
-
-  for (let y = top; y < bottom; y++) {
-    const row = y * masks.width
-    for (let x = left; x < right; x++) {
-      const scan = masks.scan.data[row + x] === 1
-      const print = masks.original.data[row + x] === 1
-      if (scan && masks.originalDilated.data[row + x] === 0) added++
-      if (print && masks.scanDilated.data[row + x] === 0) lost++
-      if (scan && print) shared++
-    }
-  }
-
-  return { added, lost, shared }
 }

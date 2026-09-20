@@ -118,20 +118,19 @@ describe('auditPages', () => {
     expect(audit.summary).toMatchObject({ passed: 0, corroborated: 1, findings: { 'unexpected-mark': 1, 'text-changed': 1 } })
   })
 
-  it('reports an expected region left empty, and required content that is not there', async () => {
+  it('reports an expected region left empty, and the amount that was altered', async () => {
     const read = [...AS_PRINTED.slice(0, 3), word('7,250.00', 440, 30, 48)]
     const audit = await auditPages([page(altered())], {
       expected: EXPECTED,
-      content:  [{ page: 1, content: ['Total 1,250.00', 'Order Confirmation'] }],
       ocr:      { engine: reads(read), targetDpi: null, recheck: false },
       output:   'none',
     })
     const kinds = audit.pages[0].findings.map(f => f.kind)
 
     expect(kinds).toEqual(['text-changed', 'expected-empty'])
-    // The altered amount is one finding: read wrong, and required.
-    expect(audit.pages[0].findings[0]).toMatchObject({ subject: 'Total 1,250.00', summary: 'Printed "Total 1,250.00" reads "Total 7,250.00" - its figures differ - required content' })
-    expect(audit.pages[0].content.map(c => [c.content, c.identifiable])).toEqual([['Total 1,250.00', false], ['Order Confirmation', true]])
+    expect(audit.pages[0].findings[0]).toMatchObject({ summary: 'Printed "Total 1,250.00" reads "Total 7,250.00" - its figures differ' })
+    // The ink moved where the reading says it did, so nothing had to be settled by re-reading.
+    expect(audit.pages[0].settled.map(settlement => [settlement.verdict, settlement.because])).toEqual([['changed', 'ink']])
   })
 
   it('does not pass a page that reads too poorly to trust, even with nothing found', async () => {
@@ -167,15 +166,13 @@ describe('auditPages', () => {
     const { pages } = await extractPair({ original: await createSyntheticPdf([printed('1,250.00')]), scanned }, { output: 'none' })
     const audit = await auditPages(await alignPages(pages, { output: 'none' }), {
       expected: [{ page: 1, id: 'signature', x: 150, y: 255, width: 300, height: 55 }],
-      content:  [{ page: 1, content: ['The Resistance', 'Total 1,250.00'] }],
       output:   'none',
     })
     const [result] = audit.pages
 
     expect(result.pixels.expected[0].identified).toBe(true)
     expect(result.findings.map(f => f.kind).toSorted((a, b) => a.localeCompare(b))).toEqual(['text-changed', 'unexpected-mark'])
-    expect(result.findings.find(f => f.kind === 'text-changed')).toMatchObject({ subject: 'Total 1,250.00' })
-    expect(result.content.find(c => c.content === 'The Resistance')?.identifiable).toBe(true)
+    expect(result.findings.find(f => f.kind === 'text-changed')?.text[0].expected).toBe('Total 1,250.00')
     expect(audit.verdict).toBe('review')
   }, 180_000)
 
@@ -183,6 +180,12 @@ describe('auditPages', () => {
     const events: StageEvent[] = []
     await auditPages([page(signed())], { expected: EXPECTED, ocr: { engine: reads(AS_PRINTED), targetDpi: null, recheck: false }, output: 'none', onProgress: e => { events.push(e) } })
 
-    expect(events.map(e => `${e.stage}:${e.phase}`)).toEqual(['ocr:start', 'ocr:done', 'diff:start', 'diff:done', 'audit:start', 'audit:done'])
+    // The reading and the pixel comparison of a page are started together, so the
+    // two 'start' events interleave; both finish before the audit of that page.
+    expect(events.map(e => `${e.stage}:${e.phase}`).toSorted((a, b) => a.localeCompare(b))).toEqual(
+      ['audit:done', 'audit:start', 'diff:done', 'diff:start', 'ocr:done', 'ocr:start'],
+    )
+    expect(events.at(0)).toMatchObject({ stage: 'ocr', phase: 'start' })
+    expect(events.at(-1)).toMatchObject({ stage: 'audit', phase: 'done' })
   })
 })

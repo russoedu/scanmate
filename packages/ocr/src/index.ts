@@ -36,7 +36,7 @@ export type { NormaliseOptions } from './text-normalisation'
 
 export { collectTemplates, FIGURE_CHARACTERS, glyphCells, printPolarity, templateKey, verifyPrintedRun } from './print-verification'
 export type { Box, CellOptions, PrintedRun, PrintPolarity, PrintVerification, Templates, VerifyOptions } from './print-verification'
-export { claimWords, DEFAULT_RECHECK_PASSES, judgeRun, judgeRuns, matchWords, recheckRun } from './page-reading'
+export { claimWords, DEFAULT_RECHECK_PASSES, judgeRun, judgeRuns, matchWords, readRun, recheckRun } from './page-reading'
 export type { Claims, MatchOptions, Recheck, RecheckOptions, RecheckPass, Reference, Verdict, WordMatch } from './page-reading'
 export { cosine, dice, jaccard, jaroWinkler, levenshtein, levenshteinSimilarity, wordDistance, wordRecall } from './text-similarity'
 export { diacriticsMap, foldConfusables, foldDiacritics } from './text-normalisation'

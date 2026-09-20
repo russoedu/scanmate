@@ -1,4 +1,4 @@
-import { composePanels, EXPECTED_MARGIN, IDENTIFIED, MISSING, NOT_IDENTIFIED, OVERLAY_DIFFERENT, REFERENCE, UNEXPECTED } from '@scanmate/diff'
+import { composePanels, EXPECTED_MARGIN, IDENTIFIED, MISSING, NOT_IDENTIFIED, OVERLAY_DIFFERENT, REFERENCE, UNEXPECTED, UNSETTLED } from '@scanmate/diff'
 import type { Annotation, ExpectedResult, Panel, Rgba } from '@scanmate/diff'
 import type { ContentResult } from '@scanmate/find'
 import { createRaster, drawLabel, labelSize } from '@scanmate/ink'
@@ -30,20 +30,20 @@ import type { AuditFinding, FindingKind } from '../finding-correlation'
  * | pink | | the band where ink still counts as a field's |
  * | orange | | ink added where nothing was expected |
  * | cyan | printed ink the scan lost | the same place, where it is not |
+ * | olive | | read differently, ink identical, nothing could settle it |
  */
 
 export const TEXT_DIFFERENCE: Rgba = NOT_IDENTIFIED
 
 const COLOURS: Readonly<Record<FindingKind, Rgba>> = {
-  'unexpected-mark':          UNEXPECTED,
-  'missing-ink':              MISSING,
-  'text-changed':             NOT_IDENTIFIED,
-  'text-missing':             NOT_IDENTIFIED,
-  'text-added':               NOT_IDENTIFIED,
-  'expected-empty':           NOT_IDENTIFIED,
-  'expected-overfilled':      NOT_IDENTIFIED,
-  'content-missing':          NOT_IDENTIFIED,
-  'content-not-identifiable': NOT_IDENTIFIED,
+  'unexpected-mark':     UNEXPECTED,
+  'missing-ink':         MISSING,
+  'text-changed':        NOT_IDENTIFIED,
+  'text-unsettled':      UNSETTLED,
+  'text-missing':        NOT_IDENTIFIED,
+  'text-added':          NOT_IDENTIFIED,
+  'expected-empty':      NOT_IDENTIFIED,
+  'expected-overfilled': NOT_IDENTIFIED,
 }
 
 /** The legend, in the order it reads. */
@@ -54,6 +54,7 @@ const LEGEND: ReadonlyArray<readonly [Rgba, string]> = [
   [EXPECTED_MARGIN, 'room to sign'],
   [UNEXPECTED, 'unexpected ink'],
   [MISSING, 'print lost'],
+  [UNSETTLED, 'unsettled'],
 ]
 
 export interface EvidenceOptions {

@@ -127,15 +127,21 @@ millimetres.
 
 It exists for one job: settling whether a reading that disagrees is a change or
 a misreading. OCR mangles small, faint and sideways print, and a reader's
-disagreement is not evidence that the paper differs. Identical ink under a word
-means identical characters, whatever they were read as. `@scanmate/audit` sends
-every text difference through here, and drops the ones the ink does not support.
+disagreement is not evidence that the paper differs. `@scanmate/audit` puts
+every text difference the pixels did not already account for through here, as
+the first step of settling it.
+
+Two ways in. `probes` takes the rectangles up front, when the caller already
+knows where to ask. When it does not — and it usually does not, because the
+places worth asking about are the ones the *reading* disputes, and the reading
+runs alongside this rather than before it — `keepMasks` leaves the ink masks on
+the result and `probeInk` asks afterwards:
 
 ```ts
-const [page] = await diffPages(pages, expected, {
-  probes: differences.map(d => ({ page: d.page, x: d.x, y: d.y, width: d.width, height: d.height })),
-})
-page.probes[0]   // { rect, addedInk: 0.04, lostInk: 0.02, sharedInk: 12.8 }
+const page = await diffPage(aligned, expected, { keepMasks: true })
+const probes = probeInk(page.masks, differences, { dpi: 150 })
+probes[0]         // { rect, addedInk: 0.04, lostInk: 0.02, sharedInk: 12.8 }
+page.masks = null // four binary images the size of the page; drop them when done
 ```
 
 A probe is measured on the same masks as everything else, so it is forgiven the
@@ -191,6 +197,7 @@ back, not to the document that asked the question.
 | `maxChanges` | `50` | Cap on a confetti page; the report says it was capped. |
 | `assumeDpi` | `150` | Used when the page does not say. |
 | `probes` | none | Rectangles to measure the ink at, changed or not. |
+| `keepMasks` | `false` | Keep the ink masks on the result, for `probeInk` afterwards. |
 
 ## What it does not do
 

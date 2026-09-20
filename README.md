@@ -69,7 +69,6 @@ const audit = await auditPages(await alignPages(pages), {
     { page: 1, id: 'signature', x: 120, y: 577, width: 262, height: 22 },
     { page: 1, id: 'date',      x: 404, y: 577, width: 171, height: 22 },
   ],
-  content: [{ page: 1, content: ['Vector Supply Company, Inc.', 'Account 4412-9087-3355'] }],
 })
 
 audit.verdict                    // 'pass' | 'review'

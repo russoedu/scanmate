@@ -1,5 +1,4 @@
 import type { Change, ExpectedResult } from '@scanmate/diff'
-import type { ContentResult } from '@scanmate/find'
 import type { TextDifference } from '@scanmate/ocr'
 
 import { correlateFindings } from './correlate-findings.use-case'
@@ -79,17 +78,5 @@ describe('correlateFindings', () => {
       ['expected-empty', 'name', '"name" was left empty'],
       ['expected-overfilled', 'title', '"title" is covered, not filled in'],
     ])
-  })
-
-  it('reports required content that is missing, or altered at one of its places', () => {
-    const occurrence = (y: number, intact: boolean) => ({ box: box(500, y), intact, excerpt: null })
-    const content: ContentResult[] = [
-      { content: 'Schedule A', found: false, identifiable: false, foundBy: 'none', score: 0.4, excerpt: null, printedInOriginal: true, box: box(20, 60), occurrences: [occurrence(60, false)], foundOnPages: [3] },
-      { content: '5,768,700.00', found: true, identifiable: false, foundBy: 'in-place', score: 1, excerpt: '5,768,700.00', printedInOriginal: true, box: box(500, 100), occurrences: [occurrence(100, true), occurrence(120, false)], foundOnPages: [1] },
-    ]
-    const { findings } = correlateFindings({ text: [], pixels: NONE, content })
-
-    expect(findings.map(f => [f.kind, f.box?.y])).toEqual([['content-missing', 60], ['content-not-identifiable', 120]])
-    expect(findings[0].summary).toBe('Required "Schedule A" is not on the page (found on page 3)')
   })
 })

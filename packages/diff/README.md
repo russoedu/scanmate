@@ -72,6 +72,7 @@ Each region reports its shape too — how many separate changes, the largest, th
 | `annotate` | `false` | Draw the report onto the overlay. |
 | `sideBySide` | `false` | Also compose the two pages side by side. |
 | `probes` | none | Rectangles to measure the ink at, changed or not - added, lost and shared, in mm². |
+| `keepMasks` | `false` | Keep the ink masks on the result, so `probeInk` can ask about places found later. |
 
 ## Building blocks
 

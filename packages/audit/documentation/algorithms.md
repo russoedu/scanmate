@@ -6,9 +6,10 @@ Two comparisons, each blind where the other sees, and one verdict.
 
 *The [IRS Form W-9](https://www.irs.gov/pub/irs-pdf/fw9.pdf) (public domain),
 filled in, signed, scanned — and then one printed digit of the account number
-replaced by another of the same run. Green: a field that was filled in. Orange:
-the band where ink still counts as that field's. Red: text that reads
-differently, including the altered figure.*
+replaced by another of the same run. One red box: the altered figure, the only
+thing on the page anything is being accused of. Four olive boxes: runs the
+reading disagreed about that nothing could settle either way. Five further
+disagreements are not drawn at all — they were settled as misreadings.*
 
 ## Why both comparisons
 
@@ -18,29 +19,39 @@ differently, including the altered figure.*
 | a signature, a stamp, a tick | ✗ it is not writing | ✓ ink where none was |
 | a field left empty or blacked out | – | ✓ |
 | a paragraph removed | ✓ runs missing | ✓ ink lost |
-| required content in the wrong place | ✓ | – |
 
-Neither is sufficient. Running both and merging what they saw is the whole idea
-of this package.
+Neither is sufficient, and neither is authoritative. Running both, merging what
+they agree on and **settling what they disagree about** is the whole idea of
+this package.
+
+Required content is not here. Whether the *original* says what it was supposed
+to say is a question no comparison of two copies can answer — issue a different
+form, return a faithful scan of it, and every check on this page passes. That
+is `@scanmate/find`'s question, asked separately, of the reading this returns.
 
 ## The shape of it
 
+Per page, the two comparisons start together. The engine reads in its own
+worker while the masks are built here, so the pair costs about what one did.
+
 ```mermaid
 flowchart TD
-  A[aligned pages] --> B[read every page<br/>@scanmate/ocr]
-  A --> C[compare every page<br/>@scanmate/diff]
-  B --> D[required content<br/>@scanmate/find]
-  B --> E[correlate by place]
-  C --> E
-  D --> E
-  E --> F[findings, corroborated where both saw it]
-  E --> G[explained: differences a region accounts for]
-  F --> H{any finding?}
-  H -->|yes| I[review]
-  H -->|no| J{text score ≥ 0.85?}
-  J -->|no| I
-  J -->|yes| K[pass]
-  F --> L[evidence page:<br/>original and scan, side by side]
+  A[one aligned page] --> B[read it<br/>@scanmate/ocr]
+  A --> C[compare it<br/>@scanmate/diff, masks kept]
+  B --> D[correlate by place]
+  C --> D
+  D --> E[both saw it: one finding, corroborated]
+  D --> F[a region accounts for it: explained]
+  D --> G[they disagree: settle it]
+  G --> H[probe the ink at that very run]
+  H --> I[read both crops again, compare them<br/>with each other]
+  I --> J[changed / misread / unsettled]
+  E --> K{any finding?}
+  J --> K
+  K -->|yes| L[review]
+  K -->|no| M{text score ≥ 0.85?}
+  M -->|no| L
+  M -->|yes| N[pass]
 ```
 
 ## Correlating by place
@@ -67,50 +78,55 @@ flowchart TD
 Overlap is judged with 1.5 points of slack, which is about one stroke width at
 scan resolution.
 
-### A reading is not a change until the ink agrees
+### Settling a disagreement
 
-The rule above leaves one gap, and it is the gap that produces red boxes over
-text a reviewer can see is identical. OCR misreads small, faint and sideways
-print constantly: `W-9` comes back as `W 2] 9`, `Specific Instructions` as
-`[=] O O If 1400`. Nothing changed on the paper; the reader simply failed.
+The rule above leaves the case that produces red boxes over text a reviewer can
+see is identical. OCR misreads small, faint and sideways print constantly:
+`W-9` comes back as `W 2] 9`, `I am` as `1am`. Nothing changed on the paper;
+the reader simply failed.
 
-So every leftover text difference is put back to the pixels, at its own box:
+So a leftover difference is not reported on the reading's word alone. It is put
+to the ink at its own run, and if the ink says nothing moved, to a second
+reading of both sides:
 
 ```mermaid
 flowchart TD
-  A[leftover text difference] --> B{the print check matched<br/>this run's ink, glyph by glyph,<br/>and found other glyphs?}
-  B -->|yes| F[finding — this was seen, not read]
-  B -->|no| C[measure the ink in its box:<br/>added + lost, in mm²]
-  C --> D{≥ 0.3 mm²?}
-  D -->|yes| F
-  D -->|no| N[noise — identical ink,<br/>so identical print]
+  A[the reading disagrees here] --> B{the glyph check matched<br/>this run's ink and found<br/>other glyphs?}
+  B -->|yes| C[changed]
+  B -->|no| D{ink moved at this run,<br/>≥ 0.3 mm²?}
+  D -->|yes| C
+  D -->|no| E[read the original's crop<br/>and the scan's, pass for pass]
+  E --> F{the two sides<br/>read alike?}
+  F -->|yes| G[misread — not reported]
+  F -->|no| H[unsettled — reported<br/>in its own colour]
 ```
 
-`diffPages` takes a `probes` option for exactly this: rectangles to measure
-whether or not anything changed there, returning added, lost and shared ink for
-each. Identical ink under a word means identical characters, however they were
-read, and the difference is set aside as **noise** — reported on the page for
-the curious, never as a finding.
+**Why compare the two readings with each other** rather than with the text
+layer: a systematic misreading — a face, a size, a resolution the engine handles
+badly — misreads the *original* exactly as it misreads the scan. It cancels.
+Both sides come back wrong in the same way, and wrong in the same way means the
+same glyphs. A real change does not cancel, because only one side carries it.
 
-The first branch matters as much as the second. A figure the print check
-matched against the original's own glyphs and found to be *different* glyphs was
-seen rather than read, and needs no second opinion. What it does **not** cover
-is a run it never checked: a difference is exempt because the ink was measured,
-not because the reading happens to contain a digit.
+**Only agreement clears a run; disagreement never condemns one.** That asymmetry
+is a correction. An earlier version of this table also asked *does the original's
+crop read as printed?* and called the run changed when it did — but the original
+is a clean render and the scan has been through a printer, a sheet of paper and
+a scanner, so it reads as printed almost always. On the returned W-9 that branch
+called three runs changed, of which two were `I am` read as `1am` and `FormW9`
+read as `FormW3.`, with nothing whatever having happened to either.
 
-**Explained, not reported**: a signature read as "Ae dhe", the word "Signature"
-written across by a hand that overshot, words over a logo the original prints as
-an image. These are set aside with the region that accounts for them, so the
-findings list stays the list of things that are actually wrong.
+**And "we could not tell" is reported as itself.** The alternative is to keep
+changing the reading until the two agree, which finds agreement whether or not
+it is there: on a 93 dpi scan, accepting a run on a single agreeing pass cleared
+4 of 61 forged digits. Three passes a side, two must agree, and what is left
+over is a finding of its own kind — `text-unsettled`, drawn in olive.
 
-**Corroborated findings are drawn twice as thick** on the evidence page,
-because a reviewer's eye should go to them first: ink added *that also reads as
-words* is a different kind of event from a smudge.
+On the returned W-9 above, ten disagreements: five settled as misreadings, four
+unsettled, one changed — the forged digit, caught by the glyph check.
 
-Required content folds into the same list rather than forming a second one. A
-value that reads wrong where the document prints it becomes **one** finding —
-the text difference, with " - required content" appended and the value named —
-not a text finding plus a content finding about the same place.
+What this leaves uncovered is a change too small to move 0.3 mm² of ink in a run
+the glyph check does not cover; it checks figures, not letters. Such a run lands
+in `unsettled`, which is reported, so it is looked at rather than dismissed.
 
 ## The verdict
 
@@ -138,9 +154,9 @@ A document passes only when every page passes.
 |---|---|
 | `unexpected-mark` | Ink added where nothing was expected. |
 | `missing-ink` | Printed ink the scan lost. |
-| `text-changed` / `text-missing` / `text-added` | The reading disagrees where the pixels saw nothing. |
+| `text-changed` / `text-missing` / `text-added` | The reading disagrees, and the ink or the glyph check agrees that something moved. |
+| `text-unsettled` | The reading disagrees, the ink at that run is identical, and reading both sides again could not settle it. |
 | `expected-empty` / `expected-overfilled` | A field left empty, or covered rather than filled in. |
-| `content-missing` / `content-not-identifiable` | Required content absent, or not intact at every place it is printed. |
 
 Each carries its place in points, a one-sentence summary, and the evidence
 behind it — the text differences, the pixel change — so a report can quote
@@ -199,8 +215,10 @@ Side by side rather than a crop, because the question a reviewer is answering is
 |---|---|---|
 | `minTextScore` | `0.85` | Below this a page cannot pass, findings or not. |
 | `expected` | none | Regions where a change is expected, in points. |
-| `content` | none | Content that must be on each page. |
-| `ocr` / `diff` / `find` | their own defaults | Passed straight through. |
+| `ocr` / `diff` | their own defaults | Passed straight through. |
+| `settle.quorum` | `2` | Readings that must agree before a side is believed. |
+| `settle.passes` | 400, 400 stretched, 600 stretched | How each side is read when a dispute is settled. |
+| `settle.maxDisputes` | `40` | Disputes re-read per page; beyond it they are unsettled. |
 | `output` | `'png'` | Encoding of the evidence page. |
 | — | `1.5` pt | Slack when deciding two boxes are the same place. |
 | — | `0.3` mm² | Ink at a text difference below which the print counts as identical. A glyph of 9 pt text covers roughly 1 mm², so a changed character moves several times this; scanner grain does not. |
@@ -212,8 +230,8 @@ Side by side rather than a crop, because the question a reviewer is answering is
   about the document, not about a workflow.
 - It does not rank findings by severity. A stray tick and a changed total are
   both reported; which matters is the caller's judgement.
-- It does not look at anything but the two documents it was given.
-- It does not treat a reading as evidence on its own. A difference the pixels
-  cannot corroborate is reported as `noise`, not as a finding - which means a
-  change made with no change of ink at all is, by construction, not something
-  this can see.
+- It does not look at anything but the two documents it was given, and it does
+  not check that the original says what it should. That is `@scanmate/find`.
+- It does not treat a reading as evidence on its own, and it does not treat a
+  disagreement between the two comparisons as evidence either. What it cannot
+  settle it reports as unsettled rather than deciding.

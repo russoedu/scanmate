@@ -67,6 +67,49 @@ const FIGURE_CHARACTERS = '0123456789.,:/%()+-'
 /** White kept around a crop, in pixels: tesseract reads poorly off the edge of an image. */
 const MARGIN = 12
 
+/**
+ * Reads one run's crop once per pass, and says what each pass read - without
+ * judging it against anything.
+ *
+ * `recheckRun` asks "does this still say what the original prints?", which is
+ * the right question while reading a page. It is the wrong question once the
+ * pixels have disagreed with the reading, because a systematic misreading -
+ * a face, a size, a resolution the engine handles badly - misreads the
+ * *original* just as surely as the scan. Reading both sides the same way and
+ * comparing the two readings to each other cancels exactly that error, and
+ * needs the readings themselves rather than a verdict.
+ *
+ * @param engine - The engine to read with.
+ * @param image - The page to crop from, and its resolution.
+ * @param run - The run to read, placed on that page.
+ * @param options - Which passes to try; the matching rules pick the charset.
+ * @param polarity - Whether the original prints this run light on dark.
+ * @returns What each pass read, in order; empty when the run cannot be cropped.
+ */
+export async function readRun (
+  engine: OcrEngine,
+  image: { raster: Raster, dpi: number },
+  run: Reference,
+  options: MatchOptions & RecheckOptions,
+  polarity?: PrintPolarity,
+): Promise<string[]> {
+  const { passes = DEFAULT_RECHECK_PASSES } = options
+  const crop = cropRun(image.raster, image.dpi, run, polarity)
+  if (crop === null) return []
+
+  const characters = FIGURE.test(run.text.trim()) ? FIGURE_CHARACTERS : undefined
+  const readings: string[] = []
+  for (const pass of passes) {
+    const scale = Math.max(1, pass.dpi / image.dpi)
+    const enlarged = scale === 1 ? crop : await resampleRaster(crop, Math.round(crop.width * scale), Math.round(crop.height * scale))
+    const prepared = frame(polarity === 'light-on-dark' || pass.stretch === true ? stretch(enlarged) : enlarged)
+    const read = await engine.recognise(prepared, { layout: pass.layout, characters })
+    readings.push(read.lines.map(line => line.text).join(' ').trim())
+  }
+
+  return readings
+}
+
 export async function recheckRun (
   engine: OcrEngine,
   image: { raster: Raster, dpi: number },

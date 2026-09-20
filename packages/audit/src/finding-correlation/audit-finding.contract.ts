@@ -14,19 +14,19 @@ import type { TextDifference } from '@scanmate/ocr'
  *   which stays within the pixel tolerance.
  * - `expected-empty`, `expected-overfilled`: a region that should have been
  *   filled in was left empty, or was blacked out.
- * - `content-missing`, `content-not-identifiable`: required content was not on
- *   its page, or not at every place the original prints it.
+ * - `text-unsettled`: the reading disagrees, the ink at that run is identical,
+ *   and reading both sides again could not settle which is right. Reported,
+ *   because "we could not tell" is not the same as "nothing happened".
  */
 export type FindingKind =
   'unexpected-mark' |
   'missing-ink' |
   'text-changed' |
+  'text-unsettled' |
   'text-missing' |
   'text-added' |
   'expected-empty' |
-  'expected-overfilled' |
-  'content-missing' |
-  'content-not-identifiable'
+  'expected-overfilled'
 
 export interface AuditFinding {
   kind:         FindingKind
