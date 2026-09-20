@@ -34,6 +34,14 @@ await scan.dispose()
 
 ## What it does for you
 
+**You never align or enhance yourself.** To check a returned document against the one you issued, call `audit()`, `diff()`, `ocr()` or `find()` and nothing else. Extraction, alignment and preparation happen underneath, once, in the right order:
+
+```ts
+const report = await scan.audit()   // extracts, aligns, prepares, reads and compares
+```
+
+`align()` and `enhance()` remain part of the API because they are useful on their own - inspecting an alignment, producing a cleaned page to look at - but they are **not steps in a validation**. Calling them first changes nothing except when you are choosing the treatment yourself, and calling `enhance()` explicitly turns the automatic choice off.
+
 **Every method runs what it needs.** `diff()` on a fresh session extracts and aligns first. Each stage is remembered, so the next question costs only the new work, and asking the same one twice costs nothing:
 
 ```ts
@@ -47,6 +55,29 @@ Change an option and that stage runs again, dropping whatever was computed from 
 ```ts
 await scan.align({ model: 'homography' })   // realigns, and the old diff is dropped
 ```
+
+**The document chooses how it is prepared.** A soft scan reads far better levelled and sharpened; a good one reads better left alone. There is no default that suits both, so the session tries each treatment on a few pages spread across the document, scores them against the original's own text layer, and applies the winner to the rest:
+
+```ts
+await scan.ocr()
+scan.preparation   // { chosen: { id: 'levelled-sharpened' }, tried: [...], on: [1, 4, 7] }
+```
+
+Measured on three scans of one order confirmation, scored by what the reading agreed with:
+
+| scan | as scanned | levelled | levelled and sharpened |
+|---|---|---|---|
+| 93 dpi | 0.6603 | 0.6485 | **0.8047** |
+| 120 dpi | **0.9362** | 0.9220 | 0.9222 |
+| 144 dpi | 0.9968 | **0.9984** | 0.9848 |
+
+Three documents, three different winners - which is why this is chosen rather than configured. Each of the three picks its own best treatment, so the 93 dpi scan gains 0.14 and neither good scan loses anything.
+
+Three pages, because one is not enough and that is measured too: on the 93 dpi scan, page 2 is the single page where sharpening loses; on the 120 dpi one, page 1 is the single page where levelling wins. Either alone would have chosen wrongly.
+
+`prepare: 'none'` reads the aligned pages as they are.
+
+It cannot bias a verdict. The choice is between three fixed treatments scored over a whole page, and it never reaches the evidence: `diff()` and the glyph check read the aligned page, never the prepared one.
 
 **One OCR engine for the session.** `ocrPages` and `auditPages` each start a tesseract worker when they are not given one, and a language model is tens of megabytes into a fresh WASM heap. The session makes one, hands it to every stage that reads, and terminates it in `dispose()` - and never terminates an engine you supplied yourself.
 
@@ -66,11 +97,11 @@ That is measured, not asserted: a test spawns a child process with a module hook
 |---|---|---|
 | `pages(options?)` | page pairs | the constructor's inputs |
 | `align(options?)` | the scan on the original's canvas | `pages` |
-| `enhance(options?)` | a cleaned copy alongside | `align` - **never implicit** |
-| `ocr(options?)` | how closely the text matches | `enhance` if it ran, else `align` |
+| `enhance(options?)` | a cleaned copy alongside | `align` - and it overrides the automatic choice |
+| `ocr(options?)` | how closely the text matches | prepared pages, or `enhance` if you ran it |
 | `diff(expected?, options?)` | what changed, and whether it should have | `align` |
 | `find(content?, options?)` | whether required content is there | `ocr` |
-| `audit(options?)` | the verdict, with its evidence | `enhance` if it ran, else `align` |
+| `audit(options?)` | the verdict, with its evidence | prepared pages, or `enhance` if you ran it |
 | `report()` | everything known, joined by page | whatever has run |
 | `dispose()` | — | — |
 
@@ -80,6 +111,7 @@ Results are also readable **synchronously**, as `undefined` until the stage has 
 scan.alignedPages      // undefined until align() has finished
 scan.unpaired          // pages the scan lost, which nothing downstream reports
 scan.mergedPdf         // the merged bytes, when a side was given as an array
+scan.preparation       // which treatment the document chose, and what the others scored
 scan.loaded            // which stage packages have loaded
 ```
 

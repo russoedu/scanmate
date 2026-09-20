@@ -143,7 +143,9 @@ describe('Scanmate', () => {
 
   it('shares one run between callers asking at the same time', async () => {
     // The test that fails if results are cached instead of promises.
-    const scan = session()
+    // Preparation is off so the count is the reading itself, not the trial
+    // reads that choosing a treatment makes; that is its own test.
+    const scan = session({ prepare: 'none' })
     await Promise.all([scan.ocr(), scan.ocr(), scan.diff()])
 
     expect(calls.filter(c => c === 'alignPages')).toHaveLength(1)
@@ -180,11 +182,33 @@ describe('Scanmate', () => {
     await expect(scan.align()).resolves.toHaveLength(1)
   })
 
-  it('never enhances unless it was asked to', async () => {
+  it('prepares the pages itself, so a caller never has to align or enhance', async () => {
     const scan = session()
     await scan.ocr()
 
-    expect(calls.includes('enhancePages')).toBe(false)
+    // Each treatment is tried on one page and the best kept. Every recipe but
+    // the first enhances, so the trial is visible in the calls.
+    expect(calls.filter(call => call === 'enhancePages').length).toBeGreaterThan(0)
+    expect(scan.preparation?.tried.map(t => t.id).toSorted((a, b) => a.localeCompare(b))).toEqual(['as-scanned', 'levelled', 'levelled-sharpened'])
+    // The stub reads everything perfectly, so nothing beats leaving it alone.
+    expect(scan.preparation?.chosen.id).toBe('as-scanned')
+  })
+
+  it('decides how to prepare once, however many readers ask', async () => {
+    const scan = session()
+    await scan.ocr()
+    const trials = calls.filter(call => call === 'ocrPages').length
+    await scan.audit()
+
+    expect(calls.filter(call => call === 'ocrPages').length).toBe(trials)
+  })
+
+  it('reads the aligned pages untouched when told not to prepare', async () => {
+    const scan = session({ prepare: 'none' })
+    await scan.ocr()
+
+    expect(calls).toEqual(['extractPair', 'alignPages', 'createTesseractEngine', 'ocrPages'])
+    expect(scan.preparation).toBeUndefined()
   })
 
   it('reads the enhanced pages once enhancing was asked for', async () => {
@@ -231,11 +255,12 @@ describe('Scanmate, reusing an audit', () => {
   it('hands back the reading and the pixels the audit already worked out', async () => {
     const scan = session()
     await scan.audit()
+    // What the audit already paid for: asking again must cost nothing more.
+    const afterAudit = calls.length
     await scan.ocr()
     await scan.diff()
 
-    expect(calls.filter(c => c === 'ocrPages')).toHaveLength(0)
-    expect(calls.filter(c => c === 'diffPages')).toHaveLength(0)
+    expect(calls.slice(afterAudit)).toEqual([])
   })
 
   it('keeps the audit itself when it files the reading and the pixels it produced', async () => {

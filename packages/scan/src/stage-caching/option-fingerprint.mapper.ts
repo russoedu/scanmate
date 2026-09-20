@@ -49,8 +49,16 @@ function stable (value: unknown): unknown {
     .toSorted(([a], [b]) => a.localeCompare(b))
     .map(([key, of]) => [key, stable(of)] as const)
 
-  // An object with no comparable content is still a distinct thing to a caller.
-  return entries.length === 0 && Object.keys(value).length > 0 ? `object#${identity(value)}` : Object.fromEntries(entries)
+  // A plain bag is what it holds, so `{ ocr: undefined }` is `{}` - the whole
+  // point of eliding `undefined` is that an absent key and an explicit one are
+  // the same settings. Anything else that yields no entries is opaque rather
+  // than empty - a Map, a Set, a Date, a class instance keeping its state
+  // privately - and two of those are the same only if they are the same object.
+  const prototype = Object.getPrototypeOf(value) as unknown
+  const plain = prototype === Object.prototype || prototype === null
+  if (!plain && entries.length === 0) return `opaque#${identity(value)}`
+
+  return Object.fromEntries(entries)
 }
 
 /** A stable string for any option bag. Equal strings mean equal settings. */
