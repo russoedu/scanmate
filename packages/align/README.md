@@ -1,230 +1,96 @@
-![scanmate align](./scanmate-align.svg)
+![scanmate align](./assets/scanmate-align.svg)
 
 # `@scanmate/align`
 
-> Coarse-to-fine geometric alignment engine for matching scanned pages back onto reference document templates.
+Puts a scanned or photographed page back onto the original it came from: deskewed, rescaled and registered, so a rectangle in PDF points means the same place on both.
 
-`@scanmate/align` resamples photographs or flatbed scans of printed forms onto the exact coordinate canvas of their original digital templates (PDF pages). It solves translation, rotation, scaling, affine shear, and 8-DOF perspective distortions using a multi-hypothesis coarse estimator, Fast Fourier Transform (FFT) phase correlation, oriented FAST + steered BRIEF (ORB) feature matching, and RANSAC geometric model fitting.
+![the scan as it came back, and the same scan put back on the original's page](./assets/aligned.jpg)
 
----
+*Left: the returned scan, turned 1.4° and 3% small. Right: the same pixels on the original's canvas. Made from the [IRS Form W-9](https://www.irs.gov/pub/irs-pdf/fw9.pdf) (a work of the United States government, in the public domain): filled in as a generator would, printed, signed by hand and scanned crooked.*
 
-## Features
-
-- 🎯 **Coordinate Preservation**: Resamples scanned pages directly onto the original PDF canvas dimensions, ensuring bounding box coordinates $(x, y, w, h)$ remain 1:1 comparable.
-- 🚀 **Multi-Hypothesis Coarse Estimation**: Guesses transformation candidates via frame matching, content bounding-box matching, and projection-histogram deskewing at low resolution (512px).
-- ⚡ **FFT Phase Correlation**: Fine-tunes 2D translational offsets using frequency-domain cross-power spectral density peaks.
-- 🔬 **Steered BRIEF & FAST Corners (ORB)**: Detects corners with intensity centroids for scale/rotation invariance without native OpenCV dependencies.
-- 🛡️ **RANSAC Model Fitting**: Filters up to 60%+ false matches (e.g. repeated table cells, identical letterforms) using RANdom SAmple Consensus.
-- 📐 **Multiple Transformation Models**: Supports `similarity` (4-DOF), `affine` (6-DOF), and `homography` (8-DOF perspective transform).
-
----
-
-## Installation
+## Install
 
 ```bash
-# Using npm
-npm install @scanmate/align @scanmate/ink
-
-# Using pnpm
-pnpm add @scanmate/align @scanmate/ink
-
-# Using yarn
-yarn add @scanmate/align @scanmate/ink
+npm install @scanmate/align @scanmate/extract
 ```
-
----
-
-## Quick Start
 
 ```ts
-import { alignScan } from '@scanmate/align'
-import { decodeImage } from '@scanmate/ink'
-import { readFile } from 'node:fs/promises'
+import { alignPages, alignScan } from '@scanmate/align'
+import { extractPair } from '@scanmate/extract'
 
-const original = await decodeImage(await readFile('template_p1.png'))
-const scanned = await decodeImage(await readFile('returned_photo.jpg'))
+// A pair of documents, page by page:
+const { pages } = await extractPair({ original: 'fw9-issued.pdf', scanned: 'fw9-returned.pdf' })
+const aligned = await alignPages(pages)
 
-const result = await alignScan(original, scanned, {
-  model: 'similarity',
-  workingSize: 1400,
-})
+aligned[0].scanned.raster         // left above: the scan as it came back
+aligned[0].aligned.raster         // right: the same pixels on the original's canvas
+aligned[0].aligned.confidence     // 0-1: how well the ink agrees after warping
+aligned[0].aligned.transform      // model, scale, rotation, shear, translation
+aligned[0].aligned.matrix         // original coordinates -> scan coordinates
+aligned[0].aligned.inverse        // and back
 
-console.log(`Confidence: ${(result.confidence * 100).toFixed(1)}%`)
+// Or two images on their own:
+const result = await alignScan('fw9-page-1.png', 'fw9-returned.jpg')
 ```
 
----
+## How it works, briefly
 
-## Architecture & Algorithm Deep-Dive
+1. **Ink separation** on both pages, so shadows, grey lids and uneven light do not take part in anything.
+2. **A coarse guess** of scale, rotation and shift, tried three ways — frame to frame, content to content, and after deskewing each page — nudged by FFT phase correlation and judged on ink correlation. Descriptors only match between images of comparable size, and nothing in a scan says what resolution it is.
+3. **ORB features**: FAST-9 corners, steered BRIEF descriptors, brute-force Hamming matching with a ratio test and a displacement filter.
+4. **RANSAC** per transform family, re-fitted on its inliers. A page of text is full of identical-looking corners, so wrong matches are the normal case, not an accident.
+5. **One warp for the winner**, at full resolution.
 
-### 1. Multi-Stage Coarse-to-Fine Pipeline
+Everything above the per-model step is done once, so trying three models costs about 1.2× trying one.
 
-```mermaid
-flowchart TD
-    A["Original Template & Scanned Image"] --> B["Decode to Rasters & Ink Normalization"]
-    B --> C["Coarse Estimator (512px downsample)"]
+## Choosing the model
 
-    subgraph CoarseStrategy["Coarse Estimation Hypotheses"]
-        C1["Hypothesis 1: Frame Matching"]
-        C2["Hypothesis 2: Content Bounding-Box"]
-        C3["Hypothesis 3: Projection Histogram Deskew"]
-    end
+`model: 'all'` (the default) sweeps `similarity` → `affine` → `homography`, cheapest first, and stops as soon as one reaches `confidenceTarget`. A freer model must beat the best simpler one by `modelPreferenceMargin` to replace it: eight degrees of freedom will happily overfit a flatbed scan's noise, winning on correlation by a hair while being geometrically wrong.
 
-    C --> CoarseStrategy
-    CoarseStrategy --> D["Score Candidates via Ink Correlation"]
-    D --> E["Best Coarse Transform H_coarse"]
-    E --> F["2D FFT Phase Correlation<br/>Fine translation shift (dx, dy)"]
-    F --> G["Coarse-Warped Scan"]
-    G --> H["ORB Feature Detection (1400px)<br/>FAST Corners + Steered BRIEF"]
-    H --> I["Hamming Distance Matching & Mutual Filter"]
-    I --> J["RANSAC Iterative Inlier Estimation"]
-    J --> K{"Inlier count >= minInliers?"}
-    K -- Yes --> L["Fit Final Homography H_fine<br/>Compose: H_total = H_coarse * H_fine"]
-    K -- No --> M["Fallback to H_coarse (method: 'coarse')"]
-    L --> N["Inverse Mapping Resample onto Original Canvas"]
-    M --> N
-    N --> O["Aligned Output Raster & Confidence Diagnostics"]
-```
+If no model finds a consensus — a nearly blank form has few corners — the coarse estimate is returned, scored the same way, with `method: 'coarse'`. There is always a transform and always a number saying how much to trust it.
 
----
+## Reading the confidence
 
-### 2. Feature Matching & RANSAC Alignment Sequence
+`confidence` is the ink correlation after warping, clamped to `[0, 1]`. Measured on real returned documents:
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant App as Application
-    participant Align as alignScan()
-    participant ORB as Feature Matching (ORB)
-    participant RANSAC as RANSAC Solver
-    participant Kernel as @scanmate/ink Warp
+| | ink correlation |
+|---|---|
+| aligned to the wrong page | 0.01 – 0.30 |
+| correctly aligned, **signed** page | 0.80 – 0.84 |
+| correctly aligned, ordinary page | 0.92 – 0.97 |
 
-    App->>Align: Execute alignScan(original, scanned)
-    Align->>Align: Run Coarse Estimation & FFT Phase Correlation
-    Align->>ORB: detectAndDescribe(originalInk) & detectAndDescribe(scannedInk)
-    ORB->>ORB: Compute FAST corners & 256-bit steered BRIEF descriptors
-    Align->>ORB: matchFeatures(setA, setB)
-    ORB->>ORB: Calculate Hamming Bit Distances & Mutual Nearest Neighbor
-    ORB-->>Align: Return candidate PointMatch correspondences
-    Align->>RANSAC: ransac(matches, { model, threshold })
-    loop Random Sample Consensuses (N iterations)
-        RANSAC->>RANSAC: Sample minimal point set (e.g. 2 for Similarity, 4 for Homography)
-        RANSAC->>RANSAC: Solve model parameter matrix H_candidate via SVD
-        RANSAC->>RANSAC: Count inliers where distance(H * p_src, p_dst) < threshold
-    end
-    RANSAC->>RANSAC: Refit optimal model H_final on all consensus inliers
-    RANSAC-->>Align: Return RansacResult (inliers, matrix)
-    Align->>Kernel: warpRaster(scanned, outputCanvas, H_total_inv)
-    Kernel-->>Align: Aligned Raster
-    Align-->>App: Return AlignResult
-```
+A signed page scores lower because it was signed: the signature is ink the original has not, and correlation counts it as disagreement. A threshold has to leave room for that.
 
----
+## Options
 
-## Comprehensive API Reference
+| option | default | |
+|---|---|---|
+| `model` | `'all'` | `'similarity' \| 'affine' \| 'homography' \| 'all'`. |
+| `confidenceTarget` | `0.9` | Stop the sweep here. |
+| `models` | all three | Restrict or reorder the sweep. |
+| `modelPreferenceMargin` | `0.02` | How much better a freer model must be. |
+| `workingSize` | `1400` | Longest side for features and matching. |
+| `coarseSize` | `512` | Longest side for the coarse search. |
+| `maxFeatures` | `1200` | Corners kept per image. |
+| `ransacThreshold` | `3` px | Inlier distance. |
+| `minInliers` | `12` | Below this there is no consensus. |
+| `maxSkewDeg` | `12` | Largest per-page skew considered. |
+| `maxScaleRatio` | `6` | Largest size ratio entertained. |
+| `maxDisplacementRatio` | `0.12` | A match may not move further than this. |
+| `interpolation` | `'bilinear'` | `'nearest'` for masks. |
+| `output` | `'png'` | `'none'` keeps the raster only. |
+| `seed` | fixed | The same input gives the same matrix. |
 
-### 1. Primary Alignment Functions
+`alignPages` adds `onProgress`, and carries each page's metadata through untouched.
 
-#### `alignScan(original: ImageInput | Raster, scanned: ImageInput | Raster, options?: AlignOptions): Promise<AlignResult>`
-Main entry point to align a single scanned image back onto the original template canvas.
-- **Parameters**:
-  - `original`: Original template image (file `Buffer`, `Uint8Array`, or decoded `Raster`).
-  - `scanned`: Scanned page image (file `Buffer`, `Uint8Array`, or decoded `Raster`).
-  - `options` *(optional)*: `AlignOptions` object (see detailed breakdown below).
-- **Returns**: `Promise<AlignResult>` containing resampled `raster`, transformation matrices, transform summary, `confidence` score (0.0 to 1.0), `method` (`'features'` | `'coarse'`), and diagnostics.
+## Diagnostics
 
-##### Detailed Options Explanation (`AlignOptions`):
+`AlignResult.diagnostics` reports the coarse score and strategy, each page's measured skew, feature and match counts, inliers and inlier ratio, reprojection error, final correlation and overlap, the selected model, every attempt, and the time taken. A low score is then a thing you can read rather than a mystery.
 
-| Option | Type | Default | Description & Impact |
-|---|---|---|---|
-| `model` | `'similarity' \| 'affine' \| 'homography'` | `'similarity'` | Mathematical transformation model to fit. `similarity` (4-DOF) solves scale, rotation, translation; `affine` (6-DOF) adds axis shear; `homography` (8-DOF) solves perspective tilt. |
-| `workingSize` | `number` | `1400` | Maximum dimension (width/height in px) to downscale images for feature detection. Higher values increase accuracy for faint text but increase execution time quadratically. |
-| `coarseSize` | `number` | `512` | Maximum dimension for the fast initial coarse estimation sweep. |
-| `maxFeatures` | `number` | `1200` | Maximum budget of ORB keypoints to detect per image. |
-| `ransacThreshold` | `number` | `3.0` | Maximum reprojection distance in working-resolution pixels to consider a feature match an inlier during RANSAC. |
-| `minInliers` | `number` | `12` | Minimum required RANSAC inlier matches. If inlier count is below this, feature stage is rejected and method falls back to `'coarse'`. |
-| `maxSkewDeg` | `number` | `12.0` | Maximum page tilt angle considered during projection histogram deskewing. |
-| `interpolation` | `'bilinear' \| 'bicubic' \| 'nearest'` | `'bilinear'` | Sub-pixel interpolation kernel used when inverse warping the scan onto the output canvas. |
-| `background` | `Rgba` (`[r,g,b,a]`) | `[255,255,255,255]` | RGBA background fill color for canvas areas not covered by the warped scan. |
-| `output` | `'png' \| 'jpeg' \| 'none'` | `'png'` | Format for encoded output bytes in `result.image`. Set to `'none'` if consuming `result.raster` directly to save PNG encoding overhead. |
-| `seed` | `number` | `42` | PRNG seed for RANSAC sampling and steered BRIEF patterns, ensuring deterministic output across runs. |
+## Building blocks
 
----
+`estimateCoarse`, `detectAndDescribe`, `matchFeatures`, `phaseCorrelate`, `ransac`, `fitSimilarity`, `fitAffine`, `fitHomography`, `findInliers` and `polishTranslation` are exported for callers who want a stage on its own.
 
-#### `alignPages(pages: PagePairing[], options?: AlignPagesOptions): Promise<AlignedPage[]>`
-Executes multi-page document alignment in parallel or sequence.
-- **Parameters**:
-  - `pages`: Array of paired document page objects (`{ pageNumber, original, scanned }`).
-  - `options` *(optional)*: Extends `AlignOptions` with `onProgress: (stage: string, progress: number) => void` callback.
-- **Returns**: `Promise<AlignedPage[]>`
+## How it decides
 
-#### `polishTranslation(original: Raster, aligned: Raster): Matrix3`
-Fine-tunes residual 1-2 pixel translational shifts between original and aligned rasters using phase correlation.
-
----
-
-### 2. Intermediate Pipeline Building Blocks
-
-#### `estimateCoarse(original: Raster, scanned: Raster, options?: CoarseOptions): Promise<CoarseResult>`
-Evaluates triple-hypothesis coarse transformation candidates (`frame`, `content`, `deskew`) at low resolution (`coarseSize`).
-- **`options`**:
-  - `coarseSize` *(default: 512)*: Downscaled image dimension.
-  - `maxSkewDeg` *(default: 12)*: Max search skew angle.
-- **Returns**: `Promise<CoarseResult>` with best matrix, candidate scores, and downscaled warped gray images.
-
-#### `detectAndDescribe(image: GrayImage, options?: FeatureOptions): FeatureSet`
-Detects FAST corners and computes 256-bit steered BRIEF binary descriptors (ORB).
-- **`options`**:
-  - `maxFeatures` *(default: 1200)*: Keypoint budget cap.
-  - `fastThreshold` *(default: 20)*: FAST corner detector intensity difference threshold.
-- **Returns**: `FeatureSet` containing `keypoints` (position, angle, response) and `descriptors` (`Uint8Array` of size $N \times 32$).
-
-#### `matchFeatures(setA: FeatureSet, setB: FeatureSet, options?: MatchOptions): PointMatch[]`
-Matches binary BRIEF descriptors between two feature sets using Hamming distance.
-- **`options`**:
-  - `maxDistance` *(default: 64)*: Maximum acceptable Hamming bit error distance (0-256).
-  - `crossCheck` *(default: true)*: Enforces mutual nearest-neighbor filter (A must choose B and B must choose A).
-- **Returns**: Array of `PointMatch` (`{ src: Point, dst: Point, distance: number }`).
-
-#### `hamming(a: Uint8Array, b: Uint8Array): number` / `popcount(n: number): number`
-High-speed bitwise XOR popcount function for computing 256-bit Hamming distance between descriptors.
-
-#### `phaseCorrelate(imageA: GrayImage, imageB: GrayImage): PhaseCorrelationResult`
-Computes 2D FFT cross-power spectrum between two gray images to find global translation vector $(dx, dy)$ and correlation peak height.
-
----
-
-### 3. Model Fitting & RANSAC Solvers
-
-#### `ransac(matches: PointMatch[], options?: RansacOptions): RansacResult`
-Iterative RANSAC solver for filtering false feature matches and fitting geometric transformation parameters.
-- **`options`**:
-  - `model` *(default: `'similarity'`)*: `'similarity'`, `'affine'`, or `'homography'`.
-  - `threshold` *(default: 3.0)*: Inlier reprojection error threshold in pixels.
-  - `maxIterations` *(default: 2000)*: Max consensus iteration trials.
-  - `confidence` *(default: 0.99)*: Theoretical probability of finding optimal inlier set.
-  - `seed` *(default: 42)*: PRNG seed.
-- **Returns**: `RansacResult` (`{ matrix: Matrix3, inliers: PointMatch[], iterations: number, rmsError: number }`).
-
-#### `fitModel(model: TransformModel, points: PointMatch[]): Matrix3`
-Direct non-iterative model fitting solver for specified `model` type on a set of point matches.
-
-#### `fitSimilarity(points: PointMatch[]): Matrix3`
-Fits 4-DOF Similarity matrix (Scale, Rotation, Translation) from 2+ point matches using least squares.
-
-#### `fitAffine(points: PointMatch[]): Matrix3`
-Fits 6-DOF Affine matrix (Scale X/Y, Rotation, Shear, Translation) from 3+ point matches.
-
-#### `fitHomography(points: PointMatch[]): Matrix3`
-Fits 8-DOF Homography matrix ($3 \times 3$ perspective transformation) from 4+ point matches using SVD / eigenvector solver.
-
-#### `findInliers(matches: PointMatch[], matrix: Matrix3, threshold: number): PointMatch[]`
-Filters point matches returning only those whose reprojection error under `matrix` is less than `threshold`.
-
-#### `minimumSamples(model: TransformModel): number`
-Returns minimum required point correspondences to solve model: `similarity` = 2, `affine` = 3, `homography` = 4.
-
----
-
-## License
-
-MIT © [ScanMate Team](https://github.com/russoedu/scanmate)
+[`documentation/algorithms.md`](./documentation/algorithms.md) has the algorithms in full: what each step measures, the decision flows, every constant with the measurement behind it, and what the package deliberately does not do.

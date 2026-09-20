@@ -1,6 +1,7 @@
 import type { AlignedPage, PageImage, ProgressCallback } from '@scanmate/ink'
 
 import type { OcrEngine, TesseractEngineOptions } from '../ocr-engine'
+import type { VerifyOptions } from '../print-verification'
 import type { RecheckOptions } from './recheck-run.use-case'
 import type { NormaliseOptions } from '../text-normalisation'
 import type { ScoreMetric, TextMetrics } from '../text-similarity'
@@ -13,6 +14,9 @@ export interface PositionedText {
   width:     number
   height:    number
   endsLine?: boolean
+  /** How the run is set, when the text layer says: a figure is matched against glyphs of the same face and size. */
+  fontName?: string
+  fontSize?: number
 }
 
 /**
@@ -56,6 +60,13 @@ export interface OcrOptions {
    * time; `false` reports the page reading as it is. See `recheckRun`.
    */
   recheck?:           RecheckOptions | false
+  /**
+   * Match every printed figure against the original's own glyphs instead of
+   * trusting what the scan reads there; `false` leaves figures to the reading.
+   * See `verifyPrintedRun`. On by default, and only possible when the original
+   * has a text layer.
+   */
+  printCheck?:        VerifyOptions | false
   onProgress?:        ProgressCallback
 }
 
@@ -97,6 +108,13 @@ export interface TextDifference {
    * the match threshold (`'text'`). Always `'text'` for missing and added.
    */
   reason:     'numbers' | 'text'
+  /**
+   * The scan's ink here was matched against the original's own glyphs, and they
+   * are not the same glyphs. A difference carrying this was *seen* rather than
+   * read, so it stands on its own; one without it is a reading, and a reading
+   * disagreeing with identical ink is a misreading.
+   */
+  verified?:  boolean
   /** Where on the page, in points from the top-left. */
   x:          number
   y:          number
@@ -139,6 +157,8 @@ export interface PageOcr {
   differences: TextDifference[]
   /** Runs the page reading doubted and re-read on their own, and how many of them the re-reading cleared. */
   rechecks:    { attempted: number, cleared: number }
+  /** Printed figures matched against the original's own glyphs, and how many read as something else. */
+  printChecks: { checked: number, different: number }
   warnings:    string[]
 }
 

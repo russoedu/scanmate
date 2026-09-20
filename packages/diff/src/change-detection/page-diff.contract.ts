@@ -1,5 +1,7 @@
 import type { ImageFormat, InkOptions, ProgressCallback, Raster, Rect } from '@scanmate/ink'
 
+import type { Masks } from '../region-comparison'
+
 /**
  * Coordinates for regions going in and changes coming out.
  *
@@ -25,6 +27,37 @@ export interface ExpectedChange {
 export interface DiffOptions {
   /** Units of `ExpectedChange` rectangles and of every rectangle reported back. Default `'points'`. */
   units?:             CoordinateUnits
+  /**
+   * Places to measure the ink at, whether or not anything changed there.
+   *
+   * A reading that disagrees with the original is not by itself a change: OCR
+   * misreads small print, and sideways print, and print on a shaded bar. Asking
+   * what the ink does at the very place the reading disagrees settles it - ink
+   * that is identical there means the characters are identical, whatever was
+   * read. `@scanmate/audit` passes every text difference through here.
+   */
+  probes?:            readonly ProbeRect[]
+  /**
+   * Keep the ink masks on the result, so the caller can probe places it does
+   * not know about yet.
+   *
+   * The places worth probing are the ones the reading disputes, and the reading
+   * runs alongside this rather than before it - so `probes` cannot name them.
+   * Masks are four binary images the size of the page, about 9 MB for A4 at
+   * 150 dpi, so a caller is expected to drop them as soon as it has asked.
+   */
+  keepMasks?:         boolean
+  /**
+   * How far outside an expected region its ink may still lie, in `units`. Default `6`
+   * (2 mm at 72 points to the inch).
+   *
+   * People sign past the box they are given - a descender below the rule, a flourish
+   * out to the side - and that is the signature, not a mark someone made elsewhere. The
+   * region claims the ink within this band and measures it, while still reporting the
+   * rectangle it was given. Ink inside the band of any expected region counts towards
+   * them all, so one stroke crossing two fields is not left over as unexpected.
+   */
+  expectedMargin?:    number
   /** Pixels the original's ink is fattened by before diffing, to absorb sub-pixel misalignment. Default `2`. */
   tolerance?:         number
   /**
@@ -169,6 +202,21 @@ export interface RegionInkMetrics {
 }
 
 /** A change found where nothing was expected, or ink that went missing. */
+/** A place to measure the ink at; `page` selects the page when several are compared. */
+export type ProbeRect = Rect & { page?: number }
+
+/** What the ink does inside one place that was asked about. */
+export interface InkProbe {
+  /** The place asked about, in `units`. */
+  rect:      Rect
+  /** New ink there, in square millimetres. */
+  addedInk:  number
+  /** Printed ink lost there, in square millimetres. */
+  lostInk:   number
+  /** Ink the two pages agree on there, in square millimetres. */
+  sharedInk: number
+}
+
 export interface Change {
   /** Bounding box, in the requested units. */
   x:       number
@@ -183,13 +231,17 @@ export interface Change {
 
 export interface PageDiff {
   page:             number
-  /** The overlay: red added, blue lost, grey agreed - annotated when asked. */
+  /** The overlay: violet where the ink differs, grey where it agrees - annotated when asked. */
   diffRaster:       Raster
   diffImage:        Uint8Array | null
   /** Original and aligned scan side by side with the report boxed on both, when `sideBySide` was asked for. */
   sideBySideRaster: Raster | null
   sideBySideImage:  Uint8Array | null
   expected:         ExpectedResult[]
+  /** The ink at each place `probes` asked about, in the same order. */
+  probes:           InkProbe[]
+  /** The ink masks, when `keepMasks` asked for them: for `probeInk`, then dropped. */
+  masks:            Masks | null
   /** New ink outside every expected region, merged into one box per change. */
   unexpected:       Change[]
   /**

@@ -12,6 +12,9 @@
  *   faint strokes that OCR cares about.
  */
 
+/** One colour, in the same order and range as a raster's bytes: red, green, blue, alpha. */
+export type Rgba = readonly [number, number, number, number]
+
 /** A decoded image: 8-bit RGBA, row-major, 4 bytes per pixel, no padding. */
 export interface Raster {
   width:  number

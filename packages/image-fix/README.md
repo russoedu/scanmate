@@ -200,3 +200,7 @@ Inspects PDF operator streams and classifies page as `'scanned'`, `'born-digital
 ## License
 
 MIT © [ScanMate Team](https://github.com/russoedu/scanmate)
+
+## Where the algorithms went
+
+[`documentation/algorithms.md`](./documentation/algorithms.md) maps every algorithm this package used to carry to the package that documents it now.

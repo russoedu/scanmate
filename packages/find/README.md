@@ -1,8 +1,18 @@
-![scanmate find](./scanmate-find.svg)
+![scanmate find](./assets/scanmate-find.svg)
 
 # `@scanmate/find`
 
 Checks whether the content that must be on each page is there, and whether it's where the original puts it.
+
+![the signer fields, resolved from the words the form prints](./assets/regions.jpg)
+
+*The signer fields, resolved from the words the form itself prints rather than from coordinates typed into a config. Made from the [IRS Form W-9](https://www.irs.gov/pub/irs-pdf/fw9.pdf) (a work of the United States government, in the public domain): filled in as a generator would, printed, signed by hand and scanned crooked.*
+
+## Install
+
+```bash
+npm install @scanmate/find @scanmate/ocr
+```
 
 ```ts
 import { ocrPages } from '@scanmate/ocr'
@@ -47,15 +57,21 @@ The result feeds `@scanmate/diff`'s expected regions:
 import { extractPages } from '@scanmate/extract'
 import { resolveRegions } from '@scanmate/find'
 
-const [page] = await extractPages('contract.pdf', { pages: [6] })
-const { regions, problems } = resolveRegions(page.metadata.textItems, { width: 595.28, height: 841.89 }, {
-  anchor: 'For and on behalf of Customer',
+const [page] = await extractPages('fw9-issued.pdf', { pages: [1] })
+// The W-9 prints "Signature of U.S. person" at the left of its signature row; the
+// two cells of that row sit at these offsets from it, measured off the form.
+const { regions, problems } = resolveRegions(page.metadata.textItems, { width: 612, height: 792 }, {
+  anchor: 'Signature of',
   fields: {
-    name:      { dx: 39, dy: 20, width: 200, height: 16 },
-    signature: { dx: 57, dy: 40, width: 480, height: 40 },
+    signature: { dx: 44, dy: -4, width: 262, height: 22 },
+    date:      { dx: 328, dy: -4, width: 171, height: 22 },
   },
 })
 // problems: anchor missing or ambiguous, fields off the page or overlapping - empty when all is well
 ```
 
 An anchor must occur exactly once unless `occurrence` names which one to use.
+
+## How it decides
+
+[`documentation/algorithms.md`](./documentation/algorithms.md) has the algorithms in full: what each step measures, the decision flows, every constant with the measurement behind it, and what the package deliberately does not do.

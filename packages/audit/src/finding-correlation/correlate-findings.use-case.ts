@@ -1,8 +1,8 @@
 import type { Change, ExpectedResult, PageDiff } from '@scanmate/diff'
-import type { ContentResult } from '@scanmate/find'
 import type { Rect } from '@scanmate/ink'
 import type { TextDifference } from '@scanmate/ocr'
 
+import type { Settlement } from '../dispute-settlement'
 import type { AuditFinding, ExplainedDifference } from './audit-finding.contract'
 
 /**
@@ -24,6 +24,8 @@ import type { AuditFinding, ExplainedDifference } from './audit-finding.contract
 export interface Correlation {
   findings:  AuditFinding[]
   explained: ExplainedDifference[]
+  /** Differences settled as misreadings: the print is identical, the reading was not. */
+  noise:     TextDifference[]
 }
 
 export interface CorrelationInput {
@@ -31,14 +33,17 @@ export interface CorrelationInput {
   text:     readonly TextDifference[]
   /** The pixel comparison of the page, with rectangles in points. */
   pixels:   Pick<PageDiff, 'expected' | 'unexpected' | 'missing'>
-  /** Required content checked on this page, if any. */
-  content?: readonly ContentResult[]
+  /**
+   * How each text difference the pixels did not account for was settled, from
+   * `settleDisputes`. A difference with no settlement is reported as it stands.
+   */
+  settled?: readonly Settlement[]
 }
 
 /** Points of slack when deciding two boxes are at the same place. */
 const SLACK = 1.5
 
-export function correlateFindings ({ text, pixels, content = [] }: CorrelationInput): Correlation {
+export function correlateFindings ({ text, pixels, settled = [] }: CorrelationInput): Correlation {
   const explained: ExplainedDifference[] = []
   const open: TextDifference[] = []
   for (const difference of text) {
@@ -68,8 +73,18 @@ export function correlateFindings ({ text, pixels, content = [] }: CorrelationIn
       ? `Printed ink lost, and with it "${words.map(w => w.expected).join(' ')}"`
       : `Printed ink lost (${change.inkArea.toFixed(1)} mm2)`))
   }
-  // What the pixels did not see: a substituted character, a misread word.
-  for (const difference of open) if (!used.has(difference)) findings.push(textFinding(difference))
+  // What the pixels did not see, as the settlement decided it: a change the ink
+  // or the glyph check confirmed, a misreading the two sides' own readings
+  // agreed on, or an argument neither could settle - which is reported too,
+  // because "we could not tell" is not the same as "nothing happened".
+  const noise: TextDifference[] = []
+  const verdicts = new Map(settled.map(settlement => [settlement.difference, settlement]))
+  for (const difference of open) {
+    if (used.has(difference)) continue
+    const settlement = verdicts.get(difference)
+    if (settlement?.verdict === 'misread') noise.push(difference)
+    else findings.push(textFinding(difference, settlement))
+  }
 
   for (const region of pixels.expected) {
     if (region.identified) continue
@@ -84,34 +99,7 @@ export function correlateFindings ({ text, pixels, content = [] }: CorrelationIn
     })
   }
 
-  for (const result of content) {
-    if (result.identifiable) continue
-    const missing = !result.found
-    const box = result.occurrences.find(o => !o.intact)?.box ?? result.box
-
-    // The same misreading already found at that place: one finding, which now
-    // also says the content was required.
-    const same = box === null ? undefined : findings.find(f => f.box !== null && f.subject === undefined && f.kind !== 'unexpected-mark' && overlaps(f.box, box))
-    if (same !== undefined) {
-      same.subject = result.content
-      same.summary += ' - required content'
-      continue
-    }
-
-    findings.push({
-      kind:         missing ? 'content-missing' : 'content-not-identifiable',
-      box,
-      corroborated: false,
-      summary:      missing
-        ? `Required "${result.content}" is not on the page${result.foundOnPages.length > 0 ? ` (found on page ${result.foundOnPages.join(', ')})` : ''}`
-        : `Required "${result.content}" does not read correctly everywhere the original prints it`,
-      text:    [],
-      pixels:  null,
-      subject: result.content,
-    })
-  }
-
-  return { findings, explained }
+  return { findings, explained, noise }
 }
 
 /** The expected region that accounts for a text difference, or `null`. */
@@ -128,13 +116,22 @@ function pixelFinding (kind: 'unexpected-mark' | 'missing-ink', change: Change, 
   return { kind, box: boxOf(change), corroborated: words.length > 0, summary, text: words, pixels: change }
 }
 
-function textFinding (difference: TextDifference): AuditFinding {
-  const kind = difference.kind === 'changed' ? 'text-changed' : (difference.kind === 'missing' ? 'text-missing' : 'text-added')
+function textFinding (difference: TextDifference, settlement?: Settlement): AuditFinding {
+  const unsettled = settlement?.verdict === 'unsettled'
+  const KINDS = { changed: 'text-changed', missing: 'text-missing', added: 'text-added' } as const
+  const kind = unsettled ? 'text-unsettled' : KINDS[difference.kind]
   const summary = difference.kind === 'changed'
     ? `Printed "${difference.expected}" reads "${difference.found}"${difference.reason === 'numbers' ? ' - its figures differ' : ''}`
     : (difference.kind === 'missing' ? `Printed "${difference.expected}" could not be read` : `Words the original does not have: "${difference.found}"`)
 
-  return { kind, box: boxOf(difference), corroborated: false, summary, text: [difference], pixels: null }
+  return {
+    kind,
+    box:          boxOf(difference),
+    corroborated: false,
+    summary:      unsettled ? `${summary} - the ink is identical and re-reading could not settle it` : summary,
+    text:         [difference],
+    pixels:       null,
+  }
 }
 
 function boxOf (r: Rect): Rect {

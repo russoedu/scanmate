@@ -23,6 +23,7 @@ function page (number: number, runs: readonly Run[], added = ''): PageOcr {
     metrics:     compareTexts(expected, alignedText),
     differences: [],
     rechecks:    { attempted: 0, cleared: 0 },
+    printChecks: { checked: 0, different: 0 },
     warnings:    [],
   }
 }

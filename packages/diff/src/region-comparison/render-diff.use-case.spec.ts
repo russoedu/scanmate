@@ -1,7 +1,7 @@
 import { cloneRaster, createSyntheticDocument, drawSignature, drawTick } from '@scanmate/ink'
 import type { Raster } from '@scanmate/ink'
 
-import { renderDiff } from './render-diff.use-case'
+import { OVERLAY_DIFFERENT, OVERLAY_SHARED, renderDiff } from './render-diff.use-case'
 
 const BLANK = createSyntheticDocument({ width: 520, height: 680, seed: 3 })
 
@@ -15,19 +15,19 @@ function filledForm (): Raster {
 }
 
 describe('renderDiff', () => {
-  it('paints added ink red and leaves agreed ink grey', async () => {
+  it('paints ink the two do not share violet, and agreed ink grey', async () => {
     const overlay = await renderDiff(BLANK.raster, filledForm())
 
-    let red = 0
+    let added = 0
     let grey = 0
     for (let i = 0; i < overlay.data.length; i += 4) {
-      const [r, g, b] = [overlay.data[i], overlay.data[i + 1], overlay.data[i + 2]]
-      if (r > 200 && g < 80) red++
-      else if (r === 110 && g === 110 && b === 110) grey++
+      const pixel = [overlay.data[i], overlay.data[i + 1], overlay.data[i + 2]]
+      if (pixel.every((value, channel) => value === OVERLAY_DIFFERENT[channel])) added++
+      else if (pixel.every((value, channel) => value === OVERLAY_SHARED[channel])) grey++
     }
 
-    expect(red).toBeGreaterThan(200)
-    expect(grey).toBeGreaterThan(red)
+    expect(added).toBeGreaterThan(200)
+    expect(grey).toBeGreaterThan(added)
     expect(overlay.width).toBe(BLANK.raster.width)
   })
 })

@@ -1,199 +1,83 @@
-![scanmate extract](./scanmate-extract.svg)
+![scanmate extract](./assets/scanmate-extract.svg)
 
 # `@scanmate/extract`
 
-> PDF document parsing, page structure inspection, native DPI determination, and Skia canvas rasterization.
+PDF pages as rasters with their metadata: what kind of page it is, what resolution it really holds, and the text layer with every run's place, face and size — and an original paired with its returned scan.
 
-`@scanmate/extract` converts single-page or multi-page PDF documents into pixel-perfect RGBA `Raster` pairs ready for document alignment and comparison. Powered by `pdfjs-dist` for PDF object parsing and `@napi-rs/canvas` (prebuilt Skia bindings) for drawing, it inspects embedded vector layers vs. raster images, automatically determines native scanner DPI, and pairs original templates with incoming scans.
+![the original's text layer, every run boxed where it sits](./assets/text-items.jpg)
 
----
+*Each box is one run of the text layer, with the text, face and size it carries: exact, and free. Made from the [IRS Form W-9](https://www.irs.gov/pub/irs-pdf/fw9.pdf) (a work of the United States government, in the public domain), filled in as a generator would.*
 
-## Features
-
-- 📑 **Page Structure Classification (`classifyPage`)**: Inspects PDF operators to determine if a page is `'born-digital'`, `'scanned'`, or `'mixed'` based on image coverage ($>80\%$).
-- 📏 **Native DPI Auto-Resolution (`pairDpi`)**: Calculates native DPI of embedded scan streams so both template and scan are rendered at identical 1:1 pixel resolutions.
-- 🎨 **Skia Canvas Engine**: Uses `@napi-rs/canvas` for fast, zero-system-dependency PDF vector and image rasterization.
-- 🔗 **Document & Stream Pairing (`extractPair`)**: Pairs multi-page original PDFs with returned multi-page scans, supporting custom page ranges and memory-efficient async streams.
-- 🧪 **Synthetic PDF Generator (`createSyntheticPdf`)**: Renders vector test PDFs with text, lines, tables, and images for test suites and smoke testing.
-
----
-
-## Installation
+## Install
 
 ```bash
-# Using npm
-npm install @scanmate/extract @scanmate/ink
-
-# Using pnpm
-pnpm add @scanmate/extract @scanmate/ink
-
-# Using yarn
-yarn add @scanmate/extract @scanmate/ink
+npm install @scanmate/extract
 ```
-
----
-
-## Quick Start
 
 ```ts
-import { extractPair } from '@scanmate/extract'
+import { extractPages, extractPair, inspectDocument } from '@scanmate/extract'
 
-const { pages } = await extractPair({
-  original: 'template.pdf',
-  scanned: 'returned_scan.pdf',
-  dpi: 'native',
-})
+// What is in this file, without rendering anything:
+const inspection = await inspectDocument('fw9-returned.pdf')
+inspection.pages[0].metadata?.kind          // 'vector' | 'scanned' | 'scanned-with-text-layer' | 'empty'
+inspection.pages[0].metadata?.effectiveDpi  // what the scan really holds
+
+// One document - the boxes in the picture above:
+const pages = await extractPages('fw9-issued.pdf', { dpi: 150 })
+pages[0].image.raster                        // decoded RGBA
+pages[0].metadata.textItems                  // every run, in points from the top-left
+
+// Or a pair, ready for @scanmate/align:
+const { pages: pairs, unpaired } = await extractPair({ original: 'fw9-issued.pdf', scanned: 'fw9-returned.pdf' })
 ```
 
----
+## What it decides
 
-## Architecture & Algorithm Deep-Dive
+- **Whether a page is a scan**, from two signals: how much of the page the image operators actually cover (80% is the line), and whether there is any text. A generated form's letterhead covers 1.2% of the page; every page of three real scans of it covered 100%. A scan with an OCR text layer over it is its own kind, because its text must never be trusted.
+- **What resolution to render at.** `'match'` — the default for a pair — renders **both** sides at the scan's own resolution. Measured on real scans at 93, 120 and 144 dpi, that beat every fixed choice from 150 to 300 on alignment confidence, on overlap, on false "added ink", and on time. Rendering the original finer than the scan adds no information; it just makes the two disagree at every stroke edge.
+- **What a scan holds when its page is not its paper.** A photo stored at one pixel per point says 72 dpi of itself. Under `'match'` the scan is measured against the *original's* page size, so a 3024 × 4032 picture of an A4 sheet is read as the ~345 dpi it is, and its own pixels are never resampled.
 
-### 1. Classification & DPI Resolution Workflow
+## The text layer
 
-```mermaid
-flowchart TD
-    A["PDF Input File / Buffer"] --> B["openPdf()<br/>Parse via pdfjs-dist"]
-    B --> C["inspectPage()<br/>Analyze operator stream & text content"]
-    C --> D{"Image Coverage >= 80%?"}
-    D -- Yes --> E["Classify as 'scanned'"]
-    D -- No --> F{"Text / Vector Content present?"}
-    F -- Yes --> G["Classify as 'born-digital'"]
-    F -- No --> H["Classify as 'mixed'"]
+Each run carries its text, its box in points from the page's top-left **as displayed** (after `/Rotate`), its baseline, its font size, pdf.js's name for the face, its angle, and whether it ends a line. The box comes from the font's ascent and descent rather than a guess, which is what lets `@scanmate/ocr` claim read words by position and file glyph templates by face and size.
 
-    E --> I["Extract Embedded Image Dimensions (w_img, h_img)"]
-    I --> J["Compute Native DPI:<br/>DPI = (w_img / widthPt) * 72"]
-    G --> K["Use Target / Default DPI (e.g. 300)"]
+Only the **original's** text layer is meant to be trusted. A returned document's is reported and never used: it can be stale, or planted, and it is not what the person signing the paper saw.
 
-    J --> L["pairDpi()<br/>Match Original render resolution to Scan native DPI"]
-    K --> L
-    L --> M["@napi-rs/canvas Skia Render<br/>Generate 1:1 comparable Rasters"]
+## Pairing
+
+Scans lose pages and gain cover sheets, so `extractPair` reports what it could pair **and** what it could not, rather than throwing or truncating silently:
+
+```ts
+const { pages, unpaired, pageCount } = await extractPair({ original, scanned }, { pairing: 'index' })
+unpaired.original   // [7]  - no scanned page for these
+unpaired.scanned    // [1]  - a cover sheet, say
 ```
 
----
+`pairing` is `'index'`, `'page-number'`, or an explicit list of `[originalPage, scannedPage]`.
 
-### 2. Document Pair Extraction Sequence (`extractPair`)
+## Options
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant App as Application
-    participant Extract as extractPair()
-    participant PDF as openPdf()
-    participant Inspect as inspectPage()
-    participant Render as renderPage()
+| option | default | |
+|---|---|---|
+| `dpi` | `'match'` for pairs, `'native'` for one document | Or a number. |
+| `fallbackDpi` | `200` | For a page with no native resolution. |
+| `minDpi` / `maxDpi` | `72` / `400` | Bounds on a resolution read from a file. |
+| `pages` | all | Numbers, or a range string like `'1-3,5'`. |
+| `output` | `'png'` | `'jpeg'`, or `'none'` to keep rasters only. |
+| `quality` | `92` | For lossy output. |
+| `background` | white | PDF pages are transparent where nothing is drawn. |
+| `includeText` | `true` | Read the text layer. |
+| `pairing` | `'index'` | How scanned pages match original ones. |
+| `onProgress` | — | Called before and after each page. |
 
-    App->>Extract: extractPair({ original, scanned, dpi: 'native' })
-    Extract->>PDF: Load original PDF & scanned PDF
-    Extract->>Extract: planPairs() -> Pair page indexes
-    loop Every Page Pair (Page i)
-        Extract->>Inspect: inspectPage(scannedPdf, i)
-        Inspect-->>Extract: Page Metadata & Native Image DPI
-        Extract->>Inspect: inspectPage(originalPdf, i)
-        Inspect-->>Extract: Page Metadata
-        Extract->>Extract: Calculate unified pairDpi (e.g. 200 DPI)
-        Extract->>Render: renderPage(originalPdf, i, { targetDpi })
-        Render-->>Extract: Original Raster
-        Extract->>Render: renderPage(scannedPdf, i, { targetDpi })
-        Render-->>Extract: Scanned Raster
-    end
-    Extract-->>App: Return PairedDocument ({ pages, unpaired })
-```
+`extractPairStream` yields pages as they are rendered, for documents too large to hold at once.
 
----
+## Rendering
 
-## Comprehensive API Reference
+Pages are rendered with `pdfjs-dist` onto `@napi-rs/canvas`. The standard-14 fonts ship inside `pdfjs-dist`, so nothing needs system fonts or fontconfig in a container. Both are prebuilt, with no system package to install.
 
-### 1. Document Extraction & Pairing
+> `pdf.js` detaches the buffer it is given. This package passes a copy; any caller doing its own `getDocument` should too, or it will find its own bytes empty afterwards.
 
-#### `extractPair(options: ExtractPairOptions): Promise<PairedDocument>`
-Primary function to parse, inspect, match DPI, and render original and scanned PDF documents.
-- **Parameters (`ExtractPairOptions`)**:
+## How it decides
 
-| Option | Type | Default | Description & Impact |
-|---|---|---|---|
-| `original` | `PdfInput` | *(Required)* | Original template PDF (`filePath` string, `Buffer`, `Uint8Array`, or URL). |
-| `scanned` | `PdfInput` | *(Required)* | Scanned PDF file or buffer. |
-| `dpi` | `DpiChoice` | `'native'` | Target render DPI. `'native'` calculates embedded scan image DPI; number (e.g. `300`) forces fixed DPI. |
-| `pageSelection` | `PageSelection` | `'all'` | Page filtering selection (`'all'`, single index `1`, array `[1, 3]`, or range string `'1-5'`). |
-
-- **Returns**: `Promise<PairedDocument>` (`{ pages: PairedPage[], unpaired: { original: ExtractedPage[], scanned: ExtractedPage[] } }`).
-
-#### `extractPairStream(options: ExtractPairOptions): AsyncIterable<PairedPage>`
-Memory-efficient async generator yielding paired pages one by one for large multi-page documents.
-
-#### `extractPages(options: ExtractOptions): Promise<ExtractedPage[]>`
-Extracts and renders all pages from a single PDF document.
-- **Parameters (`ExtractOptions`)**:
-  - `input`: PDF document source.
-  - `pageSelection` *(default: `'all'`)*: Page selection filter.
-  - `targetDpi` *(default: 300)*: Render resolution DPI.
-- **Returns**: `Promise<ExtractedPage[]>` (`{ pageNumber, raster, metadata }`).
-
-#### `extractPageStream(options: ExtractOptions): AsyncIterable<ExtractedPage>`
-Async generator stream for single PDF page rendering.
-
----
-
-### 2. PDF Document Loading & Structure Inspection
-
-#### `openPdf(input: PdfInput): Promise<OpenedPdf>`
-Loads PDF document and initializes `pdfjs-dist` worker handle.
-- **Parameters**: `input` (`string` file path, `Buffer`, `Uint8Array`, or URL).
-- **Returns**: `Promise<OpenedPdf>` object (`{ pageCount, getPage(index), close() }`).
-
-#### `inspectPage(pdf: OpenedPdf, pageIndex: number): Promise<PageMetadata>`
-Inspects PDF operators, text content, and embedded images without rendering pixels.
-- **Parameters**:
-  - `pdf`: `OpenedPdf` instance.
-  - `pageIndex`: 1-based page number.
-- **Returns**: `Promise<PageMetadata>` (`{ widthPt, heightPt, rotationDeg, kind, hasTextLayer, imageCoverage, images: EmbeddedImage[] }`).
-
-#### `classifyPage(metadata: PageMetadata): PageKind`
-Classifies page structural type based on image coverage:
-- `'scanned'`: Embedded raster image covers $\ge 80\%$ of page area (`SCAN_COVERAGE`).
-- `'born-digital'`: Vector text / line art with $< 80\%$ image coverage.
-- `'mixed'`: Combination of digital vector text and embedded images.
-
----
-
-### 3. DPI Auto-Resolution & Rendering
-
-#### `renderPage(pdf: OpenedPdf, pageIndex: number, options?: RenderOptions): Promise<Raster>`
-Renders PDF page to an 8-bit RGBA `Raster` at target resolution using Skia (`@napi-rs/canvas`).
-- **Parameters**:
-  - `pdf`: `OpenedPdf` instance.
-  - `pageIndex`: 1-based page index.
-  - `options` *(optional)*:
-    - `targetDpi` *(default: 300)*: Target resolution DPI.
-- **Returns**: `Promise<Raster>`
-
-#### `nativeDpi(metadata: PageMetadata): number | null`
-Calculates native scanner resolution in DPI from embedded scan image dimensions and point size:
-$$\text{DPI} = \frac{\text{imageWidth}}{\text{widthPt}} \times 72$$
-Returns `null` if page contains no full-page embedded image.
-
-#### `pageDpi(metadata: PageMetadata, choice?: DpiChoice): number`
-Resolves target DPI for a single page based on metadata and user preference.
-
-#### `pairDpi(originalMeta: PageMetadata, scannedMeta: PageMetadata, choice?: DpiChoice): number`
-Resolves the render resolution of both sides of a page pair. With `'match'` the original renders at the scan's resolution *on the paper it shows* - the scan's pixels over the original's page size - and the scan at its own pixels, never resampled. A phone photo stored at one pixel per point says 72 dpi of itself; a 3024 x 4032 picture of an A4 sheet holds about 345 on the sheet, and that is what the original is rendered at.
-
----
-
-### 4. Page Pairing & Selection Helpers
-
-#### `planPairs(originalPdf: OpenedPdf, scannedPdf: OpenedPdf, selection?: PageSelection): PagePairing[]`
-Calculates 1-to-1 page pairing index map between original and scanned documents.
-
-#### `selectPages(pdf: OpenedPdf, selection?: PageSelection): number[]`
-Parses page selection expressions (e.g. `'1-3, 5'`) into an array of 1-based page numbers.
-
-#### `createSyntheticPdf(options?: SyntheticPdfOptions): Promise<Uint8Array>`
-Generates a vector test PDF file byte array containing customizable text, lines, tables, and images.
-
----
-
-## License
-
-MIT © [ScanMate Team](https://github.com/russoedu/scanmate)
+[`documentation/algorithms.md`](./documentation/algorithms.md) has the algorithms in full: what each step measures, the decision flows, every constant with the measurement behind it, and what the package deliberately does not do.

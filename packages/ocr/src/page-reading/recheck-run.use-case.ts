@@ -2,6 +2,7 @@ import { createRaster, resampleRaster } from '@scanmate/ink'
 import type { Raster } from '@scanmate/ink'
 
 import type { OcrEngine } from '../ocr-engine'
+import type { PrintPolarity } from '../print-verification'
 import { FIGURE, judgeRun } from './match-words.use-case'
 import type { MatchOptions, Reference } from './match-words.use-case'
 
@@ -52,9 +53,6 @@ export const DEFAULT_RECHECK_PASSES: readonly RecheckPass[] = [
   { dpi: 600, layout: 'line', stretch: true },
 ]
 
-/** Which way the original prints a run: dark text on light, or light text on a dark bar. */
-export type PrintPolarity = 'dark-on-light' | 'light-on-dark'
-
 export interface Recheck {
   cleared: boolean
   /** An agreeing reading when cleared; `null` otherwise. */
@@ -68,6 +66,49 @@ export interface Recheck {
 const FIGURE_CHARACTERS = '0123456789.,:/%()+-'
 /** White kept around a crop, in pixels: tesseract reads poorly off the edge of an image. */
 const MARGIN = 12
+
+/**
+ * Reads one run's crop once per pass, and says what each pass read - without
+ * judging it against anything.
+ *
+ * `recheckRun` asks "does this still say what the original prints?", which is
+ * the right question while reading a page. It is the wrong question once the
+ * pixels have disagreed with the reading, because a systematic misreading -
+ * a face, a size, a resolution the engine handles badly - misreads the
+ * *original* just as surely as the scan. Reading both sides the same way and
+ * comparing the two readings to each other cancels exactly that error, and
+ * needs the readings themselves rather than a verdict.
+ *
+ * @param engine - The engine to read with.
+ * @param image - The page to crop from, and its resolution.
+ * @param run - The run to read, placed on that page.
+ * @param options - Which passes to try; the matching rules pick the charset.
+ * @param polarity - Whether the original prints this run light on dark.
+ * @returns What each pass read, in order; empty when the run cannot be cropped.
+ */
+export async function readRun (
+  engine: OcrEngine,
+  image: { raster: Raster, dpi: number },
+  run: Reference,
+  options: MatchOptions & RecheckOptions,
+  polarity?: PrintPolarity,
+): Promise<string[]> {
+  const { passes = DEFAULT_RECHECK_PASSES } = options
+  const crop = cropRun(image.raster, image.dpi, run, polarity)
+  if (crop === null) return []
+
+  const characters = FIGURE.test(run.text.trim()) ? FIGURE_CHARACTERS : undefined
+  const readings: string[] = []
+  for (const pass of passes) {
+    const scale = Math.max(1, pass.dpi / image.dpi)
+    const enlarged = scale === 1 ? crop : await resampleRaster(crop, Math.round(crop.width * scale), Math.round(crop.height * scale))
+    const prepared = frame(polarity === 'light-on-dark' || pass.stretch === true ? stretch(enlarged) : enlarged)
+    const read = await engine.recognise(prepared, { layout: pass.layout, characters })
+    readings.push(read.lines.map(line => line.text).join(' ').trim())
+  }
+
+  return readings
+}
 
 export async function recheckRun (
   engine: OcrEngine,
@@ -131,29 +172,6 @@ function cropRun (raster: Raster, dpi: number, run: Reference, polarity?: PrintP
       for (let c = 0; c < 3; c++) out.data[i + c] = 255 - out.data[i + c]
 
   return out
-}
-
-/**
- * Which way the original prints a run, read off its own crisp rendering: the
- * glyphs are the pixels far from the background, and the background is most of
- * the box.
- */
-export function printPolarity (raster: Raster, dpi: number, run: Reference): PrintPolarity {
-  const s = dpi / 72
-  const left = Math.max(0, Math.floor(run.x * s))
-  const top = Math.max(0, Math.floor(run.y * s))
-  const right = Math.min(raster.width, Math.ceil((run.x + run.width) * s))
-  const bottom = Math.min(raster.height, Math.ceil((run.y + run.height) * s))
-  const values: number[] = []
-  for (let y = top; y < bottom; y++)
-    for (let x = left; x < right; x++) values.push(luminance(raster.data, (y * raster.width + x) * 4))
-  if (values.length === 0) return 'dark-on-light'
-
-  const background = values.toSorted((a, b) => a - b)[Math.floor(values.length / 2)]
-  const glyphs = values.filter(v => Math.abs(v - background) > 48)
-  if (glyphs.length === 0) return 'dark-on-light'
-
-  return glyphs.reduce((a, b) => a + b, 0) / glyphs.length > background ? 'light-on-dark' : 'dark-on-light'
 }
 
 /** Linear stretch so the darkest 2% become black and the lightest 2% white. */

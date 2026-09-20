@@ -1,183 +1,83 @@
-![scanmate diff](./scanmate-diff.svg)
+![scanmate diff](./assets/scanmate-diff.svg)
 
 # `@scanmate/diff`
 
-> Visual change detection, form field verification, and unexpected modification analysis for aligned document pairs.
+What changed between an original and its aligned scan: which expected regions were filled in, what ink was added where nothing was expected, what printed ink the scan lost — and a picture of all three.
 
-`@scanmate/diff` analyzes differences between original digital document templates and aligned scanned pages. It verifies whether expected form regions (such as signature blocks, checkboxes, and fillable fields) were completed, measures added/removed ink quantities, isolates unexpected handwritten marks or edits using 2-pass connected components analysis, and renders color-coded visual difference overlays.
+![the original and the returned scan side by side, the signer fields outlined](./assets/side-by-side.jpg)
 
----
+*Green: a field that was filled in. Orange: the band around it where ink still counts as that field's. Made from the [IRS Form W-9](https://www.irs.gov/pub/irs-pdf/fw9.pdf) (a work of the United States government, in the public domain): filled in as a generator would, printed, signed by hand and scanned crooked.*
 
-## Features
-
-- ✍️ **Form Region Verification (`compareRegions`)**: Quantifies added ink inside specific bounding boxes in original canvas coordinates.
-- 🔍 **Sub-Pixel Dilation Tolerance**: Fattens original ink boundaries before subtraction to eliminate false-positive edge noise caused by minor printing/scanning shifts.
-- 🎨 **Color-Coded Visual Overlay (`renderDiff`)**: Produces RGBA difference overlays (Red = added ink / signature, Blue = removed ink, Grey = matching ink).
-- 🧩 **Unexpected Mark Isolation (`diffPage`)**: Uses 8-connectivity Connected Component Analysis (CCL) to group un-matched ink pixels into isolated bounding boxes.
-- 📦 **Automated Box Merging**: Consolidates adjacent connected components to present clean, readable change boxes around handwritten notes or stamps.
-
----
-
-## Installation
+## Install
 
 ```bash
-# Using npm
-npm install @scanmate/diff @scanmate/ink
-
-# Using pnpm
-pnpm add @scanmate/diff @scanmate/ink
-
-# Using yarn
-yarn add @scanmate/diff @scanmate/ink
+npm install @scanmate/diff @scanmate/extract @scanmate/align
 ```
-
----
-
-## Quick Start
 
 ```ts
-import { compareRegions } from '@scanmate/diff'
-import { decodeImage } from '@scanmate/ink'
+import { alignPages } from '@scanmate/align'
+import { diffPages } from '@scanmate/diff'
+import { extractPair } from '@scanmate/extract'
 
-const original = await decodeImage(originalBuffer)
-const aligned = await decodeImage(alignedBuffer)
+const { pages } = await extractPair({ original: 'fw9-issued.pdf', scanned: 'fw9-returned.pdf' })
+// The W-9's signature row, measured off the form in points from the page's top-left.
+const changes = await diffPages(await alignPages(pages), [
+  { page: 1, id: 'signature', x: 120, y: 577, width: 262, height: 22 },
+  { page: 1, id: 'date',      x: 404, y: 577, width: 171, height: 22 },
+], { sideBySide: true })
 
-const reports = compareRegions(original, aligned, [
-  { id: 'signature', rect: { x: 100, y: 750, width: 350, height: 80 } },
-])
+changes[0].expected          // [{ id, identified, addedInk, overfilled, ink: { ... } }]
+changes[0].unexpected        // [{ x, y, width, height, inkArea, pixels }]
+changes[0].missing           // printed ink the scan lost
+changes[0].sideBySideImage   // original and scan, boxed alike
+changes[0].diffImage         // the overlay: violet where the ink differs, grey where it agrees
 ```
 
----
+Rectangles are in PDF points from the page's top-left by default, the same frame `@scanmate/extract` reports text in; `units: 'pixels'` switches to the original's rendered pixels.
 
-## Architecture & Algorithm Deep-Dive
+## What it measures
 
-### 1. Dilation Masking & Sub-Pixel Tolerance
+- **Ink, not brightness.** Both pages are divided by their own local background before anything is compared, so a shadow or a grey scanner lid takes no part.
+- **In square millimetres, not shares of a box.** A signature is a few tens of mm² whether its box is a stamp or the width of the page, and the same mark is four times the pixels at twice the resolution.
+- **Two thresholds on the scan.** A normal one for what counts as *added*, and a faint one at a quarter of it for what is *still there at all*. Printed ink counts as lost only where the scan shows nothing even at the lower bar: a pale photocopy has lighter ink, not missing ink.
+- **Tolerance for the alignment.** The original's ink is fattened by `tolerance` (2 px) before subtraction, so stroke edges do not become a halo of confetti. A change that stays inside that band cannot be seen here — a digit swapped for another digit is exactly such a change, which is why `@scanmate/ocr` matches figures glyph by glyph.
 
-Even when a scan is perfectly aligned, real-world printing and scanning artifacts (ink bleed, scanner MTF blur, rasterization anti-aliasing) create sub-pixel outline differences along text character edges. Subtracting raw ink maps directly produces false-positive "halos" around every letter on the page.
+## Deciding a region
 
-To prevent this, `@scanmate/diff` applies **morphological dilation** with radius $r$ (default 2px) to the original template's ink map $M_{orig}$:
+A region is **identified** when it has at least `minFillArea` (2 mm²) of new ink and is not **overfilled** — covered or struck through, which `maxFill` (0.5) draws the line on. Form rules showing through a slight misregistration are discounted: a component spanning 90% of the region and no thicker than 0.6 mm is the box's own printed line.
 
-$$M_{orig, dilated} = \text{dilate}(M_{orig}, r)$$
+People sign past the box they are given, so each region also claims the ink within `expectedMargin` (6 points) of it, and the regions claim it **together**, so one stroke running through two fields is not left over as an unexpected mark. What a region reports is still the rectangle it was given; the band is drawn in pink.
 
-$$\text{Ink}_{added}(x, y) = \max\left(0, \text{Ink}_{scan}(x, y) - M_{orig, dilated}(x, y)\right)$$
+Each region reports its shape too — how many separate changes, the largest, the bounds as a share of the box, how much ink touches the border — so a signature can be told from a stray line without looking at the picture.
 
-```mermaid
-flowchart TD
-    A["Original Ink Map"] --> B["Morphological Dilation (Radius r = 2px)"]
-    B --> C["Dilated Original Mask M_dilated"]
-    D["Aligned Scan Ink Map M_scan"] --> E["Ink Subtraction:<br/>Added = max(0, M_scan - M_dilated)"]
-    C --> E
-    E --> F["Clean Added Ink Map<br/>(Character outline noise suppressed,<br/>Signatures & Checkmarks retained)"]
-```
+## Options
 
----
+| option | default | |
+|---|---|---|
+| `units` | `'points'` | Or `'pixels'`. |
+| `tolerance` | `2` px | How much misregistration is forgiven. |
+| `faintInk` | `0.25` | Fraction of the normal threshold for "still there". |
+| `minFillArea` | `2` mm² | New ink a region needs. |
+| `maxFill` | `0.5` | Above this the region is covered, not filled. |
+| `expectedMargin` | `6` pt | How far outside a region its ink may lie. |
+| `formLineSpan` | `0.9` | Span that makes a component a printed rule... |
+| `formLineThickness` | `0.6` mm | ...if it is no thicker than this. |
+| `minChangeArea` | `1` mm² | Smallest change reported. |
+| `minMissingArea` | `4` mm² | Smallest loss reported. |
+| `mergeGap` | `3` mm | Boxes closer than this become one. |
+| `regionOverlap` | `0.5` | Share of a change's ink that must fall inside a region. |
+| `maxChanges` | `50` | Cap on a confetti page; the report says it was capped. |
+| `assumeDpi` | `150` | Used when the page does not say. |
+| `output` | `'png'` | `'none'` keeps rasters only. |
+| `annotate` | `false` | Draw the report onto the overlay. |
+| `sideBySide` | `false` | Also compose the two pages side by side. |
+| `probes` | none | Rectangles to measure the ink at, changed or not - added, lost and shared, in mm². |
+| `keepMasks` | `false` | Keep the ink masks on the result, so `probeInk` can ask about places found later. |
 
-### 2. Connected Component Analysis & Unexpected Mark Grouping
+## Building blocks
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant Diff as diffPage()
-    participant Mask as Mask Engine
-    participant CCL as Connected Components
-    participant Merge as Box Merger
+`buildMasks`, `connectedComponents`, `labelComponents`, `mergeBoxes`, `measureRegionInk`, `annotateOverlay`, `composeSideBySide`, `compareRegions`, `diffDocument` and `renderDiff` are exported for callers who want a stage on its own, along with the annotation colours.
 
-    Diff->>Mask: Compute Added Ink Map & Mask expected regions
-    Mask-->>Diff: Un-matched Added Ink Map
-    Diff->>CCL: connectedComponents(binaryInkMap)
-    CCL->>CCL: Pass 1: Label 8-connected pixel clusters & track equivalences
-    CCL->>CCL: Pass 2: Resolve label equivalences & calculate component stats
-    CCL-->>Diff: Return raw pixel blob Components
-    Diff->>Merge: mergeBoxes(components, { maxGap: 15px })
-    Merge->>Merge: Calculate bounding box overlaps & expand by maxGap
-    Merge->>Merge: Merge intersecting bounding boxes into unified regions
-    Merge-->>Diff: Return MergedBox array
-    Diff-->>Diff: Annotate overlay & produce PageDiff report
-```
+## How it decides
 
----
-
-## Comprehensive API Reference
-
-### 1. Region Comparison & Form Verification
-
-#### `compareRegions(original: Raster, aligned: Raster, regions: Region[], options?: RegionOptions): RegionReport[]`
-Evaluates specific rectangular form regions to check if signatures, checkboxes, or text boxes were filled in.
-- **Parameters**:
-  - `original`: Original template `Raster`.
-  - `aligned`: Aligned scan `Raster` (must match `original` canvas width/height).
-  - `regions`: Array of `Region` objects (`{ id: string, rect: Rect, threshold?: number }`).
-  - `options` *(optional)*: `RegionOptions` object (see breakdown below).
-- **Returns**: Array of `RegionReport` (`{ id, rect, filled, score, added, removed, addedPixels, totalPixels }`).
-
-##### Detailed Options Explanation (`RegionOptions`):
-
-| Option | Type | Default | Description & Impact |
-|---|---|---|---|
-| `tolerance` | `number` | `2` | Morphological dilation radius in pixels applied to original ink before subtraction. Absorbs minor sub-pixel rendering shifts. |
-| `threshold` | `number` | `0.02` | Ink ratio threshold (2% of region area) above which `filled` is set to `true`. |
-| `addedColor` | `Rgba` | `[239, 68, 68, 255]` | RGBA color (Red) for added ink in diff overlays. |
-| `removedColor` | `Rgba` | `[59, 130, 246, 255]` | RGBA color (Blue) for removed ink in diff overlays. |
-| `matchedColor` | `Rgba` | `[156, 163, 175, 255]`| RGBA color (Grey) for matching ink in diff overlays. |
-
----
-
-#### `diffDocument(original: Raster, aligned: Raster, regions?: Region[], options?: RegionOptions): DocumentDiff`
-Computes whole-page added/removed ink statistics plus per-region details in a single efficient pass.
-- **Returns**: `DocumentDiff` (`{ overallAdded, overallRemoved, overallAddedPixels, overallTotalPixels, regions: RegionReport[] }`).
-
-#### `renderDiff(original: Raster, aligned: Raster, options?: RegionOptions): Raster`
-Generates a 4-color RGBA overlay `Raster` suitable for visual inspection (Red = scan additions, Blue = template deletions, Grey = matched ink, White = paper background).
-
----
-
-### 2. High-Level Page & Document Diffing
-
-#### `diffPage(options: DiffOptions): Promise<PageDiff>`
-Full change detection pipeline for a single page, matching expected form regions and isolating unexpected handwritten edits using connected component analysis.
-- **Parameters (`DiffOptions`)**:
-  - `page`: Page number index.
-  - `original`: Original template `Raster`.
-  - `aligned`: Aligned scan `Raster`.
-  - `expectedRegions` *(optional)*: Array of expected form field bounding boxes.
-  - `minChangePixels` *(default: 20)*: Minimum area in pixels to consider a connected component a valid unexpected change box.
-  - `tolerance` *(default: 2)*: Dilation tolerance radius.
-  - `addedColor` / `removedColor`: Visual overlay colors.
-- **Returns**: `Promise<PageDiff>` (`{ page, expected: ExpectedResult[], unexpected: UnexpectedChange[], overlay: Raster }`).
-
-#### `diffPages(alignedPages: AlignedPage[], expectedRegions: ExpectedRegion[], options?: DiffOptions): Promise<PageDiff[]>`
-Batch page diffing for multi-page document collections.
-
----
-
-### 3. Pipeline Building Blocks & Connected Components
-
-#### `buildMasks(original: Raster, aligned: Raster, options?: RegionOptions): Masks`
-Computes intermediate Float32 ink maps and binary addition/subtraction masks.
-- **Returns**: `Masks` (`{ originalInk, alignedInk, addedMask, removedMask, width, height }`).
-
-#### `measureRegion(masks: Masks, region: Region, options?: RegionOptions): RegionReport`
-Measures ink statistics inside a single `Region` using pre-computed `Masks`.
-
-#### `paintOverlay(masks: Masks, options?: RegionOptions): Raster`
-Paints RGBA overlay `Raster` from pre-computed `Masks`.
-
-#### `connectedComponents(binary: BinaryImage, options?: ComponentOptions): Component[]`
-Executes 2-pass 8-connectivity Connected Component Analysis (CCL) to extract disjoint pixel blobs.
-- **Options**:
-  - `minPixels` *(default: 1)*: Ignore components with pixel count below this limit.
-- **Returns**: Array of `Component` (`{ id, minX, minY, maxX, maxY, pixelCount, width, height }`).
-
-#### `mergeBoxes(boxes: MergedBox[], options?: MergeOptions): MergedBox[]`
-Consolidates overlapping or closely adjacent bounding boxes.
-- **Options**:
-  - `maxGap` *(default: 15)*: Maximum distance in pixels between box boundaries to trigger a box merge.
-
-#### `annotateOverlay(overlay: Raster, annotations: Annotation[], options?: LabelOptions): Raster`
-Draws bounding box rectangles and text labels onto a diff overlay `Raster`.
-
----
-
-## License
-
-MIT © [ScanMate Team](https://github.com/russoedu/scanmate)
+[`documentation/algorithms.md`](./documentation/algorithms.md) has the algorithms in full: what each step measures, the decision flows, every constant with the measurement behind it, and what the package deliberately does not do.

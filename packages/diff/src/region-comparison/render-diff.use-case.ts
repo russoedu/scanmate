@@ -1,4 +1,4 @@
-import type { ImageInput, Raster } from '@scanmate/ink'
+import type { ImageInput, Raster, Rgba } from '@scanmate/ink'
 import { buildMasks } from './ink-masks.use-case'
 import type { Masks } from './ink-masks.use-case'
 import type { RegionOptions } from './region.model'
@@ -6,10 +6,15 @@ import type { RegionOptions } from './region.model'
 /**
  * An RGBA overlay of the comparison, for looking at with your own eyes.
  *
- * Red is ink the scan added, blue is ink it lost, grey is ink both agree on.
- * A correctly aligned pair of a signed form is almost entirely grey with a red
- * signature; a misaligned one is red and blue confetti along every stroke,
- * which is the fastest way to tell the two failures apart.
+ * Violet is ink the two pages do not share - added by the scan or lost from the
+ * print, which the picture does not distinguish; grey is ink they agree on. A
+ * correctly aligned pair of a signed form is almost entirely grey with a violet
+ * signature; a misaligned one is violet confetti along every stroke, which is
+ * the fastest way to tell the two failures apart.
+ *
+ * Which side the ink came from is a question for the report, where it is
+ * measured separately and in millimetres. Here it would be a second colour
+ * carrying a distinction the eye does not need at this zoom.
  */
 export async function renderDiff (
   original: ImageInput,
@@ -22,7 +27,16 @@ export async function renderDiff (
   return paintOverlay(masks)
 }
 
-/** The overlay, from masks already built. Red added, blue lost, grey agreed, white paper. */
+/**
+ * Ink the two pages do not share. Violet rather than red, because red means
+ * "changed" on every annotated page in the pipeline and one colour cannot mean
+ * two things.
+ */
+export const OVERLAY_DIFFERENT: Rgba = [127, 0, 252, 255]
+/** Ink the two pages agree on. */
+export const OVERLAY_SHARED: Rgba = [110, 110, 110, 255]
+
+/** The overlay, from masks already built. Violet where they differ, grey where they agree, white paper. */
 export function paintOverlay (masks: Masks): Raster {
   const { width, height } = masks
   const data = new Uint8ClampedArray(width * height * 4)
@@ -36,19 +50,10 @@ export function paintOverlay (masks: Masks): Raster {
     let g = 255
     let b = 255
 
-    if (inScan && !nearOriginal) {
-      r = 220
-      g = 30
-      b = 40
-    } else if (inOriginal && masks.scanDilated.data[p] === 0) {
-      r = 40
-      g = 90
-      b = 220
-    } else if (inOriginal || inScan) {
-      r = 110
-      g = 110
-      b = 110
-    }
+    const added = inScan && !nearOriginal
+    const lost = inOriginal && masks.scanDilated.data[p] === 0
+    if (added || lost) [r, g, b] = OVERLAY_DIFFERENT
+    else if (inOriginal || inScan) [r, g, b] = OVERLAY_SHARED
 
     data[i] = r
     data[i + 1] = g

@@ -95,7 +95,12 @@ export function judgeRun (expected: string, found: string, options: MatchOptions
   return { agrees: true }
 }
 
-export function judgeRuns (references: readonly Reference[], claims: Claims, options: MatchOptions): WordMatch {
+/**
+ * @param verified - Runs the print check matched glyph by glyph and found
+ *   changed. Their differences are evidence in themselves; every other one is
+ *   a reading, which the pixels still have to agree with.
+ */
+export function judgeRuns (references: readonly Reference[], claims: Claims, options: MatchOptions, verified: ReadonlySet<number> = new Set()): WordMatch {
   const differences: TextDifference[] = []
   const expectedParts: string[] = []
   const alignedParts: string[] = []
@@ -114,6 +119,7 @@ export function judgeRuns (references: readonly Reference[], claims: Claims, opt
       found:      verdict.kind === 'missing' ? null : found,
       similarity: verdict.similarity,
       reason:     verdict.reason,
+      verified:   verified.has(r),
       ...box(ref),
     })
   }
@@ -122,7 +128,7 @@ export function judgeRuns (references: readonly Reference[], claims: Claims, opt
   for (const group of claims.added) {
     const found = group.map(w => w.text).join(' ')
     alignedParts.push(found + '\n')
-    differences.push({ kind: 'added', expected: null, found, similarity: 0, reason: 'text', ...union(group) })
+    differences.push({ kind: 'added', expected: null, found, similarity: 0, reason: 'text', verified: false, ...union(group) })
   }
 
   return { alignedText: alignedParts.join('').trim(), expectedText: expectedParts.join('').trim(), differences }

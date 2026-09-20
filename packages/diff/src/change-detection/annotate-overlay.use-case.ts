@@ -1,19 +1,37 @@
-import type { Raster, Rect } from '@scanmate/ink'
+import type { Raster, Rect, Rgba } from '@scanmate/ink'
 
 /**
  * Outline what the report says onto the overlay, so the picture and the numbers
- * can be checked against each other at a glance: green for an expected region
- * that was filled in, amber for one that was not, magenta around every change
- * nobody expected, and blue - the overlay's colour for lost ink - around ink
- * that went missing.
+ * can be checked against each other at a glance.
+ *
+ * One colour per answer, and the answers are few:
+ *
+ * | colour | |
+ * |---|---|
+ * | blue `#0017FC` | the area being asked about, as the original has it |
+ * | green `#00FC11` | an expected region that was filled in |
+ * | red `#FC0027` | one left empty, covered, or content that changed |
+ * | pink `#F500FC` | the band around a region where ink still counts as its own |
+ * | orange `#FF8A00` | ink added where nothing was expected |
+ * | cyan `#00C8FC` | printed ink the scan lost |
+ * | olive `#C8A000` | a disagreement nothing could settle |
  */
 
-export type Rgba = readonly [number, number, number, number]
+export type { Rgba } from '@scanmate/ink'
 
-export const IDENTIFIED: Rgba = [30, 160, 70, 255]
-export const NOT_IDENTIFIED: Rgba = [230, 150, 20, 255]
-export const UNEXPECTED: Rgba = [200, 30, 190, 255]
-export const MISSING: Rgba = [20, 90, 230, 255]
+/** The area in question, drawn on the original: a statement of where, not of what. */
+export const REFERENCE: Rgba = [0, 23, 252, 255]
+export const IDENTIFIED: Rgba = [0, 252, 17, 255]
+/** Empty, covered, or changed: the answers that need a person. */
+export const NOT_IDENTIFIED: Rgba = [252, 0, 39, 255]
+/**
+ * Neither comparison could settle it. Not red, because red is a statement that
+ * something is wrong and this is a statement that nobody knows.
+ */
+export const UNSETTLED: Rgba = [200, 160, 0, 255]
+export const EXPECTED_MARGIN: Rgba = [245, 0, 252, 255]
+export const UNEXPECTED: Rgba = [255, 138, 0, 255]
+export const MISSING: Rgba = [0, 200, 252, 255]
 
 export interface Annotation {
   rect:  Rect

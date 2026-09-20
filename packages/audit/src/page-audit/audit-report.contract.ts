@@ -1,20 +1,19 @@
 import type { DiffOptions, ExpectedChange, PageDiff } from '@scanmate/diff'
-import type { ContentResult, ExpectedContent, FindOptions } from '@scanmate/find'
 import type { ImageFormat, ProgressCallback, Raster } from '@scanmate/ink'
-import type { OcrOptions, PageOcr } from '@scanmate/ocr'
+import type { OcrOptions, PageOcr, TextDifference } from '@scanmate/ocr'
 
+import type { Settlement, SettlementInput } from '../dispute-settlement'
 import type { AuditFinding, ExplainedDifference, FindingKind } from '../finding-correlation'
 
 export interface AuditOptions {
   /** Regions where a change is expected - a signature box, a tick box - in points from the top-left. */
   expected?:     readonly ExpectedChange[]
-  /** Content that must be on each page, checked with `@scanmate/find`. */
-  content?:      readonly ExpectedContent[]
   /** Options for the full reading. The text layer, the recheck and the engine are `@scanmate/ocr`'s. */
   ocr?:          Omit<OcrOptions, 'onProgress'>
   /** Options for the pixel comparison. Rectangles are always in points, so the two comparisons line up. */
   diff?:         Omit<DiffOptions, 'onProgress' | 'units' | 'output' | 'sideBySide'>
-  find?:         FindOptions
+  /** How a disagreement between the reading and the pixels is settled. */
+  settle?:       Omit<SettlementInput, 'differences' | 'probes' | 'original' | 'scanned' | 'engine' | 'rules'>
   /**
    * A page whose text score falls below this is too unreliable to pass on the
    * findings alone: at low resolution OCR misses changes it should see.
@@ -36,15 +35,17 @@ export interface PageAudit {
   reasons:        string[]
   /** Everything to look at, text and pixels together. */
   findings:       AuditFinding[]
+  /** Reading differences the ink says are not differences: identical print, read wrong. */
+  noise:          TextDifference[]
   /** Text differences accounted for by an expected region - kept for transparency, not counted. */
   explained:      ExplainedDifference[]
   /** The full reading of the page: both texts, every measure, every run. */
   text:           PageOcr
   /** The full pixel comparison: expected regions, unexpected and missing ink, the overlay. */
   pixels:         PageDiff
-  /** Required content checked on this page. */
-  content:        ContentResult[]
-  /** The original and the aligned scan side by side, with the findings drawn on both. */
+  /** How each disputed difference was settled, and what each re-read said. */
+  settled:        Settlement[]
+  /** The original, the aligned scan and the overlay, with the findings drawn. */
   evidenceRaster: Raster
   evidenceImage:  Uint8Array | null
 }
