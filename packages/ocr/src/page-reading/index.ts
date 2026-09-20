@@ -4,5 +4,5 @@ export { claimWords, judgeRun, judgeRuns, matchWords } from './match-words.use-c
 export type { Claims, MatchOptions, Reference, Verdict, WordMatch } from './match-words.use-case'
 export { ocrPages } from './ocr-pages.use-case'
 export type { OcrOptions, OcrReport, PageOcr, PlacedText, PositionedText, ReadablePage, RunReading, SideText, TextDifference } from './ocr-report.contract'
-export { DEFAULT_RECHECK_PASSES, printPolarity, recheckRun } from './recheck-run.use-case'
-export type { PrintPolarity, Recheck, RecheckOptions, RecheckPass } from './recheck-run.use-case'
+export { DEFAULT_RECHECK_PASSES, recheckRun } from './recheck-run.use-case'
+export type { Recheck, RecheckOptions, RecheckPass } from './recheck-run.use-case'

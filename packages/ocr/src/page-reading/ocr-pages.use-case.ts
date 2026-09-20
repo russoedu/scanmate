@@ -1,13 +1,15 @@
-import { resampleRaster } from '@scanmate/ink'
+import { resampleRaster, toGrayscale } from '@scanmate/ink'
 import type { Raster } from '@scanmate/ink'
 
+import { collectTemplates, printPolarity, verifyPrintedRun } from '../print-verification'
+import type { PrintedRun } from '../print-verification'
 import { createTesseractEngine } from '../ocr-engine'
 import type { OcrEngine, RecognisedText } from '../ocr-engine'
 import { DEFAULT_NORMALISE } from '../text-normalisation'
 import { compareTexts } from '../text-similarity'
 import { claimWords, judgeRun, judgeRuns } from './match-words.use-case'
 import type { MatchOptions, Reference } from './match-words.use-case'
-import { printPolarity, recheckRun } from './recheck-run.use-case'
+import { recheckRun } from './recheck-run.use-case'
 import type { OcrOptions, OcrReport, PageOcr, PlacedText, ReadablePage, SideText } from './ocr-report.contract'
 
 /**
@@ -70,6 +72,7 @@ async function readPage (page: ReadablePage, engine: OcrEngine, options: OcrOpti
     matchThreshold = 0.8,
     minWordConfidence = 60,
     recheck = {},
+    printCheck = {},
   } = options
   const warnings: string[] = []
 
@@ -104,6 +107,7 @@ async function readPage (page: ReadablePage, engine: OcrEngine, options: OcrOpti
   // image - belong to the original even though its text layer lacks them.
   // Writing over printed matter is for @scanmate/diff to see, not this.
   const originalDpi = page.original.dpi ?? assumeDpi
+  const originalGray = toGrayscale(page.original.raster)
   claims.added = claims.added
     .map(group => group.filter(word => !printedUnder(page.original.raster, originalDpi, word)))
     .filter(group => group.length > 0)
@@ -114,11 +118,27 @@ async function readPage (page: ReadablePage, engine: OcrEngine, options: OcrOpti
       if (judgeRun(run.text, claims.found[r], rules).agrees) continue
       rechecks.attempted++
       rechecked.add(r)
-      const second = await recheckRun(engine, scanImage, run, { ...rules, ...recheck }, printPolarity(page.original.raster, originalDpi, run))
+      const second = await recheckRun(engine, scanImage, run, { ...rules, ...recheck }, printPolarity(originalGray, originalDpi, run))
       if (second.reading === null) continue
       claims.found[r] = second.reading
       rechecks.cleared++
     }
+  // Figures are matched against the original's own glyphs, which settles what no
+  // reading of a returned scan can: whether this is still the digit that was printed.
+  const printChecks = { checked: 0, different: 0 }
+  if (printCheck !== false && useLayer) {
+    const scanGray = toGrayscale(page.aligned.raster)
+    const printed: PrintedRun[] = items.map(item => ({ ...item }))
+    const templates = collectTemplates(originalGray, originalDpi, printed)
+    for (const [r, run] of printed.entries()) {
+      const verified = verifyPrintedRun(originalGray, scanGray, originalDpi, run, templates, printCheck)
+      if (verified === null) continue
+      printChecks.checked++
+      if (!verified.agrees) printChecks.different++
+      claims.found[r] = verified.agrees ? run.text : verified.reading
+    }
+  }
+
   const match = judgeRuns(references, claims, rules)
   const runs = references.map((run, r) => ({
     text:      run.text,
@@ -143,6 +163,7 @@ async function readPage (page: ReadablePage, engine: OcrEngine, options: OcrOpti
     metrics,
     differences: match.differences,
     rechecks,
+    printChecks,
     warnings,
   }
 }

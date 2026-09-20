@@ -2,6 +2,7 @@ import { createRaster, resampleRaster } from '@scanmate/ink'
 import type { Raster } from '@scanmate/ink'
 
 import type { OcrEngine } from '../ocr-engine'
+import type { PrintPolarity } from '../print-verification'
 import { FIGURE, judgeRun } from './match-words.use-case'
 import type { MatchOptions, Reference } from './match-words.use-case'
 
@@ -51,9 +52,6 @@ export const DEFAULT_RECHECK_PASSES: readonly RecheckPass[] = [
   { dpi: 400, layout: 'word' },
   { dpi: 600, layout: 'line', stretch: true },
 ]
-
-/** Which way the original prints a run: dark text on light, or light text on a dark bar. */
-export type PrintPolarity = 'dark-on-light' | 'light-on-dark'
 
 export interface Recheck {
   cleared: boolean
@@ -131,29 +129,6 @@ function cropRun (raster: Raster, dpi: number, run: Reference, polarity?: PrintP
       for (let c = 0; c < 3; c++) out.data[i + c] = 255 - out.data[i + c]
 
   return out
-}
-
-/**
- * Which way the original prints a run, read off its own crisp rendering: the
- * glyphs are the pixels far from the background, and the background is most of
- * the box.
- */
-export function printPolarity (raster: Raster, dpi: number, run: Reference): PrintPolarity {
-  const s = dpi / 72
-  const left = Math.max(0, Math.floor(run.x * s))
-  const top = Math.max(0, Math.floor(run.y * s))
-  const right = Math.min(raster.width, Math.ceil((run.x + run.width) * s))
-  const bottom = Math.min(raster.height, Math.ceil((run.y + run.height) * s))
-  const values: number[] = []
-  for (let y = top; y < bottom; y++)
-    for (let x = left; x < right; x++) values.push(luminance(raster.data, (y * raster.width + x) * 4))
-  if (values.length === 0) return 'dark-on-light'
-
-  const background = values.toSorted((a, b) => a - b)[Math.floor(values.length / 2)]
-  const glyphs = values.filter(v => Math.abs(v - background) > 48)
-  if (glyphs.length === 0) return 'dark-on-light'
-
-  return glyphs.reduce((a, b) => a + b, 0) / glyphs.length > background ? 'light-on-dark' : 'dark-on-light'
 }
 
 /** Linear stretch so the darkest 2% become black and the lightest 2% white. */
