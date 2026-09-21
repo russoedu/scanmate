@@ -54,6 +54,29 @@ The bleed can be set per side: `bleed` for all four, and `bleedTop`, `bleedRight
 
 Each region reports its shape too — how many separate changes, the largest, the bounds as a share of the box, how much ink touches the border — so a signature can be told from a stray line without looking at the picture.
 
+## Checkboxes
+
+A form is full of boxes, and the question about each is plain: ticked or not. It is not the question an expected region answers - a region asks whether ink was *added*, so a box ticked before the form was issued reads as untouched, and an empty one, often the right answer, reads as a field someone forgot. `readCheckboxes` reads each side on its own:
+
+```ts
+import { readCheckboxes } from '@scanmate/diff'
+
+const boxes = await readCheckboxes(alignedPages, [
+  { page: 1, id: 'consent',    x: 36, y: 612, width: 13, height: 13, expect: 'ticked' },
+  { page: 1, id: 'newsletter', x: 36, y: 640, width: 13, height: 13 },
+])
+boxes[0].scanned     // { state: 'ticked', ink: 1.8, fill: 0.31 }
+boxes[0].satisfied   // true: it shows what it must
+boxes[1].changed     // whether the scan's state differs from the original's
+```
+
+- **Past the frame.** A fifth of the box's side is set aside all round (`inset`), so the printed square - and a pixel or two of misalignment - is never a mark.
+- **Three states.** `empty`; `ticked` for any mark of at least `minTickArea` (0.6 mm²) - a tick, a cross, a dot; `struck` once half the inside is inked, because a box blacked out or scribbled over gives no answer that can be read.
+- **Both sides.** A box ticked on the original and on the scan is not a change; one ticked on the original and empty on the scan is.
+- **`expect`** says what the returned document must show; `satisfied` says whether it does.
+
+Measured on synthetic scans at 150 dpi in 4.6 mm boxes: a 0.34 mm pen tick leaves 0.75-1.8 mm² inside the box, mid-grey to dark; an empty box under sensor noise far past a real scanner's, at most 0.23 mm², and none at all through ordinary noise or a 2-pixel misalignment. A very light stroke - soft pencil, about a third grey - can fall under the threshold.
+
 ## Options
 
 | option | default | |
