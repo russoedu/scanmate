@@ -10,6 +10,9 @@ import type { FindingKind } from '../finding-correlation'
 import type { AuditOptions, AuditReport, AuditedPage } from './audit-report.contract'
 import type { ReadablePage } from '@scanmate/ink'
 
+/** Below this text score a page is too unreliable to pass on its findings alone - unless `minTextScore` says otherwise. */
+export const DEFAULT_MIN_TEXT_SCORE = 0.85
+
 /**
  * The final audit: every aligned page read in full and compared pixel by
  * pixel, the two answers merged, and a verdict with its evidence.
@@ -41,7 +44,7 @@ import type { ReadablePage } from '@scanmate/ink'
  * with the reasons and the evidence page to check them against.
  */
 export async function auditPages<Page extends ReadablePage> (pages: readonly Page[], options: AuditOptions = {}): Promise<AuditReport<Page>> {
-  const { expected = [], minTextScore = 0.85, output = 'png', onProgress } = options
+  const { expected = [], minTextScore = DEFAULT_MIN_TEXT_SCORE, output = 'png', onProgress } = options
   // One engine for the whole run: the page readings and every disputed re-read.
   const engine: OcrEngine = options.ocr?.engine ?? await createTesseractEngine(options.ocr?.tesseract)
 
