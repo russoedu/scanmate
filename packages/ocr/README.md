@@ -97,3 +97,9 @@ Nothing is downloaded and, by default, nothing is written. This matters where de
 ## How it decides
 
 [`documentation/algorithms.md`](./documentation/algorithms.md) has the algorithms in full: what each step measures, the decision flows, every constant with the measurement behind it, and what the package deliberately does not do.
+
+[`documentation/print-verification.md`](./documentation/print-verification.md) shows the glyph check working, in pictures: which way round the print is, where one character ends and the next begins, what each glyph is compared against, every candidate scored, why the template is never blurred, and what a refusal looks like. Same machine, lid off.
+
+![one cell of a figure scored against all ten candidate digits, with the printed digit and its nearest rival marked](./assets/verify-match.png)
+
+*The scan's ink for one digit, the original's ink in the same place, and that ink scored against every digit the document prints in this face. The printed `2` takes 0.883 and the nearest rival manages 0.641, so the cell is decided - and decided as what was printed.*
