@@ -1,7 +1,7 @@
 import { alignPages } from '@scanmate/align'
 import { A4, createSyntheticPdf, extractPages, extractPair } from '@scanmate/extract'
 import type { SyntheticPdfPage } from '@scanmate/extract'
-import { cloneRaster, createSyntheticDocument, drawLabel, drawSignature, drawTick, IDENTITY, labelSize, simulateScan } from '@scanmate/ink'
+import { cloneRaster, createSyntheticDocument, drawLabel, drawLine, drawSignature, drawTick, IDENTITY, labelSize, simulateScan } from '@scanmate/ink'
 import type { Raster, ReadablePage, StageEvent, TextRun } from '@scanmate/ink'
 import type { OcrEngine, OcrWord, RecognisedText } from '@scanmate/ocr'
 
@@ -116,6 +116,32 @@ describe('auditPages', () => {
     expect(result.findings.map(f => [f.kind, f.corroborated])).toEqual([['unexpected-mark', true], ['text-changed', false]])
     expect(result.reasons).toContain('Printed "Total 1,250.00" reads "Total 7,250.00" - its figures differ')
     expect(audit.summary).toMatchObject({ passed: 0, corroborated: 1, findings: { 'unexpected-mark': 1, 'text-changed': 1 } })
+  })
+
+  it('reads checkboxes instead of calling a tick unexpected, or an unticked box empty', async () => {
+    const raster = signed()
+    // A fine pen - a third of a millimetre at 72 dpi - through the first box.
+    drawLine(raster, TICK.x + 3, TICK.y + 7, TICK.x + 6, TICK.y + 10, 1, 20)
+    drawLine(raster, TICK.x + 6, TICK.y + 10, TICK.x + 11, TICK.y + 3, 1, 20)
+    const second = FORM.regions['tick-2']
+    const checkboxes = [{ page: 1, id: 'consent', ...TICK, expect: 'ticked' as const }, { page: 1, id: 'newsletter', ...second }]
+    const audit = await auditPages([page(raster)], { expected: EXPECTED, checkboxes, ocr: { engine: reads(AS_PRINTED), targetDpi: null, recheck: false }, output: 'none' })
+    const [{ audit: result }] = audit.pages
+
+    expect(result.findings).toStrictEqual([])
+    expect(audit.verdict).toBe('pass')
+    expect(result.checkboxes.map(box => [box.id, box.scanned.state, box.satisfied])).toStrictEqual([['consent', 'ticked', true], ['newsletter', 'empty', null]])
+
+    // The same boxes, the consent now required to stay empty.
+    const refused = await auditPages([page(raster)], {
+      expected:   EXPECTED,
+      checkboxes: [{ ...checkboxes[0], expect: 'empty' }, checkboxes[1]],
+      ocr:        { engine: reads(AS_PRINTED), targetDpi: null, recheck: false },
+      output:     'none',
+    })
+
+    expect(refused.verdict).toBe('review')
+    expect(refused.pages[0].audit.findings).toMatchObject([{ kind: 'checkbox-mismatch', subject: 'consent', summary: '"consent" must be empty, and is ticked' }])
   })
 
   it('reports an expected region left empty, and the amount that was altered', async () => {

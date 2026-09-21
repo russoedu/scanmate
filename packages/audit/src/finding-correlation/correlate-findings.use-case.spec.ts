@@ -1,4 +1,4 @@
-import type { Change, ExpectedResult } from '@scanmate/diff'
+import type { Change, CheckboxReading, CheckboxState, ExpectedResult } from '@scanmate/diff'
 import type { TextDifference } from '@scanmate/ocr'
 
 import { correlateFindings } from './correlate-findings.use-case'
@@ -20,6 +20,21 @@ function region (id: string, at: ReturnType<typeof box>, identified: boolean, ov
 }
 
 const NONE = { expected: [], unexpected: [], missing: [] }
+
+function checkbox (id: string, original: CheckboxState, scanned: CheckboxState, expect: 'ticked' | 'empty' | null = null): CheckboxReading {
+  const side = (state: CheckboxState) => ({ state, ink: state === 'empty' ? 0 : 2, fill: state === 'struck' ? 0.8 : 0.2 })
+
+  return {
+    id,
+    page:      1,
+    box:       box(40, 400, 12, 12),
+    original:  side(original),
+    scanned:   side(scanned),
+    changed:   original !== scanned,
+    expect,
+    satisfied: expect === null ? null : scanned === expect,
+  }
+}
 
 describe('correlateFindings', () => {
   it('keeps what only the reading saw: a figure changed within the pixel tolerance', () => {
@@ -78,5 +93,28 @@ describe('correlateFindings', () => {
       ['expected-empty', 'name', '"name" was left empty'],
       ['expected-overfilled', 'title', '"title" is covered, not filled in'],
     ])
+  })
+
+  it('reads a box, never calls it a field left empty, and reports only what is wrong with it', () => {
+    const boxes = [
+      checkbox('optional-empty', 'empty', 'empty'),
+      checkbox('optional-ticked', 'empty', 'ticked'),
+      checkbox('required', 'empty', 'empty', 'ticked'),
+      checkbox('scribbled', 'empty', 'struck'),
+      checkbox('pre-ticked-cleared', 'ticked', 'empty'),
+      checkbox('pre-ticked-kept', 'ticked', 'ticked'),
+    ]
+    const { findings } = correlateFindings({
+      text:       [],
+      pixels:     { ...NONE, expected: boxes.map(b => region(b.id, box(40, 400, 12, 12), b.scanned.state !== 'empty')) },
+      checkboxes: boxes,
+    })
+
+    expect(findings.map(f => [f.kind, f.subject, f.summary])).toStrictEqual([
+      ['checkbox-mismatch', 'required', '"required" must be ticked, and is empty'],
+      ['checkbox-struck', 'scribbled', '"scribbled" is inked over: whether it is ticked cannot be told'],
+      ['checkbox-cleared', 'pre-ticked-cleared', '"pre-ticked-cleared" was ticked on the original and is empty on the scan'],
+    ])
+    expect(findings[0].checkbox).toBe(boxes[2])
   })
 })

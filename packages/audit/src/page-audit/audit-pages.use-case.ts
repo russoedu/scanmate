@@ -1,4 +1,4 @@
-import { diffPage, probeInk } from '@scanmate/diff'
+import { checkboxesFromMasks, diffPage, probeInk } from '@scanmate/diff'
 import { DEFAULT_NORMALISE, encodeImage } from '@scanmate/ink'
 import { createTesseractEngine, ocrPages } from '@scanmate/ocr'
 import type { OcrEngine, PageOcr } from '@scanmate/ocr'
@@ -44,7 +44,7 @@ export const DEFAULT_MIN_TEXT_SCORE = 0.85
  * with the reasons and the evidence page to check them against.
  */
 export async function auditPages<Page extends ReadablePage> (pages: readonly Page[], options: AuditOptions = {}): Promise<AuditReport<Page>> {
-  const { expected = [], minTextScore = DEFAULT_MIN_TEXT_SCORE, output = 'png', onProgress } = options
+  const { expected = [], checkboxes = [], minTextScore = DEFAULT_MIN_TEXT_SCORE, output = 'png', onProgress } = options
   // One engine for the whole run: the page readings and every disputed re-read.
   const engine: OcrEngine = options.ocr?.engine ?? await createTesseractEngine(options.ocr?.tesseract)
 
@@ -52,6 +52,14 @@ export async function auditPages<Page extends ReadablePage> (pages: readonly Pag
   const readings: PageOcr[] = []
   try {
     for (const [position, page] of pages.entries()) {
+      // A box is measured as a region, so a tick is never unexpected ink; what
+      // it means is decided from its reading, not from whether it gained ink.
+      const boxes = checkboxes.filter(box => box.page === page.page)
+      const boxIds = new Set(boxes.map(box => box.id))
+      const regions = [
+        ...expected.filter(region => region.page === page.page),
+        ...boxes.map(({ page: at, id, x, y, width, height }) => ({ page: at, id, x, y, width, height })),
+      ]
       // Both comparisons of the same page at once: tesseract works in its own
       // worker while the masks are built here, so the two cost about one.
       const [reading, diff] = await Promise.all([
@@ -59,7 +67,7 @@ export async function auditPages<Page extends ReadablePage> (pages: readonly Pag
         (async () => {
           const begun = Date.now()
           onProgress?.({ stage: 'diff', phase: 'start', page: page.page, index: position + 1, total: pages.length })
-          const result = await diffPage(page, expected.filter(region => region.page === page.page), {
+          const result = await diffPage(page, regions, {
             ...options.diff, units: 'points', output, sideBySide: false, keepMasks: true,
           })
           onProgress?.({
@@ -99,10 +107,11 @@ export async function auditPages<Page extends ReadablePage> (pages: readonly Pag
         },
         ...options.settle,
       })
+      const ticks = diff.masks === null ? [] : checkboxesFromMasks(diff.masks, boxes, { ...options.checkbox, dpi })
       // Four binary images the size of the page; nothing needs them now.
       diff.masks = null
 
-      const { findings, explained, noise } = correlateFindings({ text: text.differences, pixels: diff, settled })
+      const { findings, explained, noise } = correlateFindings({ text: text.differences, pixels: diff, settled, checkboxes: ticks })
 
       const reasons = findings.map(f => f.summary)
       if (text.score < minTextScore)
@@ -110,7 +119,7 @@ export async function auditPages<Page extends ReadablePage> (pages: readonly Pag
 
       const evidenceRaster = renderEvidence(page.original.raster, page.aligned.raster, {
         dpi,
-        expected:    diff.expected,
+        expected:    diff.expected.filter(region => !boxIds.has(region.id)),
         findings,
         overlay:     diff.diffRaster,
         // The same bleed the comparison measured with, so the band drawn is the band checked.
@@ -130,6 +139,7 @@ export async function auditPages<Page extends ReadablePage> (pages: readonly Pag
           explained,
           noise,
           settled,
+          checkboxes:    ticks,
           text,
           pixels:        diff,
           evidenceRaster,

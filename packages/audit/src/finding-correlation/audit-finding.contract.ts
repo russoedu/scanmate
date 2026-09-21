@@ -1,4 +1,4 @@
-import type { Change, ExpectedResult } from '@scanmate/diff'
+import type { Change, CheckboxReading, ExpectedResult } from '@scanmate/diff'
 import type { ScanmateRect } from '@scanmate/ink'
 import type { TextDifference } from '@scanmate/ocr'
 
@@ -17,6 +17,10 @@ import type { TextDifference } from '@scanmate/ocr'
  * - `text-unsettled`: the reading disagrees, the ink at that run is identical,
  *   and reading both sides again could not settle which is right. Reported,
  *   because "we could not tell" is not the same as "nothing happened".
+ * - `checkbox-mismatch`: a box does not show what its `expect` asks.
+ * - `checkbox-struck`: a box is inked over, so which answer it gives cannot be
+ *   told - blacked out, or a tick scribbled over to take it back.
+ * - `checkbox-cleared`: a box ticked on the original comes back empty.
  */
 export type FindingKind =
   'unexpected-mark' |
@@ -26,7 +30,10 @@ export type FindingKind =
   'text-missing' |
   'text-added' |
   'expected-empty' |
-  'expected-overfilled'
+  'expected-overfilled' |
+  'checkbox-mismatch' |
+  'checkbox-struck' |
+  'checkbox-cleared'
 
 export interface AuditFinding {
   kind:         FindingKind
@@ -40,8 +47,10 @@ export interface AuditFinding {
   text:         TextDifference[]
   /** What the pixel comparison found here: a change, or an expected region's result. */
   pixels:       Change | ExpectedResult | null
-  /** The expected region, or the required content, it concerns. */
+  /** The expected region, the box, or the required content it concerns. */
   subject?:     string
+  /** The box it concerns, as both sides have it. */
+  checkbox?:    CheckboxReading
 }
 
 /** A text difference that needs no one's attention, and why. */

@@ -1,4 +1,4 @@
-import type { Change, ExpectedResult, PageDiff } from '@scanmate/diff'
+import type { Change, CheckboxReading, ExpectedResult, PageDiff } from '@scanmate/diff'
 import type { ScanmateRect } from '@scanmate/ink'
 import type { TextDifference } from '@scanmate/ocr'
 
@@ -19,6 +19,12 @@ import type { AuditFinding, ExplainedDifference } from './audit-finding.contract
  * as "Ae dhe". And a printed run under a region that was filled in reads
  * differently because someone wrote across it; the region itself carries the
  * finding that matters.
+ *
+ * Checkboxes are read, not expected: they are given to the pixel comparison as
+ * regions, so a tick is never unexpected ink and its reading as a letter is
+ * explained, but an empty one is not a field left empty. A box is a finding
+ * only when it does not show what it must, is inked over, or was ticked on the
+ * original and comes back empty.
  */
 
 export interface Correlation {
@@ -30,20 +36,22 @@ export interface Correlation {
 
 export interface CorrelationInput {
   /** The text differences of the page, in points. */
-  text:     readonly TextDifference[]
+  text:        readonly TextDifference[]
   /** The pixel comparison of the page, with rectangles in points. */
-  pixels:   Pick<PageDiff, 'expected' | 'unexpected' | 'missing'>
+  pixels:      Pick<PageDiff, 'expected' | 'unexpected' | 'missing'>
   /**
    * How each text difference the pixels did not account for was settled, from
    * `settleDisputes`. A difference with no settlement is reported as it stands.
    */
-  settled?: readonly Settlement[]
+  settled?:    readonly Settlement[]
+  /** The page's checkboxes, as read on both sides. Their regions are in `pixels.expected` too. */
+  checkboxes?: readonly CheckboxReading[]
 }
 
 /** Points of slack when deciding two boxes are at the same place. */
 const SLACK = 1.5
 
-export function correlateFindings ({ text, pixels, settled = [] }: CorrelationInput): Correlation {
+export function correlateFindings ({ text, pixels, settled = [], checkboxes = [] }: CorrelationInput): Correlation {
   const explained: ExplainedDifference[] = []
   const open: TextDifference[] = []
   for (const difference of text) {
@@ -86,8 +94,9 @@ export function correlateFindings ({ text, pixels, settled = [] }: CorrelationIn
     else findings.push(textFinding(difference, settlement))
   }
 
+  const boxes = new Set(checkboxes.map(box => box.id))
   for (const region of pixels.expected) {
-    if (region.identified) continue
+    if (region.identified || boxes.has(region.id)) continue
     findings.push({
       kind:         region.overfilled ? 'expected-overfilled' : 'expected-empty',
       box:          boxOf(region),
@@ -99,7 +108,26 @@ export function correlateFindings ({ text, pixels, settled = [] }: CorrelationIn
     })
   }
 
+  for (const box of checkboxes) {
+    const finding = checkboxFinding(box)
+    if (finding !== null) findings.push(finding)
+  }
+
   return { findings, explained, noise }
+}
+
+/** What is wrong with a box, if anything. */
+function checkboxFinding (box: CheckboxReading): AuditFinding | null {
+  const { id, original, scanned, expect, satisfied } = box
+  const finding = (kind: AuditFinding['kind'], summary: string): AuditFinding => ({
+    kind, box: box.box, corroborated: false, summary, text: [], pixels: null, subject: id, checkbox: box,
+  })
+
+  if (satisfied === false) return finding('checkbox-mismatch', `"${id}" must be ${expect}, and is ${scanned.state}`)
+  if (scanned.state === 'struck' && original.state !== 'struck') return finding('checkbox-struck', `"${id}" is inked over: whether it is ticked cannot be told`)
+  if (original.state !== 'empty' && scanned.state === 'empty') return finding('checkbox-cleared', `"${id}" was ticked on the original and is empty on the scan`)
+
+  return null
 }
 
 /** The expected region that accounts for a text difference, or `null`. */
