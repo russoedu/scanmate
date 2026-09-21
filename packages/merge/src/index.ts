@@ -24,6 +24,8 @@ export { mergeDocuments } from './document-merge'
 export type { Embedding, MergedPage, MergeOptions, MergeResult } from './document-merge'
 export { MergeSourceError } from './source-reading'
 export type { SourceKind } from './source-reading'
+export { markPages } from './page-marking'
+export type { MarkOptions, MarkResult, PageMark } from './page-marking'
 export type { PageSize } from './page-placement'
 
 // --- Building blocks ---
@@ -32,3 +34,5 @@ export { MIN_RECORDED_DPI, PAPER, placeImage, resolveDpi } from './page-placemen
 export type { Placement } from './page-placement'
 export { isPdf, readSource } from './source-reading'
 export type { ResolvedSource } from './source-reading'
+export { toUserSpace, viewportSize, viewportTransform } from './page-marking'
+export type { Affine, PageGeometry } from './page-marking'
