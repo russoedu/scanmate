@@ -62,6 +62,11 @@ export async function diffPages<Page extends AlignedPage> (
   return results
 }
 
+/** Least new ink, in mm2, reported as a change outside every expected region - unless `minChangeArea` says otherwise. */
+export const DEFAULT_MIN_CHANGE_AREA = 1
+/** Least lost ink, in mm2, reported as missing - unless `minMissingArea` says otherwise. */
+export const DEFAULT_MIN_MISSING_AREA = 4
+
 /** One page. `expected` should already be the regions for this page. */
 export async function diffPage (
   page: AlignedPage,
@@ -75,8 +80,8 @@ export async function diffPage (
     maxFill = 0.5,
     formLineSpan = 0.9,
     formLineThickness = 0.6,
-    minChangeArea = 1,
-    minMissingArea = 4,
+    minChangeArea = DEFAULT_MIN_CHANGE_AREA,
+    minMissingArea = DEFAULT_MIN_MISSING_AREA,
     faintInk,
     mergeGap = 3,
     assumeDpi = 150,
