@@ -43,6 +43,39 @@ Each run carries its text, its box in points from the page's top-left **as displ
 
 Only the **original's** text layer is meant to be trusted. A returned document's is reported and never used: it can be stale, or planted, and it is not what the person signing the paper saw.
 
+## Where the fields are
+
+A generated document's fields move with its content: one more line in an address pushes the signature block down, sometimes onto the next page. What does not move is a field's place beside its label. `locateFields` finds each label in the text layer and places the fields from it:
+
+```ts
+import { locateFields } from '@scanmate/extract'
+
+const { regions, anchors, problems } = await locateFields('fw9.pdf', [
+  {
+    anchor: 'Signature of U.S. person',
+    fields: {
+      signature: { dx: 44, dy: -3.8, width: 262, height: 22 },
+      date:      { dx: 328, dy: -3.8, width: 171, height: 22 },
+    },
+  },
+])
+regions    // [{ page: 1, id: 'signature', x: 120, y: 577, width: 262, height: 22 }, { page: 1, id: 'date', ... }]
+problems   // [] - or why a field could not be placed, or should not be trusted
+```
+
+![the signer fields, resolved from the anchor the original prints](./assets/regions.jpg)
+
+*The boxes were not measured by hand: they are offsets from a label found in the [IRS Form W-9](https://www.irs.gov/pub/irs-pdf/fw9.pdf)'s own text layer (a work of the United States government, in the public domain).*
+
+- **A label is found as it is printed.** The W-9 prints "Signature of" and "U.S. person" as two runs on two lines; the anchor is the whole label, and wraps with it. Runs are joined along a line, and onto the next line under it.
+- **Whole words only**, compared after the suite's normalisation with the punctuation at their edges set aside: `'Signature'` finds `Signature:`, and `'Date'` never finds `Update`.
+- **The whole document is searched**, and each region carries its page. A label printed twice is refused as `anchor-ambiguous` rather than guessed at: name the `occurrence` (counted in page order) or the `page`.
+- **`from`** measures the offsets from any corner of the label. A field to the right of its label is best measured from `'top-right'`, so it does not move when the label's wording does.
+- **The regions are checked**: off the page, overlapping another on its page, zero-sized, or an id used twice all come back in `problems`.
+- **Turned pages and turned text work.** Everything is in points from the top-left of the page as displayed - the frame `@scanmate/diff` measures in and `markPages` draws in - so the regions go straight to either.
+
+It reads the text layer and renders nothing: about 200 ms on the W-9. `resolveFields` does the same from text already in hand, and `locateAnchor` only finds a label. A label inside a longer run has its edges placed in proportion to its characters, and says so with `estimated: true`.
+
 ## Pairing
 
 Scans lose pages and gain cover sheets, so `extractPair` reports what it could pair **and** what it could not, rather than throwing or truncating silently:

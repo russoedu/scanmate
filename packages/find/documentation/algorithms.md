@@ -1,17 +1,11 @@
 # How `@scanmate/find` decides
 
-Two questions:
+One question: **is the content that must be on this page actually on it?** -
+the company name, the order number, the total.
 
-1. **Is the content that must be on this page actually on it?** — the company
-   name, the order number, the total.
-2. **Where is the field?** — the box under "Signature of", resolved from text
-   the original prints rather than from coordinates someone typed once.
-
-![the signer fields, resolved from the anchor the original prints](../assets/regions.jpg)
-
-*The two boxes were not measured by hand. They are offsets from the words
-"Signature of", found in the original's own text layer, on the
-[IRS Form W-9](https://www.irs.gov/pub/irs-pdf/fw9.pdf) (public domain).*
+Where a field is - the box beside "Signature of U.S. person" - used to be
+answered here too. It reads only the original's text layer, so it moved to
+`@scanmate/extract` as `locateFields`, and its algorithm is documented there.
 
 ## Finding content
 
@@ -87,36 +81,7 @@ Both sides go through the same normalisation as `@scanmate/ocr` — reusing it
 rather than reimplementing it, because a mismatch between the two would be a
 silent correctness bug.
 
-## Resolving a field from an anchor
-
-Coordinates typed into a config drift the moment a template changes. An anchor
-does not: the field is *under the words the form prints*.
-
-```mermaid
-flowchart TD
-  A[anchor text] --> B[join runs on one line<br/>baselines within 2 points]
-  B --> C[normalise and compare]
-  C --> D{how many places<br/>match?}
-  D -->|none| E[named outcome: not found]
-  D -->|more than one| F{occurrence given?}
-  F -->|no| G[named outcome: ambiguous]
-  F -->|yes, nth| H[take that one]
-  D -->|exactly one| I[take it]
-  H --> J[offsets from the anchor's corner]
-  I --> J
-  J --> K{every region finite, positive,<br/>on the page, not overlapping?}
-  K -->|no| L[named outcome: invalid]
-  K -->|yes| M[regions, in points]
-```
-
-Runs are joined across a line first, because a text layer splits a phrase
-wherever the generator changed anything — "Signature of" can be three separate
-runs. Anything ambiguous is a **named outcome**, never a guess: zero matches and
-five matches are different problems, and both are the caller's to handle.
-
-The resolved regions are validated before they are returned — finite, positive,
-inside the page, and not overlapping each other — so a bad offset table fails
-here rather than silently measuring the wrong rectangle.
+## Only the original is trusted
 
 One rule is a security rule: **only the original's text layer is ever read**. A
 returned scan can carry a text layer of its own, stale or planted, and nothing
@@ -127,15 +92,12 @@ here will use it.
 | option | default | |
 |---|---|---|
 | `minScore` | `0.85` | Least similarity for a match; figures and lone letters are exact regardless. |
-| `normalise` | shared with `@scanmate/ocr` | Case, diacritics, typography, hyphens. |
-| `lineTolerance` | `2` pt | Baselines this close are one line. |
-| `maxRuns` | `12` | Runs joined when looking for an anchor. |
-| `occurrence` | `'unique'` | Or the nth, when a form repeats its anchor per signer. |
+| `normalise` | the suite's, from `@scanmate/ink` | Case, diacritics, typography, hyphens. |
 
 ## What it does not do
 
 - It does not read the scan. It works from `@scanmate/ocr`'s report.
-- It does not look at ink. Whether a resolved region was *filled in* is
+- It does not look at ink. Whether a field was *filled in* is
   `@scanmate/diff`'s question.
 - It does not invent a location for content it cannot find in the original: if
   the document does not print it, there is no "place" for it to be.

@@ -124,7 +124,7 @@ const found = findContent(audit.pages, [{ page: 1, content: ['Account 4412-9087-
 
 | Option | Default | |
 |---|---|---|
-| `expected` | none | Regions where a change is expected, in points (`resolveRegions` in `@scanmate/find` builds them from anchors). |
+| `expected` | none | Regions where a change is expected, in points (`locateFields` in `@scanmate/extract` builds them from the labels the original prints). |
 | `ocr` | `@scanmate/ocr` defaults | Engine, languages and cache, the recheck, thresholds. Pass `ocr.engine` to share one engine across audits. |
 | `diff` | `@scanmate/diff` defaults | Tolerances, minimum areas, form-line handling. Rectangles are always in points. |
 | `settle` | `quorum: 2`, three passes | How a disagreement between the reading and the pixels is settled. |
