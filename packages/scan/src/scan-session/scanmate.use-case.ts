@@ -1,4 +1,4 @@
-import type { AuditOptions, AuditReport } from '@scanmate/audit'
+import type { AuditOptions, AuditReport, EvidencePdfOptions } from '@scanmate/audit'
 import type { AlignPagesOptions } from '@scanmate/align'
 import type { Checkbox, CheckboxOptions, CheckboxReading, ComparedPage, DiffOptions, ExpectedChange, PageDiff } from '@scanmate/diff'
 import type { EnhancePagesOptions } from '@scanmate/enhance'
@@ -382,6 +382,22 @@ export class Scanmate {
 
       return report
     })
+  }
+
+  /**
+   * The audit as one PDF, for whoever reviews it: a cover with the verdict and
+   * why, then each page's evidence image with what to look at in words, as
+   * text that can be searched.
+   *
+   * Runs `audit()` if it has not run - with the session's settings, so the
+   * PDF is the audit's own evidence, not a second opinion - and loads the PDF
+   * library only now.
+   */
+  async evidence (options?: EvidencePdfOptions): Promise<Uint8Array> {
+    const report = await this.audit()
+    const { writeEvidencePdf } = await loadAudit()
+
+    return await writeEvidencePdf(report, options)
   }
 
   /**
