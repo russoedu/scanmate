@@ -10,6 +10,8 @@ import type { PipelineStage, ScanmateBinarySource, ScanmateSource } from '@scanm
 import type { OcrOptions, OcrReport, ReadPage } from '@scanmate/ocr'
 
 import { pixelsFromAudit, readingFromAudit } from '../audit-reuse'
+import { runInBatches } from '../batch-running'
+import type { BatchInfo, BatchOptions } from '../batch-running'
 import { calibrateCorpus } from '../corpus-calibration'
 import type { CalibrateOptions, CalibrationCase, CorpusCalibration } from '../corpus-calibration'
 import { preparePages } from '../page-preparation'
@@ -158,6 +160,37 @@ export class Scanmate {
    */
   static async calibrate (corpus: Iterable<CalibrationCase> | AsyncIterable<CalibrationCase>, options: CalibrateOptions = {}): Promise<CorpusCalibration> {
     return await calibrateCorpus(corpus, options, (original, scanned, session) => new Scanmate(original, scanned, session))
+  }
+
+  /**
+   * A long document, a few pages at a time, keeping only what you take from
+   * each batch.
+   *
+   * A session remembers every page's pixels so that its later stages are cheap
+   * - which for a long document is gigabytes. This runs `work` on one session
+   * per range of pages, disposing each before opening the next, so the peak is
+   * one batch however long the document is:
+   *
+   * ```ts
+   * const verdicts = await Scanmate.inBatches('issued.pdf', 'returned.pdf', async (scan) => {
+   *   const report = await scan.audit()
+   *   return report.pages.map(({ audit }) => ({ page: audit.page, verdict: audit.verdict, reasons: audit.reasons }))
+   * }, { batch: 4, expected })
+   * ```
+   *
+   * Keep what `work` returns small - verdicts, reasons, an evidence PDF's bytes -
+   * because a report carries its pages, and its pages carry their pixels: keep
+   * the reports and nothing was saved. A side given as an array is merged once,
+   * not per batch, and one OCR engine serves every batch, started only if one
+   * reads. `extract.pages` still selects which pages are batched.
+   */
+  static async inBatches<Result> (
+    original: ScanmateDocument,
+    scanned: ScanmateDocument,
+    work: (scan: Scanmate, batch: BatchInfo) => Promise<Result>,
+    options: BatchOptions = {},
+  ): Promise<Result[]> {
+    return await runInBatches(original, scanned, work, options, (one, two, session) => new Scanmate(one, two, session))
   }
 
   readonly #original: ScanmateDocument
