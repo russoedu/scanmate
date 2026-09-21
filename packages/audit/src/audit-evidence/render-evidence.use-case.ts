@@ -1,8 +1,8 @@
 import { composePanels, EXPECTED_MARGIN, IDENTIFIED, MISSING, NOT_IDENTIFIED, OVERLAY_DIFFERENT, REFERENCE, UNEXPECTED, UNSETTLED } from '@scanmate/diff'
 import type { Annotation, ExpectedResult, Panel, Rgba } from '@scanmate/diff'
 import type { ContentResult } from '@scanmate/find'
-import { createRaster, drawLabel, labelSize } from '@scanmate/ink'
-import type { Raster, ScanmateRect } from '@scanmate/ink'
+import { createRaster, drawLabel, growBy, hasBleed, labelSize, resolveBleed } from '@scanmate/ink'
+import type { Bleed, Raster, ScanmateRect } from '@scanmate/ink'
 
 import type { AuditFinding, FindingKind } from '../finding-correlation'
 
@@ -57,25 +57,30 @@ const LEGEND: ReadonlyArray<readonly [Rgba, string]> = [
   [UNSETTLED, 'unsettled'],
 ]
 
-export interface EvidenceOptions {
+/**
+ * What the evidence page draws. The bleed fields - `bleed`, and a side to
+ * override it - are the room drawn around each expected region, and must be the
+ * same bleed the comparison measured with, or the band on the page is not the
+ * band that was checked.
+ */
+export interface EvidenceOptions extends Bleed {
   /** What the original was rendered at. */
-  dpi:             number
+  dpi:       number
   /** The regions the pixel comparison was asked about. */
-  expected?:       readonly ExpectedResult[]
+  expected?: readonly ExpectedResult[]
   /** What the audit found. */
-  findings?:       readonly AuditFinding[]
+  findings?: readonly AuditFinding[]
   /** Required content checked on this page. */
-  content?:        readonly ContentResult[]
+  content?:  readonly ContentResult[]
   /** The pixel overlay, drawn as a third panel when given. */
-  overlay?:        Raster | null
-  /** How far outside a region its ink still counts, in points. Default `6`. */
-  expectedMargin?: number
+  overlay?:  Raster | null
   /** Draw the legend along the foot. Default `true`. */
-  legend?:         boolean
+  legend?:   boolean
 }
 
 export function renderEvidence (original: Raster, aligned: Raster, options: EvidenceOptions): Raster {
-  const { dpi, expected = [], findings = [], content = [], overlay = null, expectedMargin = 6, legend = true } = options
+  const { dpi, expected = [], findings = [], content = [], overlay = null, legend = true } = options
+  const bleed = resolveBleed(options)
   const toPixels = dpi / 72
   const line = Math.max(2, Math.round(dpi / 72))
   const box = (rect: ScanmateRect, by = 2): ScanmateRect => grow(scale(rect, toPixels), by)
@@ -89,7 +94,7 @@ export function renderEvidence (original: Raster, aligned: Raster, options: Evid
 
   // The scan: the answers, each in the colour of that answer.
   const answers: Annotation[] = [
-    ...(expectedMargin > 0 ? expected.map(region => ({ rect: scale(grow(region, expectedMargin), toPixels), color: EXPECTED_MARGIN })) : []),
+    ...(hasBleed(bleed) ? expected.map(region => ({ rect: scale(growBy(region, bleed), toPixels), color: EXPECTED_MARGIN })) : []),
     ...expected.map(region => ({ rect: box(region), color: region.identified ? IDENTIFIED : NOT_IDENTIFIED })),
     ...content.filter(result => result.identifiable).flatMap(result => places(result).map(rect => ({ rect: box(rect, 3), color: REFERENCE }))),
   ]

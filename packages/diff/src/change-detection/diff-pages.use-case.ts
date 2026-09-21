@@ -1,4 +1,4 @@
-import { encodeImage } from '@scanmate/ink'
+import { encodeImage, growBy, hasBleed, resolveBleed } from '@scanmate/ink'
 import type { AlignedPage, BinaryImage, ScanmateRect } from '@scanmate/ink'
 
 import { buildMasks, measureRegion, paintOverlay } from '../region-comparison'
@@ -81,7 +81,6 @@ export async function diffPage (
     mergeGap = 3,
     assumeDpi = 150,
     regionOverlap = 0.5,
-    expectedMargin = 6,
     maxChanges = 50,
     probes = [],
     keepMasks = false,
@@ -100,7 +99,8 @@ export async function diffPage (
 
   // People sign past the box they are given, so each region claims the ink a little
   // way outside it too; what it reports is still the region it was given.
-  const regions = expected.map(e => ({ id: e.id, rect: scaleRect(e, toPixels), claim: scaleRect(grow(e, expectedMargin), toPixels) }))
+  const bleed = resolveBleed(options)
+  const regions = expected.map(e => ({ id: e.id, rect: scaleRect(e, toPixels), claim: scaleRect(growBy(e, bleed), toPixels) }))
 
   const findChanges = (mask: BinaryImage, minArea: number): MergedBox[] => {
     const components = connectedComponents(mask).filter(c => c.pixels >= 2)
@@ -171,24 +171,24 @@ export async function diffPage (
   const missing = lost.slice(0, maxChanges).map(box => toChange(box))
 
   // The band first, so a region's own outline draws over it where they meet.
-  const margins: Annotation[] = expectedMargin > 0 ? regions.map(region => ({ rect: region.claim, color: EXPECTED_MARGIN })) : []
+  const margins: Annotation[] = hasBleed(bleed) ? regions.map(region => ({ rect: region.claim, color: EXPECTED_MARGIN })) : []
   const verdicts: Annotation[] = regions.map((region, i) => ({
-    rect:  grow(region.rect, 2),
+    rect:  pad(region.rect, 2),
     color: expectedResults[i].identified ? IDENTIFIED : NOT_IDENTIFIED,
   }))
   const reported: Annotation[] = [
     ...margins,
     ...verdicts,
-    ...outside.slice(0, maxChanges).map(box => ({ rect: grow(box, 4), color: UNEXPECTED })),
+    ...outside.slice(0, maxChanges).map(box => ({ rect: pad(box, 4), color: UNEXPECTED })),
   ]
   // On the original, every region is simply the area in question; the answers belong to the scan.
-  const asAsked: Annotation[] = regions.map(region => ({ rect: grow(region.rect, 2), color: REFERENCE }))
+  const asAsked: Annotation[] = regions.map(region => ({ rect: pad(region.rect, 2), color: REFERENCE }))
 
   const diffRaster = paintOverlay(masks)
   if (annotate) annotateOverlay(diffRaster, reported)
 
   // Lines about a point thick at any dpi, so the boxes read the same on every page.
-  const losses: Annotation[] = lost.slice(0, maxChanges).map(box => ({ rect: grow(box, 4), color: MISSING }))
+  const losses: Annotation[] = lost.slice(0, maxChanges).map(box => ({ rect: pad(box, 4), color: MISSING }))
   const sideBySideRaster = sideBySide
     ? composeSideBySide(page.original.raster, page.aligned.raster, {
         // Left: where the questions are, and the ink the scan lost, which is the original's.
@@ -276,6 +276,11 @@ function scaleRect (rect: ScanmateRect, factor: number): ScanmateRect {
   return { x: rect.x * factor, y: rect.y * factor, width: rect.width * factor, height: rect.height * factor }
 }
 
-function grow (rect: ScanmateRect, by: number): ScanmateRect {
+/**
+ * A box drawn a little outside what it marks, in pixels, so the outline does not
+ * cover the ink it is pointing at. Purely how the evidence is drawn; the room a
+ * region is allowed is its bleed, and that is decided by `resolveBleed`.
+ */
+function pad (rect: ScanmateRect, by: number): ScanmateRect {
   return { x: rect.x - by, y: rect.y - by, width: rect.width + 2 * by, height: rect.height + 2 * by }
 }

@@ -58,6 +58,22 @@ Measured on real scans: three 120-dpi page JPEGs plus a 7-page PDF merged in 20 
 
 PDF writing uses `@cantoo/pdf-lib`, the maintained fork of pdf-lib, which is pure JavaScript with nothing to install on the host.
 
+## Drawing on a PDF, not just assembling one
+
+The other thing this package writes is marks. `markPages` draws a set of regions on a PDF as vector rectangles, each with its bleed dashed around it, and hands the PDF back:
+
+```ts
+import { markPages } from '@scanmate/merge'
+
+const { pdf, drawn, warnings } = await markPages('issued.pdf', [
+  { page: 1, id: 'signature', x: 120, y: 577, width: 262, height: 22 },
+], { bleedTop: 2, bleedBottom: 12 })
+```
+
+It exists to check that the regions a validation will measure are where the document's fields actually are - most people reach it as `Scanmate.mark` in `@scanmate/scan`, whose README has a worked example on the W-9.
+
+Two things it gets right that a naive version would not. **Rotation and crop box:** a region is in points from the top-left of the page *as displayed*, which is how `@scanmate/extract` reports text, while pdf-lib draws from the bottom-left of the unrotated media box. The conversion between the two is pdf.js's own page transform, ported line for line and inverted, and its spec pins it to values read off real pdf.js for every quarter turn, with and without an offset crop box. **Bleed:** it is resolved by `resolveBleed` from `@scanmate/ink`, the same function the pixel comparison uses, so the band drawn is the band measured.
+
 ## How it decides
 
 [`documentation/algorithms.md`](./documentation/algorithms.md) has the algorithms in full: what each step measures, the decision flows, every constant with the measurement behind it, and what the package deliberately does not do.

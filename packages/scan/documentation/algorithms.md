@@ -55,8 +55,8 @@ what the packages produce when called directly.
 
 ## The two ends, without a comparison
 
-`Scanmate.merge` and `Scanmate.extract` are static, and that is the whole of what
-they say: they need no session, because a session exists to hold an original
+`Scanmate.merge`, `Scanmate.extract` and `Scanmate.mark` are static, and that is
+the whole of what they say: they need no session, because a session exists to hold an original
 beside a scan and remember what was measured between them. Assembling a PDF from
 photographs, or opening one to see what it holds, has neither side and nothing
 worth remembering.
@@ -124,6 +124,7 @@ Measured, not asserted. A child process runs an align-only session against the
 | a side given as an array | plus `merge`, `@cantoo/pdf-lib` |
 | `Scanmate.extract` alone | `scan`, `extract` — no session, no reader |
 | `Scanmate.merge` alone | `scan`, `merge` — no session, no reader |
+| `Scanmate.mark` alone | `scan`, `merge` — no session, no reader |
 
 **`sharp` is the floor.** Every stage depends on `@scanmate/ink`, which imports
 sharp at module top level, so there is no pure-JavaScript path and no point
