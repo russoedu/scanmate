@@ -51,6 +51,7 @@ By default each image page is the image at its resolution. A 2480 × 3508 scan a
 | `quality` | `92` | JPEG quality. |
 | `passThrough` | `true` | Return a lone PDF unchanged. |
 | `metadata` | none | Title, author, subject, keywords, creator. The producer is always `@scanmate/merge`. |
+| `password` | none | Opens an encrypted PDF source that needs a password to be read. A signed or permission-restricted PDF - locked with an owner password alone - needs none. Tried on every encrypted source; one it does not open is tried with no password instead, so it cannot lock out a source that needed nothing. |
 
 Each entry in `pages` says which source and source page it came from, how it was embedded, and its size. A source that cannot be used raises a `MergeSourceError` carrying its `index`.
 
@@ -71,6 +72,8 @@ const { pdf, drawn, warnings } = await markPages('issued.pdf', [
 ```
 
 It exists to check that the regions a validation will measure are where the document's fields actually are - most people reach it as `Scanmate.mark` in `@scanmate/scan`, whose README has a worked example on the W-9.
+
+**Signed documents open as they are.** They usually arrive encrypted - an owner password restricting editing, none needed to read - which pdf-lib refuses by default. They are decrypted as they are read, with nothing to pass; `password` is only for a PDF that needs one to be read at all.
 
 Two things it gets right that a naive version would not. **Rotation and crop box:** a region is in points from the top-left of the page *as displayed*, which is how `@scanmate/extract` reports text, while pdf-lib draws from the bottom-left of the unrotated media box. The conversion between the two is pdf.js's own page transform, ported line for line and inverted, and its spec pins it to values read off real pdf.js for every quarter turn, with and without an offset crop box. **Bleed:** it is resolved by `resolveBleed` from `@scanmate/ink`, the same function the pixel comparison uses, so the band drawn is the band measured.
 

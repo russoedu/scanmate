@@ -1,9 +1,9 @@
-import { PDFDocument, StandardFonts, degrees, rgb } from '@cantoo/pdf-lib'
+import { StandardFonts, degrees, rgb } from '@cantoo/pdf-lib'
 import type { PDFFont, PDFPage } from '@cantoo/pdf-lib'
 import { growBy, hasBleed, resolveBleed } from '@scanmate/ink'
 import type { ScanmateBinarySource, ScanmateRect } from '@scanmate/ink'
 
-import { readSource } from '../source-reading'
+import { openPdf, readSource } from '../source-reading'
 import { toUserSpace, viewportSize, viewportTransform } from './page-viewport.policy'
 import type { PageGeometry } from './page-viewport.policy'
 import type { MarkOptions, MarkResult, PageMark } from './page-mark.contract'
@@ -30,7 +30,9 @@ export async function markPages (pdf: ScanmateBinarySource, marks: readonly Page
   const source = await readSource(pdf, 0)
   if (source.kind !== 'pdf') throw new TypeError('marks are drawn on a PDF, and this is not one')
 
-  const document = await PDFDocument.load(source.bytes)
+  // Decrypted if encrypted, as a signed document usually is - see `openPdf` for
+  // why that and not `ignoreEncryption`, which would silently drop every mark.
+  const document = await openPdf(source.bytes, { password: options.password })
   const font = options.labels === false ? null : await document.embedFont(StandardFonts.Helvetica)
   const bleed = resolveBleed(options)
   const pages = document.getPages()

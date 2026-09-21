@@ -24,7 +24,13 @@ export interface PageMark extends ScanmateRect {
  */
 export interface MarkOptions extends Bleed {
   /** Write each mark's `id` beside it. Default `true`. */
-  labels?: boolean
+  labels?:   boolean
+  /**
+   * Opens a PDF encrypted with a password it needs to be read. A signed or
+   * permission-restricted document, locked with an owner password alone, needs
+   * none: it is decrypted as it is read, and the marks are drawn on it.
+   */
+  password?: string
 }
 
 export interface MarkResult {

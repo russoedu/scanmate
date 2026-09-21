@@ -22,7 +22,8 @@
 
 export { mergeDocuments } from './document-merge'
 export type { Embedding, MergedPage, MergeOptions, MergeResult } from './document-merge'
-export { MergeSourceError } from './source-reading'
+export { MergeSourceError, openPdf, PdfPasswordError } from './source-reading'
+export type { OpenPdfOptions } from './source-reading'
 export type { SourceKind } from './source-reading'
 export { markPages } from './page-marking'
 export type { MarkOptions, MarkResult, PageMark } from './page-marking'
