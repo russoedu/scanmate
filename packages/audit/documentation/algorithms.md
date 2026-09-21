@@ -259,7 +259,7 @@ Side by side rather than a crop, because the question a reviewer is answering is
 | `output` | `'png'` | Encoding of the evidence page. |
 | — | `1.5` pt | Slack when deciding two boxes are the same place. |
 | — | `0.3` mm² | Ink at a text difference below which the print counts as identical. A glyph of 9 pt text covers roughly 1 mm², so a changed character moves several times this; scanner grain does not. |
-| `expectedMargin` | `6` pt | How far outside a region its ink still counts - a signature leaves its box. |
+| `bleed` | `6` pt | How far outside a region its ink still counts - a signature leaves its box. Set per side with `bleedTop`, `bleedRight`, `bleedBottom`, `bleedLeft`. Passed through `diff` options and drawn on the evidence page with the same rule. |
 
 ## What it does not do
 

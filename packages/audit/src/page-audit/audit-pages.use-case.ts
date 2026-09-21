@@ -107,10 +107,15 @@ export async function auditPages<Page extends ReadablePage> (pages: readonly Pag
 
       const evidenceRaster = renderEvidence(page.original.raster, page.aligned.raster, {
         dpi,
-        expected:       diff.expected,
+        expected:    diff.expected,
         findings,
-        overlay:        diff.diffRaster,
-        expectedMargin: options.diff?.expectedMargin,
+        overlay:     diff.diffRaster,
+        // The same bleed the comparison measured with, so the band drawn is the band checked.
+        bleed:       options.diff?.bleed,
+        bleedTop:    options.diff?.bleedTop,
+        bleedRight:  options.diff?.bleedRight,
+        bleedBottom: options.diff?.bleedBottom,
+        bleedLeft:   options.diff?.bleedLeft,
       })
       audits.push({
         ...page,
