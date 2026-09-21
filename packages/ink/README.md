@@ -31,7 +31,7 @@ correlation(inkA, inkB)                                  // how well two pages' 
 
 | | |
 |---|---|
-| **raster codec** | `decodeImage`, `encodeImage`, `resampleRaster`, `readImageMetadata`, `countPages`. PNG, JPEG, TIFF, WebP, HEIF, AVIF, GIF; EXIF rotation applied; density and page count reported. |
+| **raster codec** | `decodeImage`, `encodeImage`, `resampleRaster`, `blurRaster`, `readImageMetadata`, `countPages`. PNG, JPEG, TIFF, WebP, HEIF, AVIF, GIF; EXIF rotation applied; density and page count reported. |
 | **ink separation** | `inkMap`, `toGrayscale`, `otsuThreshold`, `binarize`, `dilate`, `coverage`, `boxBlur`, `integralImage`. |
 | **geometry** | `warpRaster`, `warpGray`, `resizeGray`, `downscaleGray`, `sampleGrayBilinear`, and 3×3 matrices: `multiply`, `invert`, `decompose`, `rebase`, `similarity`, `translation`, `isPlausible`, `applyPoint`. |
 | **similarity** | `correlation`, `intersectionOverUnion`. |
