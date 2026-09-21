@@ -97,5 +97,43 @@ seven aligned pages made a 3.3 MB PNG or 0.74 MB JPEG evidence file.
 - It does not reorder anything. Upload order is page order, because that is the
   only order that reconstructs a document someone scanned sheet by sheet.
 - It does not OCR, compress for size, or "improve" an image.
-- It does not repair a corrupt PDF; an encrypted one is refused with a clear
-  error naming which source it was.
+- It does not repair a corrupt PDF. An encrypted one is decrypted rather than
+  refused - see [Encrypted PDFs](#encrypted-pdfs).
+
+## Encrypted PDFs
+
+Signed documents usually arrive encrypted: an owner password restricting what
+may be done with them, and no password needed to read them. pdf-lib refuses
+those outright, and its error suggests loading with `ignoreEncryption: true`.
+Three ways of handling one were measured, by drawing a box on a one-line
+encrypted page, saving, and rendering the result with pdf.js:
+
+| how it is loaded | original text | the drawn box |
+|---|---|---|
+| `ignoreEncryption: true` | intact | **missing** |
+| for incremental update, decrypted | **missing** | drawn |
+| decrypted with the empty password | intact | drawn |
+
+**`ignoreEncryption` is wrong for anything that writes.** The document loads,
+saves and opens, with its text intact - and whatever was drawn is silently gone,
+written unencrypted into a file that still declares itself encrypted, so a
+viewer "decrypts" it into nothing. For `markPages` that is a clean-looking PDF
+with no marks and no error, the worst failure a checking tool can have. It is
+not offered.
+
+**Incremental update is tempting and also wrong here.** It keeps the original
+bytes intact as a prefix, which is what would keep an existing digital signature
+valid over its revision - but on an encrypted document the original page content
+does not survive it. A marked copy is for looking at, not the signed document,
+and does not pretend to be.
+
+**Decrypting is right, and free in the common case.** The empty password opens
+an owner-password-only document, so a signed PDF needs nothing given. `password`
+is for one that needs a password to be read at all.
+
+A given password is tried first and then none. That matters for `mergeDocuments`,
+where one password is tried on every encrypted source: tried alone, it would
+lock out an owner-password-only source that needed nothing - which a test caught
+before release. The empty password only opens what anyone may read anyway.
+
+A merged document is a new one, so it comes out unencrypted whatever went in.

@@ -4,6 +4,13 @@ import type { PageSize } from '../page-placement'
 import type { SourceKind } from '../source-reading'
 
 export interface MergeOptions {
+  /**
+   * Opens an encrypted PDF source that needs a password to be read. The usual
+   * encrypted PDF - a signed or permission-restricted document, locked with an
+   * owner password alone - needs none and is decrypted as it is copied. The
+   * same password is tried on every encrypted source.
+   */
+  password?:    string
   /** Size of each image page: the image at its resolution (`'image'`, the default), or a paper size to fit it in. */
   pageSize?:    PageSize
   /** Points of white kept around an image on a paper-size page. Default `0`. */

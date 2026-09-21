@@ -1,11 +1,11 @@
-import { EncryptedPDFError, PDFDocument } from '@cantoo/pdf-lib'
+import { PDFDocument } from '@cantoo/pdf-lib'
 import type { PDFImage } from '@cantoo/pdf-lib'
 import { decodeImage, encodeImage, readImageMetadata } from '@scanmate/ink'
 import type { ImageMetadata, Raster, ScanmateSource } from '@scanmate/ink'
 
 import { placeImage, resolveDpi } from '../page-placement'
 import type { PageSize } from '../page-placement'
-import { MergeSourceError, readSource } from '../source-reading'
+import { MergeSourceError, openPdf, PdfPasswordError, readSource } from '../source-reading'
 import type { ResolvedSource, SourceKind } from '../source-reading'
 import type { Embedding, MergedPage, MergeOptions, MergeResult } from './merge-result.contract'
 
@@ -24,13 +24,13 @@ import type { Embedding, MergedPage, MergeOptions, MergeResult } from './merge-r
  * pages become one evidence file.
  */
 export async function mergeDocuments (sources: readonly ScanmateSource[], options: MergeOptions = {}): Promise<MergeResult> {
-  const { pageSize = 'image', margin = 0, imageDpi = 150, encoding = 'png', quality = 92, passThrough = true, metadata, onProgress } = options
+  const { pageSize = 'image', margin = 0, imageDpi = 150, encoding = 'png', quality = 92, passThrough = true, metadata, password, onProgress } = options
   if (sources.length === 0) throw new RangeError('nothing to merge')
 
   const resolved: ResolvedSource[] = []
   for (const [index, source] of sources.entries()) resolved.push(await readSource(source, index))
 
-  const context: Context = { merged: await PDFDocument.create(), pages: [], pageSize, margin, imageDpi, encoding, quality }
+  const context: Context = { merged: await PDFDocument.create(), pages: [], pageSize, margin, imageDpi, encoding, quality, password }
 
   for (const [index, source] of resolved.entries()) {
     const started = Date.now()
@@ -75,6 +75,7 @@ interface Context {
   imageDpi: number
   encoding: 'png' | 'jpeg'
   quality:  number
+  password: string | undefined
 }
 
 interface Origin {
@@ -85,7 +86,7 @@ interface Origin {
 }
 
 async function appendPdf (context: Context, bytes: Uint8Array, index: number): Promise<void> {
-  const source = await loadPdf(bytes, index)
+  const source = await loadPdf(bytes, index, context.password)
   const copied = await context.merged.copyPages(source, source.getPageIndices())
 
   for (const [i, page] of copied.entries()) {
@@ -104,12 +105,17 @@ async function appendPdf (context: Context, bytes: Uint8Array, index: number): P
   }
 }
 
-async function loadPdf (bytes: Uint8Array, index: number): Promise<PDFDocument> {
+/**
+ * A source PDF, decrypted if it is encrypted - an owner-password-only document,
+ * the usual signed or restricted PDF, needs nothing given. The merged document
+ * is a new one, so it comes out unencrypted whatever went in.
+ */
+async function loadPdf (bytes: Uint8Array, index: number, password: string | undefined): Promise<PDFDocument> {
   try {
-    return await PDFDocument.load(bytes, { updateMetadata: false })
+    return await openPdf(bytes, { password })
   } catch (error) {
-    if (error instanceof EncryptedPDFError)
-      throw new MergeSourceError(index, 'it is an encrypted PDF, which cannot be copied without its password')
+    if (error instanceof PdfPasswordError)
+      throw new MergeSourceError(index, error.given ? 'it is an encrypted PDF, and `password` does not open it' : 'it is an encrypted PDF that needs a password to open - pass `password`')
 
     throw new MergeSourceError(index, `it is not a readable PDF (${error instanceof Error ? error.message : String(error)})`)
   }

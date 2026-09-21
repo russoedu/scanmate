@@ -32,6 +32,38 @@ function contains (haystack: Uint8Array, needle: Uint8Array): boolean {
   return false
 }
 
+/** A PDF of `pages` blank pages, encrypted the way given. */
+async function encryptedPdf (pages: number, security: { ownerPassword: string, userPassword: string }): Promise<Uint8Array> {
+  const document = await PDFDocument.create()
+  for (let page = 0; page < pages; page++) document.addPage([300, 400])
+  document.encrypt(security)
+
+  return await document.save()
+}
+
+describe('mergeDocuments, with encrypted sources', () => {
+  it('merges a signed-style PDF - an owner password alone - without being given one', async () => {
+    const signed = await encryptedPdf(2, { ownerPassword: 'owner', userPassword: '' })
+    const other = await encryptedPdf(1, { ownerPassword: 'owner', userPassword: '' })
+    const result = await mergeDocuments([signed, other])
+
+    expect(result.pageCount).toBe(3)
+    // A new document, so it comes out unencrypted whatever went in.
+    const merged = await PDFDocument.load(result.pdf)
+    expect(merged.isEncrypted).toBe(false)
+  })
+
+  it('opens a source that needs a password to be read, given it, and names the source when not', async () => {
+    const secured = await encryptedPdf(1, { ownerPassword: 'owner', userPassword: 'secret' })
+    const other = await encryptedPdf(1, { ownerPassword: 'owner', userPassword: '' })
+
+    await expect(mergeDocuments([other, secured])).rejects.toMatchObject({ index: 1 })
+    await expect(mergeDocuments([other, secured])).rejects.toBeInstanceOf(MergeSourceError)
+    const result = await mergeDocuments([other, secured], { password: 'secret' })
+    expect(result.pageCount).toBe(2)
+  })
+})
+
 describe('mergeDocuments', () => {
   it('puts PDFs, image files and rasters into one PDF, in the order given', async () => {
     const result = await mergeDocuments([
