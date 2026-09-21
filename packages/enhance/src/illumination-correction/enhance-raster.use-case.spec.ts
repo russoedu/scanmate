@@ -2,7 +2,7 @@ import { createGray, createRaster } from '@scanmate/ink'
 import type { Raster } from '@scanmate/ink'
 
 import { estimateContrastPoints } from './contrast-points.policy'
-import { enhanceRaster } from './enhance-raster.use-case'
+import { enhanceRaster, sharpenRaster } from './enhance-raster.use-case'
 
 const MIDDLE = (8 * 16 + 8) * 4
 /** A 16x16 swatch is too small for page statistics - one pixel of ink reads as noise - so swatch tests fix the settings. */
@@ -103,5 +103,77 @@ describe('estimateContrastPoints', () => {
 
     expect(points.blackPoint).toBeCloseTo(0.2, 1)
     expect(points.whitePoint).toBeCloseTo(1, 1)
+  })
+})
+
+/** Text-like strokes a few pixels wide on paper, softened as a scan softens them. */
+function softPage (): Raster {
+  const raster = createRaster(400, 300)
+  raster.data.fill(235)
+  for (let y = 40; y < 260; y += 20)
+    for (let x = 30; x < 370; x++)
+      if (x % 9 < 3)
+        for (let dy = 0; dy < 8; dy++) raster.data.set([40, 40, 40], ((y + dy) * 400 + x) * 4)
+  // A scanner's softness: each pixel averaged with its neighbours.
+  const soft = createRaster(400, 300)
+  for (let y = 1; y < 299; y++)
+    for (let x = 1; x < 399; x++) {
+      let sum = 0
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) sum += raster.data[((y + dy) * 400 + x + dx) * 4]
+      const v = Math.round(sum / 9)
+      soft.data.set([v, v, v, 255], (y * 400 + x) * 4)
+    }
+
+  return soft
+}
+
+/** How far the page's grey levels spread from their mean: contrast, in one number. */
+function spread (raster: Raster): number {
+  let sum = 0
+  let squares = 0
+  const count = raster.data.length / 4
+  for (let i = 0; i < raster.data.length; i += 4) {
+    sum += raster.data[i]
+    squares += raster.data[i] ** 2
+  }
+
+  return Math.sqrt(squares / count - (sum / count) ** 2)
+}
+
+describe('sharpenRaster', () => {
+  it('is the mask enhanceRaster applies, to within two grey levels on average away from the edge', async () => {
+    const page = softPage()
+    const settings = { whitePoint: 1, blackPoint: 0, despeckle: false } as const
+    const levelled = enhanceRaster(page, { ...settings, sharpen: false }).raster
+    const inJavaScript = enhanceRaster(page, { ...settings, sharpen: { sigma: 2 } }).raster
+    const inLibvips = await sharpenRaster(levelled, { sigma: 2 })
+
+    // The two blurs treat the page's edge differently - one averages what is on
+    // the page, the other extends it - so the comparison is of the page inside.
+    let difference = 0
+    let counted = 0
+    for (let y = 20; y < 280; y++)
+      for (let x = 20; x < 380; x++) {
+        const i = (y * 400 + x) * 4
+        difference += Math.abs(inLibvips.data[i] - inJavaScript.data[i])
+        counted++
+      }
+    // A Gaussian is not quite three box blurs, and dense strokes a few pixels
+    // apart show it most: 1.5 levels here, against 0.3-0.4 on a real W-9 page.
+    expect(difference / counted).toBeLessThan(2)
+  })
+
+  it('sharpens: the page comes out with more contrast than it went in', async () => {
+    const levelled = enhanceRaster(softPage(), { whitePoint: 1, blackPoint: 0, despeckle: false, sharpen: false }).raster
+    const sharpened = await sharpenRaster(levelled, { sigma: 2 })
+
+    expect(spread(sharpened)).toBeGreaterThan(spread(levelled))
+  })
+
+  it('leaves the page alone when there is nothing to do', async () => {
+    const page = softPage()
+
+    expect(await sharpenRaster(page, { sigma: 0 })).toBe(page)
+    expect(await sharpenRaster(page, { sigma: 2, amount: 0 })).toBe(page)
   })
 })

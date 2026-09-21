@@ -25,6 +25,6 @@ export type { AppliedEnhancement, EnhanceOptions, SharpenOptions } from './illum
 
 // --- Building blocks ---
 
-export { DEFAULT_ENHANCE_OPTIONS, enhanceRaster, estimateContrastPoints, resolveContrastPoints } from './illumination-correction'
+export { DEFAULT_ENHANCE_OPTIONS, enhanceRaster, estimateContrastPoints, resolveContrastPoints, sharpenRaster } from './illumination-correction'
 export type { ContrastPoints, EnhancedRaster } from './illumination-correction'
 export { despeckle, estimateNoiseSigma } from './noise-reduction'

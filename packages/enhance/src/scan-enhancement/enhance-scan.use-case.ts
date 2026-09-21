@@ -1,7 +1,7 @@
 import { decodeImage, encodeImage, isRaster, readImageMetadata, resampleRaster } from '@scanmate/ink'
 import type { ScanmateSource } from '@scanmate/ink'
 
-import { enhanceRaster } from '../illumination-correction'
+import { enhanceRaster, sharpenRaster } from '../illumination-correction'
 import type { EnhanceResult, EnhanceScanOptions } from './enhance-result.contract'
 
 /**
@@ -9,9 +9,9 @@ import type { EnhanceResult, EnhanceScanOptions } from './enhance-result.contrac
  *
  * An image below `targetDpi` is first enlarged to it with a Lanczos kernel, so
  * the cleaning - and the reading after it - works on strokes several pixels
- * wide rather than one or two. Resampling, decoding and encoding go through
- * libvips and are asynchronous; the cleaning runs to completion on the calling
- * thread.
+ * wide rather than one or two. Resampling, decoding, encoding and the
+ * sharpening's blur go through libvips and are asynchronous; the levelling
+ * runs to completion on the calling thread.
  */
 export async function enhanceScan (input: ScanmateSource, options: EnhanceScanOptions = {}): Promise<EnhanceResult> {
   const { output = 'png', quality = 92, targetDpi = 300, dpi: given, ...enhance } = options
@@ -22,7 +22,12 @@ export async function enhanceScan (input: ScanmateSource, options: EnhanceScanOp
   const source = scale === 1
     ? decoded
     : await resampleRaster(decoded, Math.round(decoded.width * scale), Math.round(decoded.height * scale))
-  const { raster, applied } = enhanceRaster(source, enhance)
+  // Levelled here, sharpened through libvips: the same mask `enhanceRaster`
+  // would apply, without its blur in JavaScript.
+  const levelled = enhanceRaster(source, { ...enhance, sharpen: false })
+  const sharpen = enhance.sharpen ?? false
+  const raster = sharpen === false ? levelled.raster : await sharpenRaster(levelled.raster, sharpen)
+  const applied = { ...levelled.applied, sharpened: sharpen }
 
   return {
     raster,
