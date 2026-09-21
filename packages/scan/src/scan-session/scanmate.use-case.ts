@@ -3,8 +3,10 @@ import type { AlignPagesOptions } from '@scanmate/align'
 import type { ComparedPage, DiffOptions, ExpectedChange, PageDiff } from '@scanmate/diff'
 import type { EnhancePagesOptions } from '@scanmate/enhance'
 import type { ExtractPairOptions } from '@scanmate/extract'
+import type { ExtractedPage, ExtractOptions } from '@scanmate/extract'
 import type { ExpectedContent, FindOptions, FindReport } from '@scanmate/find'
-import type { PipelineStage } from '@scanmate/ink'
+import type { MergeOptions, MergeResult } from '@scanmate/merge'
+import type { PipelineStage, ScanmateBinarySource, ScanmateSource } from '@scanmate/ink'
 import type { OcrOptions, OcrReport, ReadPage } from '@scanmate/ocr'
 
 import { pixelsFromAudit, readingFromAudit } from '../audit-reuse'
@@ -14,7 +16,7 @@ import { resolveDocument } from '../document-input'
 import type { ScanmateDocument, ScanmatePage } from '../document-input'
 import { SharedEngine } from '../reading-engine'
 import { fingerprint, StageCache } from '../stage-caching'
-import { loadAlign, loadAudit, loadDiff, loadEnhance, loadFind, loadOcr, loadedStages } from '../stage-loading'
+import { loadAlign, loadAudit, loadDiff, loadEnhance, loadExtract, loadFind, loadMerge, loadOcr, loadedStages } from '../stage-loading'
 import { relayAuditProgress } from './progress-relay.mapper'
 import type { AlignedScanmatePage, EnhancedScanmatePage, ReadableScanmatePage, ScanmateOptions, ScanmatePageReport } from './scan-session.contract'
 
@@ -50,6 +52,39 @@ import type { AlignedScanmatePage, EnhancedScanmatePage, ReadableScanmatePage, S
  * without forking the verdict logic.
  */
 export class Scanmate {
+  // --- the two ends, without a comparison in between ------------------------
+
+  /**
+   * Assemble one PDF from pages that arrived separately.
+   *
+   * The constructor takes an array and merges it for you, so this is for when
+   * there is nothing to compare yet: a returned document photographed a page at
+   * a time, to be stored now and checked later, or checked against an original
+   * that has not arrived.
+   *
+   * Static because it needs no session - there is no original, no scan and
+   * nothing to remember - and it loads `@scanmate/merge` and nothing else.
+   */
+  static async merge (sources: readonly ScanmateSource[], options: MergeOptions = {}): Promise<MergeResult> {
+    const { mergeDocuments } = await loadMerge()
+
+    return await mergeDocuments(sources, options)
+  }
+
+  /**
+   * Open a PDF and take its pages.
+   *
+   * The other end of the same idea: reading a document on its own - to see what
+   * it holds, at what size, with what text - rather than against another one.
+   * A session extracts as a matter of course; this is the same step when that
+   * is all you want.
+   */
+  static async extract (pdf: ScanmateBinarySource, options: ExtractOptions = {}): Promise<ExtractedPage[]> {
+    const { extractPages } = await loadExtract()
+
+    return await extractPages(pdf, options)
+  }
+
   readonly #original: ScanmateDocument
   readonly #scanned:  ScanmateDocument
   #options:           ScanmateOptions

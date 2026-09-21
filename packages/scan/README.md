@@ -115,6 +115,24 @@ scan.preparation       // which treatment the document chose, and what the other
 scan.loaded            // which stage packages have loaded
 ```
 
+## The two ends, without a comparison
+
+Sometimes there is nothing to compare yet. A returned document arrives photographed a page at a time and has to be stored now and checked later; or a document needs opening on its own, to see what it holds. Both ends of the pipeline are available without a session:
+
+```ts
+// Eight photographs into one PDF, to store now and check later.
+const merged = await Scanmate.merge(['page-1.jpg', 'page-2.jpg', 'page-3.jpg'])
+await write('returned.pdf', merged.pdf)
+
+// One document opened on its own - its pages, their size, their text.
+const pages = await Scanmate.extract('returned.pdf', { metadata: true })
+pages[0].metadata.textItems
+```
+
+They are `static` because they need no session: there is no original, no scan and nothing to remember. Each loads only the package it needs - `Scanmate.merge` pulls in `@scanmate/merge` and nothing else, `Scanmate.extract` only `@scanmate/extract` - so neither starts a reader or touches a comparison.
+
+`merged.pdf` goes straight into a session as either side, and the constructor still merges an array for you when you do have both documents in hand.
+
 ## Inputs
 
 Either side may be a path, a `URL`, bytes, a decoded raster - or an **array** of those, which is merged into one PDF first. That is how a returned document usually arrives: eight photographs of a signed contract.

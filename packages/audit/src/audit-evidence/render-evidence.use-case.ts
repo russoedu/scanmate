@@ -114,7 +114,42 @@ export function renderEvidence (original: Raster, aligned: Raster, options: Evid
     composePanelsThick(page, thick, offset, line * 2)
   }
 
-  return legend ? withLegend(page, line, Boolean(overlay)) : page
+  const titled = withTitles(page, panels, line, gutter)
+
+  return legend ? withLegend(titled, line, Boolean(overlay)) : titled
+}
+
+/** What each panel is, in the order they are composed. */
+const PANEL_NAMES = ['original', 'scanned', 'overlay'] as const
+
+/**
+ * A caption over each panel, because three near-identical pages side by side do
+ * not say which is which - and the one that matters most, the overlay, is the
+ * one a reader is least likely to guess.
+ */
+function withTitles (page: Raster, panels: readonly Panel[], line: number, gutter: number): Raster {
+  const wanted = Math.max(2, Math.round(line * 1.5))
+  const narrowest = Math.min(...panels.map(panel => panel.raster.width))
+  // The caption belongs to its panel, so it is sized to the panel rather than
+  // to the page: three columns of a wide page are each still only a page wide.
+  let scale = wanted
+  while (scale > 1 && labelSize(PANEL_NAMES[2], { scale }).width > narrowest) scale--
+
+  const text = labelSize('X', { scale })
+  const padding = Math.round(text.height * 0.8)
+  const band = text.height + padding * 2
+  const out = createRaster(page.width, page.height + band)
+  for (let i = 0; i < out.data.length; i += 4) out.data.set([255, 255, 255, 255], i)
+  out.data.set(page.data, band * page.width * 4)
+
+  let x = 0
+  for (const [index, panel] of panels.entries()) {
+    const name = PANEL_NAMES[index]
+    if (name !== undefined) drawLabel(out, name, { x: x + padding, y: padding }, { scale, color: [40, 40, 40, 255] })
+    x += panel.raster.width + gutter
+  }
+
+  return out
 }
 
 /** The findings that have a place on the page, each with it. */
@@ -142,30 +177,85 @@ function composePanelsThick (page: Raster, thick: readonly Annotation[], offset:
   }
 }
 
-/** The page with a legend along the foot, so the colours need no caption. */
-function withLegend (page: Raster, line: number, hasOverlay: boolean): Raster {
-  const scaleUp = Math.max(2, Math.round(line * 1.5))
-  const text = labelSize('X', { scale: scaleUp })
+/** How the legend is laid out at one size: what each entry costs, and where it lands. */
+interface LegendPlan {
+  scale:   number
+  swatch:  number
+  padding: number
+  rows:    Array<Array<{ colour: Rgba, label: string, muted: boolean }>>
+}
+
+/**
+ * The legend has to fit the page it explains.
+ *
+ * The size used to follow the annotation stroke alone, which is a property of
+ * the page's resolution and says nothing about how wide the page is. On a
+ * narrower page - a single portrait panel rather than three side by side - the
+ * row ran past the right edge and the last entries were simply cut off, which
+ * on the overlay panel meant losing the entry that explains the overlay.
+ *
+ * So the stroke sets what is wanted and the width decides what is possible: the
+ * largest size that fits on one row is used, and if even the smallest does not
+ * fit, the entries wrap rather than disappear.
+ */
+function planLegend (page: Raster, line: number, hasOverlay: boolean): LegendPlan {
+  const entries = LEGEND.map(([colour, label]) => ({ colour, label, muted: false }))
+  if (hasOverlay) entries.push({ colour: OVERLAY_DIFFERENT, label: 'overlay: ink that differs, grey unchanged', muted: true })
+
+  const wanted = Math.max(2, Math.round(line * 1.5))
+  for (let scale = wanted; scale > 1; scale--) {
+    const plan = pack(entries, page.width, scale)
+    if (plan.rows.length === 1) return plan
+  }
+
+  // Nothing fits on one row: wrap at the smallest size rather than lose entries.
+  return pack(entries, page.width, 1)
+}
+
+/** Entries laid into as few rows as the width allows, in the order they read. */
+function pack (entries: ReadonlyArray<{ colour: Rgba, label: string, muted: boolean }>, width: number, scale: number): LegendPlan {
+  const text = labelSize('X', { scale })
   const swatch = text.height
   const padding = Math.round(text.height * 0.8)
-  const height = text.height + padding * 2
+  const rows: LegendPlan['rows'] = []
+  let row: LegendPlan['rows'][number] = []
+  let x = padding
+
+  for (const entry of entries) {
+    const cost = swatch + Math.round(padding / 2) + labelSize(entry.label, { scale }).width + padding
+    if (x + cost > width && row.length > 0) {
+      rows.push(row)
+      row = []
+      x = padding
+    }
+    row.push(entry)
+    x += cost
+  }
+  rows.push(row)
+
+  return { scale, swatch, padding, rows }
+}
+
+/** The page with a legend along the foot, so the colours need no caption. */
+function withLegend (page: Raster, line: number, hasOverlay: boolean): Raster {
+  const { scale: legendScale, swatch, padding, rows } = planLegend(page, line, hasOverlay)
+  const text = labelSize('X', { scale: legendScale })
+  const step = text.height + Math.round(padding / 2)
+  const height = rows.length * step - Math.round(padding / 2) + padding * 2
   const strip = createRaster(page.width, page.height + height)
 
   strip.data.set(page.data, 0)
   for (let i = page.data.length; i < strip.data.length; i += 4) strip.data.set([255, 255, 255, 255], i)
 
-  let x = padding
-  const y = page.height + padding
-  for (const [colour, label] of LEGEND) {
-    fill(strip, { x, y, width: swatch, height: swatch }, colour)
-    x += swatch + Math.round(padding / 2)
-    drawLabel(strip, label, { x, y }, { scale: scaleUp, color: [40, 40, 40, 255] })
-    x += labelSize(label, { scale: scaleUp }).width + padding
-  }
-  if (hasOverlay) {
-    fill(strip, { x, y, width: swatch, height: swatch }, OVERLAY_DIFFERENT)
-    x += swatch + Math.round(padding / 2)
-    drawLabel(strip, 'overlay: ink that differs, grey unchanged', { x, y }, { scale: scaleUp, color: [90, 90, 90, 255] })
+  for (const [index, row] of rows.entries()) {
+    let x = padding
+    const y = page.height + padding + index * step
+    for (const entry of row) {
+      fill(strip, { x, y, width: swatch, height: swatch }, entry.colour)
+      x += swatch + Math.round(padding / 2)
+      drawLabel(strip, entry.label, { x, y }, { scale: legendScale, color: entry.muted ? [90, 90, 90, 255] : [40, 40, 40, 255] })
+      x += labelSize(entry.label, { scale: legendScale }).width + padding
+    }
   }
 
   return strip
