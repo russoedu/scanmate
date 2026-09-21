@@ -18,15 +18,10 @@
  * identifiable. Words forgive OCR's slips; figures and lone letters ("Schedule
  * A") must match exactly. Every page is searched too, so content that moved
  * pages shows where it went.
- *
- * Also here: regions placed relative to an anchor the original prints, for
- * field boxes that move with the document's content.
  */
 
 export { findContent } from './content-search'
 export type { ContentResult, ExpectedContent, FindOptions, FindReport, FoundBy, Occurrence, PageFind } from './content-search'
-export { checkRegions, locateAnchor, regionsFromAnchor, resolveRegions } from './anchor-regions'
-export type { AnchorOptions, FieldOffset, RegionProblem, RegionSpec, ResolvedRegions } from './anchor-regions'
 
 // --- Building blocks ---
 
