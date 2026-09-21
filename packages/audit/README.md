@@ -94,6 +94,8 @@ OCR misreads small, faint and sideways print constantly - `W-9` comes back as `W
 4. **Read both sides again, and compare them with each other.** Three passes over the original's crop and the scan's. If the two read alike, the pages carry the same glyphs however wrongly they were read - a systematic misreading misreads the original exactly as it misreads the scan, so it cancels. Not reported; it lands in `noise`.
 5. **Otherwise, unsettled** - reported as `text-unsettled`, in its own colour.
 
+The glyph check in step 2 belongs to `@scanmate/ocr`, and [its documentation shows it working, in pictures](https://github.com/russoedu/scanmate/blob/main/packages/ocr/documentation/print-verification.md): the polarity test, the cell boxes, the templates it compares against, every candidate scored, and the two-candidate question a settlement actually asks.
+
 A settlement also records whether the disagreement was **steady**: each side read the same thing on every pass, and the two still differed. A degraded read wavers; a substituted glyph does not. It does not change the verdict - a blemish in the same place reads consistently too - but a caller who knows their own documents can act on it:
 
 ```ts
