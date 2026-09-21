@@ -10,6 +10,8 @@ import type { PipelineStage, ScanmateBinarySource, ScanmateSource } from '@scanm
 import type { OcrOptions, OcrReport, ReadPage } from '@scanmate/ocr'
 
 import { pixelsFromAudit, readingFromAudit } from '../audit-reuse'
+import { calibrateCorpus } from '../corpus-calibration'
+import type { CalibrateOptions, CalibrationCase, CorpusCalibration } from '../corpus-calibration'
 import { preparePages } from '../page-preparation'
 import type { Preparation } from '../page-preparation'
 import { resolveDocument } from '../document-input'
@@ -128,6 +130,34 @@ export class Scanmate {
     const { locateFields } = await loadExtract()
 
     return await locateFields(pdf, specs, options)
+  }
+
+  /**
+   * Measure the audit's thresholds on documents someone has checked by hand.
+   *
+   * Automatic acceptance is only as safe as the thresholds behind it. Give this
+   * a corpus - each case an original, what came back, and whether it is
+   * `genuine` or was altered - and it audits every document, then reports, for
+   * each combination of thresholds, which altered documents would have passed
+   * and which genuine ones would have been held up:
+   *
+   * ```ts
+   * const { report, samples } = await Scanmate.calibrate([
+   *   { id: 'order-118', genuine: true,  original: 'issued/118.pdf', scanned: 'returned/118.pdf' },
+   *   { id: 'order-119', genuine: false, original: 'issued/119.pdf', scanned: 'forged/119.pdf' },
+   * ], { expected, onCase: ({ sample }) => save(sample) })
+   * report.best    // no false accept, fewest false reviews - with how far the corpus can vouch for it
+   * ```
+   *
+   * One document at a time, one session each, disposed before the next, so a
+   * corpus of any size costs the memory of its largest document; one OCR engine
+   * serves them all. The corpus can be an async iterable, to read cases as they
+   * are needed. `samples` are plain data: save them, and sweep other thresholds
+   * later with `calibrateAudit` from `@scanmate/audit` without reading a page
+   * again.
+   */
+  static async calibrate (corpus: Iterable<CalibrationCase> | AsyncIterable<CalibrationCase>, options: CalibrateOptions = {}): Promise<CorpusCalibration> {
+    return await calibrateCorpus(corpus, options, (original, scanned, session) => new Scanmate(original, scanned, session))
   }
 
   readonly #original: ScanmateDocument
