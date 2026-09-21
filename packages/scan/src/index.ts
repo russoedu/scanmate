@@ -85,8 +85,8 @@ export type {
 export type {
   AuditedPage, AuditFinding, AuditOptions, AuditReport, CalibrationGrid, CalibrationLabel, CalibrationPoint,
   CalibrationReport, CalibrationSample, CalibrationThresholds, Correlation, CorrelationInput,
-  ExplainedDifference, FindingKind, PageAudit, SampledFinding, SampledPage, Settlement, SettlementInput,
-  Verdict,
+  EvidencePdfOptions, ExplainedDifference, FindingKind, PageAudit, SampledFinding, SampledPage, Settlement,
+  SettlementInput, Verdict,
 } from '@scanmate/audit'
 
 // --- Building blocks ---

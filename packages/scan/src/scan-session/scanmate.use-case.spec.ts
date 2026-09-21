@@ -110,6 +110,11 @@ vi.mock('@scanmate/find', () => ({
 }))
 
 vi.mock('@scanmate/audit', () => ({
+  writeEvidencePdf: vi.fn(async () => {
+    calls.push('writeEvidencePdf')
+
+    return new Uint8Array([0x25, 0x50, 0x44, 0x46])
+  }),
   auditPages: vi.fn(async (pages: readonly { page: number }[]) => {
     calls.push('auditPages')
 
@@ -333,6 +338,16 @@ describe('Scanmate, reusing an audit', () => {
     await scan.diff()
 
     expect(calls.filter(c => c === 'diffPages')).toHaveLength(1)
+  })
+
+  it('writes the evidence of the audit it already ran, not of a second one', async () => {
+    const scan = session()
+    await scan.audit()
+    const pdf = await scan.evidence({ title: 'Order 118' })
+
+    expect(pdf).toBeInstanceOf(Uint8Array)
+    expect(calls.filter(c => c === 'auditPages')).toHaveLength(1)
+    expect(calls.at(-1)).toBe('writeEvidencePdf')
   })
 
   it('still runs a real diff when the caller asks for something the audit did not produce', async () => {

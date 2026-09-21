@@ -89,6 +89,32 @@ The overlay carries no verdicts of its own: what passed and what failed is the m
 
 Corroborated findings are drawn twice as thick, and a legend runs along the foot (`legend: false` turns it off).
 
+## The evidence PDF
+
+`writeEvidencePdf` puts the whole audit in one file for whoever reviews it: a cover with the verdict and, page by page, why; then a sheet for each page with its evidence image and what to look at in words - real text, searchable and copyable, running on to further sheets when there is a lot.
+
+```ts
+import { writeEvidencePdf } from '@scanmate/audit'
+
+const pdf = await writeEvidencePdf(audit, { title: 'Order 118, returned' })
+await writeFile('order-118-evidence.pdf', pdf)
+```
+
+![a sheet of the evidence PDF: page 1 of the returned W-9 marked REVIEW, its original, scan and overlay side by side, and below them the four things to look at, in words](./assets/evidence-pdf.jpg)
+
+*A sheet of the evidence PDF for the forged [IRS Form W-9](https://www.irs.gov/pub/irs-pdf/fw9.pdf) (a work of the United States government, in the public domain) used throughout these READMEs. The altered account number is the last line; above it, the sideways label, a footnote and a URL were read differently where the ink is identical, and re-reading could not settle them - so they are reported, not dropped.*
+
+| Option | Default | |
+|---|---|---|
+| `title` | `'Audit evidence'` | On the cover and in the PDF's metadata. |
+| `pages` | `'all'` | `'review'` gives a sheet only to the pages that need one; the cover still lists every page. |
+| `format` | `'jpeg'` | How each evidence image is embedded; `'png'` was twice the size on the W-9. |
+| `dpi` | `200` | Of each image at the size it is shown: the one-page W-9 came to 570 KB, against 2.3 MB at the audit's own resolution. Never enlarged. |
+| `quality` | `85` | JPEG quality. |
+| `createdAt` | now | Printed on the cover and set as the PDF's creation date. |
+
+Findings quote what was read, and OCR reads what it likes; a character the PDF's standard font cannot draw is printed as `?`, visibly, rather than losing the file. The PDF library loads only when this is called - an audit on its own never loads it.
+
 ## When the two disagree
 
 OCR misreads small, faint and sideways print constantly - `W-9` comes back as `W 2] 9`, `I am` as `1am` - so a reading that disagrees with the original is not by itself a change. Nor is it nothing. Rather than let one comparison overrule the other, the disagreement is settled:

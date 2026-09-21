@@ -106,6 +106,7 @@ That is measured, not asserted: a test spawns a child process with a module hook
 | `checkboxes(boxes?, options?)` | which boxes are ticked, on both sides | `align` |
 | `find(content?, options?)` | whether required content is there | `ocr` |
 | `audit(options?)` | the verdict, with its evidence | prepared pages, or `enhance` if you ran it |
+| `evidence(options?)` | the audit as one PDF, for the reviewer | `audit` |
 | `report()` | everything known, joined by page | whatever has run |
 | `dispose()` | — | — |
 
