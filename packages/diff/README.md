@@ -48,7 +48,9 @@ Rectangles are in PDF points from the page's top-left by default, the same frame
 
 A region is **identified** when it has at least `minFillArea` (2 mm²) of new ink and is not **overfilled** — covered or struck through, which `maxFill` (0.5) draws the line on. Form rules showing through a slight misregistration are discounted: a component spanning 90% of the region and no thicker than 0.6 mm is the box's own printed line.
 
-People sign past the box they are given, so each region also claims the ink within `expectedMargin` (6 points) of it, and the regions claim it **together**, so one stroke running through two fields is not left over as an unexpected mark. What a region reports is still the rectangle it was given; the band is drawn in pink.
+People sign past the box they are given, so each region also claims the ink within its **bleed** - 6 points on every side unless told otherwise - and the regions claim it **together**, so one stroke running through two fields is not left over as an unexpected mark. What a region reports is still the rectangle it was given; the band is drawn in pink.
+
+The bleed can be set per side: `bleed` for all four, and `bleedTop`, `bleedRight`, `bleedBottom` or `bleedLeft` to override one. A signature descends more than it climbs, so `{ bleedTop: 2, bleedBottom: 12 }` keeps a field clear of the printed line above it and gives the pen room below. `Scanmate.mark` in `@scanmate/scan` draws exactly this band on the original, so a region can be checked before anything is measured with it.
 
 Each region reports its shape too — how many separate changes, the largest, the bounds as a share of the box, how much ink touches the border — so a signature can be told from a stray line without looking at the picture.
 
@@ -61,7 +63,7 @@ Each region reports its shape too — how many separate changes, the largest, th
 | `faintInk` | `0.25` | Fraction of the normal threshold for "still there". |
 | `minFillArea` | `2` mm² | New ink a region needs. |
 | `maxFill` | `0.5` | Above this the region is covered, not filled. |
-| `expectedMargin` | `6` pt | How far outside a region its ink may lie. |
+| `bleed` | `6` pt | How far outside a region its ink may lie, every side. `bleedTop`, `bleedRight`, `bleedBottom` and `bleedLeft` override one side. |
 | `formLineSpan` | `0.9` | Span that makes a component a printed rule... |
 | `formLineThickness` | `0.6` mm | ...if it is no thicker than this. |
 | `minChangeArea` | `1` mm² | Smallest change reported. |

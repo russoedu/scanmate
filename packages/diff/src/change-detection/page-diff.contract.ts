@@ -1,4 +1,4 @@
-import type { AlignedPage, ImageFormat, InkOptions, ProgressCallback, Raster, ScanmateRect } from '@scanmate/ink'
+import type { AlignedPage, Bleed, ImageFormat, InkOptions, ProgressCallback, Raster, ScanmateRect } from '@scanmate/ink'
 
 import type { Masks } from '../region-comparison'
 
@@ -36,7 +36,24 @@ export interface ExpectedChange {
  */
 export type ComparedPage<Page extends AlignedPage = AlignedPage> = Page & { diff: PageDiff }
 
-export interface DiffOptions {
+/**
+ * How the comparison is run.
+ *
+ * The bleed - `bleed`, and `bleedTop`, `bleedRight`, `bleedBottom`, `bleedLeft`
+ * to override a side - is how far outside an expected region its ink may still
+ * lie, in `units`. Default 6 on every side, 2 mm at 72 points to the inch.
+ *
+ * People sign past the box they are given - a descender below the rule, a
+ * flourish out to the side - and that is the signature, not a mark someone made
+ * elsewhere. The region claims the ink within its bleed and measures it, while
+ * still reporting the rectangle it was given. Ink inside the bleed of any
+ * expected region counts towards them all, so one stroke crossing two fields is
+ * not left over as unexpected.
+ *
+ * It is the same rule `Scanmate.mark` draws, so the band a reviewer is shown is
+ * the band that is measured.
+ */
+export interface DiffOptions extends Bleed {
   /** Units of `ExpectedChange` rectangles and of every rectangle reported back. Default `'points'`. */
   units?:             CoordinateUnits
   /**
@@ -59,17 +76,6 @@ export interface DiffOptions {
    * 150 dpi, so a caller is expected to drop them as soon as it has asked.
    */
   keepMasks?:         boolean
-  /**
-   * How far outside an expected region its ink may still lie, in `units`. Default `6`
-   * (2 mm at 72 points to the inch).
-   *
-   * People sign past the box they are given - a descender below the rule, a flourish
-   * out to the side - and that is the signature, not a mark someone made elsewhere. The
-   * region claims the ink within this band and measures it, while still reporting the
-   * rectangle it was given. Ink inside the band of any expected region counts towards
-   * them all, so one stroke crossing two fields is not left over as unexpected.
-   */
-  expectedMargin?:    number
   /** Pixels the original's ink is fattened by before diffing, to absorb sub-pixel misalignment. Default `2`. */
   tolerance?:         number
   /**

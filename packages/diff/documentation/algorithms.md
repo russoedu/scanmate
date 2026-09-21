@@ -99,12 +99,29 @@ flowchart TD
   H -->|no| J[identified]
 ```
 
-**The margin** (`expectedMargin`, 6 points ≈ 2 mm) is there because people sign
-past the box they are given: a descender below the rule, a flourish out to the
-side. Without it that ink is reported as a mark nobody expected. Regions claim
-ink **together**, so one stroke running through two fields is not left over as
-unexpected either. What a region *reports* is still the rectangle it was given;
-the band is drawn in pink on the overlay so a reviewer can see the allowance.
+**The bleed** (6 points ≈ 2 mm on every side unless told otherwise) is there
+because people sign past the box they are given: a descender below the rule, a
+flourish out to the side. Without it that ink is reported as a mark nobody
+expected. Regions claim ink **together**, so one stroke running through two
+fields is not left over as unexpected either. What a region *reports* is still
+the rectangle it was given; the band is drawn in pink on the overlay so a
+reviewer can see the allowance.
+
+**It is set per side, because a pen does not overshoot evenly.** `bleed` sets all
+four; `bleedTop`, `bleedRight`, `bleedBottom` and `bleedLeft` each override one.
+It used to be one uniform number, and drawing that uniform band on the W-9 shows
+why that was not enough: six points above the signature field runs straight
+through the printed line that ends *"See the instructions for Part II, later"*.
+Harmless to detection - that ink is the original's, so it never counts as added
+- but it is a region claiming ground it has no business in, while the same six
+points below leaves a descender short. `{ bleedTop: 2, bleedBottom: 12 }` fits the
+field. Leaving every side unset reproduces the old uniform six exactly.
+
+**One rule decides it everywhere.** The bleed is resolved by `resolveBleed` in
+`@scanmate/ink`, and the same function sizes the band the comparison measures,
+the band the evidence page draws, and the band `Scanmate.mark` draws on the
+original. They cannot drift apart, which is the point of a band a reviewer is
+shown: it is the band that was checked.
 
 **Form rules are discounted**: a component spanning at least 90% of the region
 and no thicker than 0.6 mm is the box's own printed rule showing through a
@@ -187,7 +204,7 @@ back, not to the document that asked the question.
 | `faintInk` | `0.25` | Fraction of the normal threshold for "still there". |
 | `minFillArea` | `2` mm² | New ink a region needs. |
 | `maxFill` | `0.5` | Above this the region is covered, not filled. |
-| `expectedMargin` | `6` pt | How far outside a region its ink may lie. |
+| `bleed` | `6` pt | How far outside a region its ink may lie, every side. `bleedTop`, `bleedRight`, `bleedBottom` and `bleedLeft` override one side. |
 | `formLineSpan` | `0.9` | Span that makes a component a rule. |
 | `formLineThickness` | `0.6` mm | ...if it is no thicker than this. |
 | `minChangeArea` | `1` mm² | Smallest change reported. |
