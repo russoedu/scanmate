@@ -3,3 +3,4 @@
 export type { AlignedImage, AlignedPage, PageImage, ReadablePage, ScanPage } from './scan-page.contract'
 export type { PipelineStage, ProgressCallback, StageEvent } from './stage-event.contract'
 export type { PdfTextRun, TextRun } from './text-run.contract'
+export type { PageRegion } from './page-region.contract'

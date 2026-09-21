@@ -1,6 +1,7 @@
 import type { ScanmateRect } from '@scanmate/ink'
-import { DEFAULT_NORMALISE, normaliseText } from '@scanmate/ocr'
-import type { NormaliseOptions, PageOcr, ReadPage } from '@scanmate/ocr'
+import { DEFAULT_NORMALISE, normaliseText } from '@scanmate/ink'
+import type { NormaliseOptions } from '@scanmate/ink'
+import type { PageOcr, ReadPage } from '@scanmate/ocr'
 
 import { approximateSearch, bestMatch, wordSpan } from '../approximate-search'
 import type { ApproximateMatch } from '../approximate-search'

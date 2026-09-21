@@ -1,5 +1,5 @@
-import { normaliseText } from '../text-normalisation'
-import type { NormaliseOptions } from '../text-normalisation'
+import { normaliseText } from '@scanmate/ink'
+import type { NormaliseOptions } from '@scanmate/ink'
 import { cosine, dice, jaccard, jaroWinkler, levenshtein, wordDistance, wordRecall } from './similarity-metrics.use-case'
 
 /** Every measure of how alike an expected text and an actual one are, after normalisation. */
