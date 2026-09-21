@@ -1,6 +1,6 @@
 import type { AuditOptions, AuditReport } from '@scanmate/audit'
 import type { AlignPagesOptions } from '@scanmate/align'
-import type { ComparedPage, DiffOptions, ExpectedChange, PageDiff } from '@scanmate/diff'
+import type { Checkbox, CheckboxOptions, CheckboxReading, ComparedPage, DiffOptions, ExpectedChange, PageDiff } from '@scanmate/diff'
 import type { EnhancePagesOptions } from '@scanmate/enhance'
 import type { ExtractPairOptions } from '@scanmate/extract'
 import type { ExtractedPage, ExtractOptions, FieldSpec, LocatedFields, LocateOptions } from '@scanmate/extract'
@@ -295,6 +295,26 @@ export class Scanmate {
     })
   }
 
+  /**
+   * Which boxes are ticked, on the original and on the scan.
+   *
+   * Each side is read on its own terms - the ink inside the box, past its
+   * printed frame - so a box ticked before it was issued is read as ticked on
+   * both, and an empty one is an answer, not a field someone forgot. `audit()`
+   * reads the same boxes and turns into findings only the ones that are wrong.
+   * Loads `@scanmate/diff`, and nothing that reads text.
+   */
+  async checkboxes (boxes?: readonly Checkbox[], options?: CheckboxOptions): Promise<CheckboxReading[]> {
+    const wanted = boxes ?? this.#options.checkboxes ?? []
+
+    return this.#cache.run('checkboxes', fingerprint({ wanted, options, diff: this.#options.diff?.ink }), async () => {
+      const pages = await this.align()
+      const { readCheckboxes } = await loadDiff()
+
+      return await readCheckboxes(pages, wanted, { ink: this.#options.diff?.ink, ...options })
+    })
+  }
+
   /** Whether the content that must be there is there. Each page comes back carrying its `find`. */
   async find (content?: readonly ExpectedContent[], options?: FindOptions): Promise<FindReport<ReadPage<ReadableScanmatePage>>> {
     const wanted = content ?? this.#options.content ?? []
@@ -327,9 +347,10 @@ export class Scanmate {
   /** The verdict, with its evidence. Each page comes back carrying its `audit`. */
   async audit (options?: Omit<AuditOptions, 'onProgress'>): Promise<AuditReport<ReadableScanmatePage>> {
     const expected = options?.expected ?? this.#options.expected ?? []
+    const checkboxes = options?.checkboxes ?? this.#options.checkboxes ?? []
     const audit = this.#merge('audit', options)
 
-    return this.#cache.run('audit', fingerprint({ audit, expected, ocr: this.#options.ocr, diff: this.#options.diff }), async () => {
+    return this.#cache.run('audit', fingerprint({ audit, expected, checkboxes, ocr: this.#options.ocr, diff: this.#options.diff }), async () => {
       const pages = await this.#readable()
       const { auditPages } = await loadAudit()
       const { engine } = await this.#engine.lease()
@@ -337,6 +358,7 @@ export class Scanmate {
       const report = await auditPages(pages, {
         ...audit,
         expected,
+        checkboxes,
         ocr:        { ...this.#options.ocr, engine },
         diff:       this.#options.diff,
         onProgress: relayAuditProgress(this.#options.onProgress, page => order.get(page) ?? 1, pages.length),
@@ -353,7 +375,9 @@ export class Scanmate {
       // asked for a picture. See ../audit-reuse.
       const diffOptions = { ...this.#options.diff }
       this.#cache.put('ocr', fingerprint({ ...this.#options.ocr }), readingFromAudit(report, engine))
-      if (diffOptions.sideBySide !== true && diffOptions.keepMasks !== true)
+      // Nor when it measured checkboxes as regions: their ticks are not
+      // unexpected ink to audit, and would be to a `diff()` that had no boxes.
+      if (diffOptions.sideBySide !== true && diffOptions.keepMasks !== true && checkboxes.length === 0)
         this.#cache.put('diff', fingerprint({ regions: expected, diff: diffOptions }), pixelsFromAudit(report))
 
       return report

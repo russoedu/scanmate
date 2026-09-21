@@ -15,20 +15,21 @@
  * once, rather than a rule remembered at each call site.
  */
 
-export type CachedStage = 'input' | 'pages' | 'align' | 'prepare' | 'enhance' | 'ocr' | 'diff' | 'find' | 'audit'
+export type CachedStage = 'input' | 'pages' | 'align' | 'prepare' | 'enhance' | 'ocr' | 'diff' | 'checkboxes' | 'find' | 'audit'
 
 /** What each stage's result feeds. Transitive: dropping `pages` drops all of it. */
 const DOWNSTREAM: Readonly<Record<CachedStage, readonly CachedStage[]>> = {
-  input:   ['pages'],
-  pages:   ['align'],
-  align:   ['prepare', 'enhance', 'diff', 'audit'],
+  input:      ['pages'],
+  pages:      ['align'],
+  align:      ['prepare', 'enhance', 'diff', 'checkboxes', 'audit'],
   // What the document chose to read under feeds every reader, and nothing else.
-  prepare: ['ocr', 'audit'],
-  enhance: ['ocr', 'audit'],
-  ocr:     ['find', 'audit'],
-  diff:    ['audit'],
-  find:    [],
-  audit:   [],
+  prepare:    ['ocr', 'audit'],
+  enhance:    ['ocr', 'audit'],
+  ocr:        ['find', 'audit'],
+  diff:       ['audit'],
+  checkboxes: [],
+  find:       [],
+  audit:      [],
 }
 
 interface Entry {

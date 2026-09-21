@@ -69,10 +69,10 @@ export type {
   TextDifference, TextMetrics, Verdict as WordVerdict, VerifyOptions, WordMatch,
 } from '@scanmate/ocr'
 export type {
-  Annotation, Change, ComparedPage, Component, CoordinateUnits, DiffOptions, DocumentDiff, ExpectedChange,
-  ExpectedResult, InkProbe, LabelledComponents, LabelOptions as ComponentLabelOptions, Masks, MergedBox,
-  PageDiff, Panel, ProbeRect, Region, RegionInk, RegionInkMetrics, RegionInkOptions, RegionOptions,
-  RegionReport,
+  Annotation, Change, Checkbox, CheckboxOptions, CheckboxReading, CheckboxSide, CheckboxState, ComparedPage,
+  Component, CoordinateUnits, DiffOptions, DocumentDiff, ExpectedChange, ExpectedResult, InkProbe,
+  LabelledComponents, LabelOptions as ComponentLabelOptions, Masks, MergedBox, PageDiff, Panel, ProbeRect,
+  Region, RegionInk, RegionInkMetrics, RegionInkOptions, RegionOptions, RegionReport,
 } from '@scanmate/diff'
 export type {
   ApproximateMatch, ContentResult, ExpectedContent, FindOptions, FindReport, FoundBy, Occurrence, PageFind,
