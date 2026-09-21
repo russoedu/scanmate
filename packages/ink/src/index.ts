@@ -87,6 +87,8 @@ export { createRandom, gaussian } from './deterministic-sampling'
 // --- Pipeline contracts: what the stages hand one another ---
 
 export type { AlignedImage, AlignedPage, PageImage, PdfTextRun, PipelineStage, ProgressCallback, ReadablePage, ScanPage, StageEvent, TextRun } from './pipeline-contract'
+export { DEFAULT_BLEED, growBy, hasBleed, resolveBleed } from './region-bleed'
+export type { Bleed, ResolvedBleed } from './region-bleed'
 
 // --- Test fixtures, also useful for smoke-testing a deployment ---
 
