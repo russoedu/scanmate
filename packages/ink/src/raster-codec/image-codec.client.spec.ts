@@ -1,6 +1,6 @@
 import sharp from 'sharp'
 
-import { countPages, decodeImage, encodeImage, readImageMetadata, resampleRaster } from './image-codec.client'
+import { blurRaster, countPages, decodeImage, encodeImage, readImageMetadata, resampleRaster } from './image-codec.client'
 import { createRaster } from './raster.model'
 
 /** Odd dimensions on purpose: a stride or padding bug hides behind a round number. */
@@ -190,5 +190,25 @@ describe('resampleRaster', () => {
 
   it('refuses a size that is not a positive whole number of pixels', async () => {
     await expect(resampleRaster(createRaster(4, 4), 0, 4)).rejects.toThrow(RangeError)
+  })
+})
+
+describe('blurRaster', () => {
+  it('softens an edge and keeps the page its size', async () => {
+    const edge = createRaster(40, 10)
+    for (let y = 0; y < 10; y++) for (let x = 0; x < 40; x++) edge.data.set(x < 20 ? [0, 0, 0] : [255, 255, 255], (y * 40 + x) * 4)
+    const blurred = await blurRaster(edge, 2)
+    const at = (x: number) => blurred.data[(5 * 40 + x) * 4]
+
+    expect([blurred.width, blurred.height]).toStrictEqual([40, 10])
+    expect(at(2)).toBe(0)
+    expect(at(37)).toBe(255)
+    expect(at(19)).toBeGreaterThan(40)
+    expect(at(20)).toBeLessThan(215)
+    expect(at(19)).toBeLessThan(at(20))
+  })
+
+  it('refuses a sigma libvips cannot blur with', async () => {
+    await expect(blurRaster(createRaster(4, 4), 0.1)).rejects.toThrow(RangeError)
   })
 })
