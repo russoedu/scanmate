@@ -22,6 +22,7 @@
 export { Scanmate } from './scan-session'
 export type { AlignedScanmatePage, EnhancedScanmatePage, ReadableScanmatePage, ScanmateOptions, ScanmatePageReport } from './scan-session'
 export type { ScanmateDocument, ScanmatePage } from './document-input'
+export type { CalibrateOptions, CalibrationCase, CorpusCalibration } from './corpus-calibration'
 
 // --- Every type the stages speak ---
 //
@@ -82,8 +83,10 @@ export type {
   PageGeometry, PageMark, PageSize, Placement, ResolvedSource, SourceKind,
 } from '@scanmate/merge'
 export type {
-  AuditedPage, AuditFinding, AuditOptions, AuditReport, Correlation, CorrelationInput, ExplainedDifference,
-  FindingKind, PageAudit, Settlement, SettlementInput, Verdict,
+  AuditedPage, AuditFinding, AuditOptions, AuditReport, CalibrationGrid, CalibrationLabel, CalibrationPoint,
+  CalibrationReport, CalibrationSample, CalibrationThresholds, Correlation, CorrelationInput,
+  ExplainedDifference, FindingKind, PageAudit, SampledFinding, SampledPage, Settlement, SettlementInput,
+  Verdict,
 } from '@scanmate/audit'
 
 // --- Building blocks ---

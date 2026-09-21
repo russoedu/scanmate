@@ -24,15 +24,21 @@
  * each page at the same time, and what both saw at one place is one finding,
  * corroborated.
  *
+ * `calibrateAudit` measures the verdict itself: over a corpus someone has
+ * labelled by hand, how often a set of thresholds would pass an altered
+ * document, and how often it would hold up a genuine one.
+ *
  * Where they disagree, the argument is settled rather than decided by
  * precedence: both crops are read again the same way and the two readings are
  * compared with each other, which cancels the misreadings that make OCR
  * disagree with a page nothing has happened to.
  */
 
-export { auditPages } from './page-audit'
+export { auditPages, DEFAULT_MIN_TEXT_SCORE } from './page-audit'
 export type { AuditedPage, AuditOptions, AuditReport, PageAudit, Verdict } from './page-audit'
 export type { AuditFinding, ExplainedDifference, FindingKind } from './finding-correlation'
+export { calibrateAudit, DEFAULT_CALIBRATION_GRID, documentPasses, sampleAudit } from './audit-calibration'
+export type { CalibrationGrid, CalibrationLabel, CalibrationPoint, CalibrationReport, CalibrationSample, CalibrationThresholds, SampledFinding, SampledPage } from './audit-calibration'
 
 // --- Building blocks ---
 

@@ -108,7 +108,7 @@ That is measured, not asserted: a test spawns a child process with a module hook
 | `report()` | everything known, joined by page | whatever has run |
 | `dispose()` | — | — |
 
-And four that need no session at all, because there is nothing to compare:
+And five that need no session of your own:
 
 | method | returns | loads |
 |---|---|---|
@@ -116,6 +116,7 @@ And four that need no session at all, because there is nothing to compare:
 | `Scanmate.extract(pdf, options?)` | `ExtractedPage[]` — each with `page`, `image`, `metadata` | `@scanmate/extract` only |
 | `Scanmate.mark(pdf, marks, options?)` | `MarkResult` — `pdf`, `drawn`, `warnings` | `@scanmate/merge` only |
 | `Scanmate.locate(pdf, specs, options?)` | `LocatedFields` — `regions`, `anchors`, `problems` | `@scanmate/extract` only |
+| `Scanmate.calibrate(corpus, options?)` | `CorpusCalibration` — `samples`, `report` | everything an audit loads |
 
 Results are also readable **synchronously**, as `undefined` until the stage has settled. They never start work:
 
@@ -228,6 +229,29 @@ On the W-9, that label is two runs on two lines, and it resolves to exactly the 
 **`from`** measures a field from any corner of its label - `'top-right'` for a field that follows its label on the line, so it stays put when the label's wording changes.
 
 Static, like the others: it reads the original's text and renders nothing, so only `@scanmate/extract` loads - about 200 ms on the W-9. [`@scanmate/extract`](https://www.npmjs.com/package/@scanmate/extract) documents how a label is matched.
+
+## Measuring the thresholds on your documents
+
+Before the audit's `pass` is trusted without a person looking, its thresholds have to be measured on documents like yours. `Scanmate.calibrate` audits a labelled corpus - each case an original, what came back, and whether it is `genuine` or was altered - and reports, for every combination of thresholds, which altered documents would have passed and which genuine ones would have been held up:
+
+```ts
+const { report, samples } = await Scanmate.calibrate([
+  { id: 'order-118', genuine: true,  original: 'issued/118.pdf', scanned: 'returned/118.pdf' },
+  { id: 'order-119', genuine: false, original: 'issued/119.pdf', scanned: 'altered/119.pdf' },
+  // ...
+], {
+  expected,
+  diff:   { minChangeArea: 0.5 },                       // audit low, to leave room to sweep up
+  onCase: ({ sample }) => appendFile('samples.jsonl', JSON.stringify(sample) + '\n'),
+})
+
+report.best                  // thresholds with no false accept and the fewest false reviews
+report.best?.falseAcceptUpper  // how far this corpus can vouch for that "no"
+```
+
+**One document at a time.** Each case gets its own session, disposed before the next opens, so a corpus of any size costs the memory of its largest document. One OCR engine serves them all, and no evidence images are made. The corpus can be an async iterable, read as it goes.
+
+**Save the samples.** Each is a few numbers per page. `onCase` hands them over as they are done, so a run that stops at document 40 is not lost, and `calibrateAudit` from `@scanmate/audit` sweeps them again with other thresholds without reading a page. `@scanmate/audit` documents what is swept, how, and why `best` has to be confirmed on documents it was not chosen on.
 
 ## Every type, from one package
 

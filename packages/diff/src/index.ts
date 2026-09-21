@@ -15,7 +15,7 @@
  * different part of the page in each image.
  */
 
-export { diffPage, diffPages } from './change-detection'
+export { DEFAULT_MIN_CHANGE_AREA, DEFAULT_MIN_MISSING_AREA, diffPage, diffPages } from './change-detection'
 export type { Change, ComparedPage, CoordinateUnits, DiffOptions, ExpectedChange, ExpectedResult, InkProbe, PageDiff, ProbeRect, RegionInkMetrics } from './change-detection'
 
 export { compareRegions, diffDocument, renderDiff } from './region-comparison'
