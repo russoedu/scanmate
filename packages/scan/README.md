@@ -87,6 +87,7 @@ It cannot bias a verdict. The choice is between three fixed treatments scored ov
 two images in, align only  ->  @scanmate/scan, @scanmate/ink, @scanmate/align, sharp
 Scanmate.extract(pdf)      ->  @scanmate/scan, @scanmate/extract
 Scanmate.merge(images)     ->  @scanmate/scan, @scanmate/merge
+Scanmate.mark(pdf, marks)  ->  @scanmate/scan, @scanmate/merge
 ```
 
 That is measured, not asserted: a test spawns a child process with a module hook that logs every specifier Node resolves, and fails if any of the other stages appear.
@@ -113,6 +114,7 @@ And two that need no session at all, because there is nothing to compare:
 |---|---|---|
 | `Scanmate.merge(sources, options?)` | `MergeResult` — `pdf`, `pageCount`, `pages`, `passedThrough` | `@scanmate/merge` only |
 | `Scanmate.extract(pdf, options?)` | `ExtractedPage[]` — each with `page`, `image`, `metadata` | `@scanmate/extract` only |
+| `Scanmate.mark(pdf, marks, options?)` | `MarkResult` — `pdf`, `drawn`, `warnings` | `@scanmate/merge` only |
 
 Results are also readable **synchronously**, as `undefined` until the stage has settled. They never start work:
 
@@ -156,6 +158,34 @@ const scan = new Scanmate('issued.pdf', merged.pdf)
 ```
 
 The constructor still merges an array for you when you do have both documents in hand, so this is not a second way to do the same job — it is the same step for the case where the comparison comes later, or never.
+
+## Checking where the fields are
+
+Before a single signature is measured, the regions it will be measured in have to be right - and a coordinate that is a few points off looks exactly like one that is not, until a signature is reported missing. `Scanmate.mark` draws them on the original so you can see:
+
+```ts
+const { pdf, drawn, warnings } = await Scanmate.mark('fw9.pdf', [
+  { page: 1, id: 'signature', x: 120, y: 577, width: 262, height: 22 },
+  { page: 1, id: 'date',      x: 404, y: 577, width: 171, height: 22 },
+], { bleedTop: 2, bleedBottom: 12 })
+
+await write('fw9-checked.pdf', pdf)   // the original, with every region boxed
+warnings                               // anything off its page, or on a page that is not there
+```
+
+![the W-9's signature row twice: once with the default six points of bleed, whose dashed top edge runs through the printed line above; once with two points above and twelve below, which clears that line and leaves room for a signature to descend](./assets/mark-w9.png)
+
+*The W-9's signature and date fields, drawn from the same coordinates the audit example above uses. Each region is boxed in blue and its bleed dashed in magenta - the colours of the evidence page, so the two read alike. With the default six points on every side, the top of the signature's bleed runs straight through the printed line above it. Two points above and twelve below clears that line and gives a signature room to descend. Made from the [IRS Form W-9](https://www.irs.gov/pub/irs-pdf/fw9.pdf), a work of the United States government in the public domain.*
+
+**It takes the original, and nothing is adjusted.** There is no scan to align: the regions were measured against this document, so they are drawn on it directly, as vectors. The page is never re-rendered, so it stays sharp at any zoom and each box sits exactly where its coordinates say.
+
+**A mark is the same shape as an `expected` region** - `page`, `id`, `x`, `y`, `width`, `height`, in points from the top-left of the page as displayed. The array you are about to give `diff()` or `audit()` can be drawn as it is, so what you check by eye is what will be measured.
+
+**The bleed is the one the comparison uses.** `bleed` sets every side; `bleedTop`, `bleedRight`, `bleedBottom` and `bleedLeft` each override one, so `{ bleed: 6, bleedBottom: 14 }` is six points of room above and to either side and fourteen below. The same options go to `diff` and `audit` as `expected` regions' room, resolved by the same function, so the band drawn here is the band that will be measured. Leave them unset and every side is six points, exactly as before.
+
+**Rotated and cropped pages are handled.** A mark is measured the way `Scanmate.extract` reports text - with the page's rotation and crop box already applied - and it is drawn back through pdf.js's own page transform, inverted. That is proven rather than assumed: a spec measures a line of text, marks it, renders the page again and checks the box landed on the text, at every quarter turn.
+
+**It says what it could not do.** A mark on a page the document does not have is skipped and reported; one that reaches past the edge of its page is drawn and reported, because a region running off the page is itself a positioning error.
 
 ## Inputs
 

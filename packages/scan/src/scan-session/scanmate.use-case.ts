@@ -5,7 +5,7 @@ import type { EnhancePagesOptions } from '@scanmate/enhance'
 import type { ExtractPairOptions } from '@scanmate/extract'
 import type { ExtractedPage, ExtractOptions } from '@scanmate/extract'
 import type { ExpectedContent, FindOptions, FindReport } from '@scanmate/find'
-import type { MergeOptions, MergeResult } from '@scanmate/merge'
+import type { MarkOptions, MarkResult, MergeOptions, MergeResult, PageMark } from '@scanmate/merge'
 import type { PipelineStage, ScanmateBinarySource, ScanmateSource } from '@scanmate/ink'
 import type { OcrOptions, OcrReport, ReadPage } from '@scanmate/ocr'
 
@@ -83,6 +83,25 @@ export class Scanmate {
     const { extractPages } = await loadExtract()
 
     return await extractPages(pdf, options)
+  }
+
+  /**
+   * Draw the regions a validation will measure onto the original, to see
+   * whether they are where its fields actually are.
+   *
+   * Give it the original and the same regions you would give `diff()` or
+   * `audit()` as `expected` - a mark is the same shape - and it hands back the
+   * PDF with each one boxed and its bleed drawn around it. The bleed is resolved
+   * by the same rule the comparison uses, so the band on the page is the band
+   * that will be measured.
+   *
+   * Static, like `merge` and `extract`: the original is all there is, so nothing
+   * is aligned, compared or remembered, and only `@scanmate/merge` loads.
+   */
+  static async mark (pdf: ScanmateBinarySource, marks: readonly PageMark[], options: MarkOptions = {}): Promise<MarkResult> {
+    const { markPages } = await loadMerge()
+
+    return await markPages(pdf, marks, options)
   }
 
   readonly #original: ScanmateDocument

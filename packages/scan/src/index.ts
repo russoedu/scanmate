@@ -23,6 +23,12 @@ export { Scanmate } from './scan-session'
 export type { AlignedScanmatePage, EnhancedScanmatePage, ReadableScanmatePage, ScanmateOptions, ScanmatePageReport } from './scan-session'
 export type { ScanmateDocument, ScanmatePage } from './document-input'
 
+// What `Scanmate.mark` takes and returns. Type-only, so erased before anything
+// runs: re-exporting them loads nothing, and a session that never marks a page
+// still never touches @scanmate/merge.
+export type { MarkOptions, MarkResult, PageMark } from '@scanmate/merge'
+export type { Bleed } from '@scanmate/ink'
+
 // --- Building blocks ---
 
 export { MissingStageError, loadedStages } from './stage-loading'
