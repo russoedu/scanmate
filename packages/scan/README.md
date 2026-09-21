@@ -85,6 +85,8 @@ It cannot bias a verdict. The choice is between three fixed treatments scored ov
 
 ```
 two images in, align only  ->  @scanmate/scan, @scanmate/ink, @scanmate/align, sharp
+Scanmate.extract(pdf)      ->  @scanmate/scan, @scanmate/extract
+Scanmate.merge(images)     ->  @scanmate/scan, @scanmate/merge
 ```
 
 That is measured, not asserted: a test spawns a child process with a module hook that logs every specifier Node resolves, and fails if any of the other stages appear.
@@ -105,6 +107,13 @@ That is measured, not asserted: a test spawns a child process with a module hook
 | `report()` | everything known, joined by page | whatever has run |
 | `dispose()` | — | — |
 
+And two that need no session at all, because there is nothing to compare:
+
+| method | returns | loads |
+|---|---|---|
+| `Scanmate.merge(sources, options?)` | `MergeResult` — `pdf`, `pageCount`, `pages`, `passedThrough` | `@scanmate/merge` only |
+| `Scanmate.extract(pdf, options?)` | `ExtractedPage[]` — each with `page`, `image`, `metadata` | `@scanmate/extract` only |
+
 Results are also readable **synchronously**, as `undefined` until the stage has settled. They never start work:
 
 ```ts
@@ -120,18 +129,33 @@ scan.loaded            // which stage packages have loaded
 Sometimes there is nothing to compare yet. A returned document arrives photographed a page at a time and has to be stored now and checked later; or a document needs opening on its own, to see what it holds. Both ends of the pipeline are available without a session:
 
 ```ts
-// Eight photographs into one PDF, to store now and check later.
+import { Scanmate } from '@scanmate/scan'
+
+// Eight photographs into one PDF, to store now and check when the original arrives.
 const merged = await Scanmate.merge(['page-1.jpg', 'page-2.jpg', 'page-3.jpg'])
-await write('returned.pdf', merged.pdf)
+merged.pdf            // Uint8Array - the assembled document
+merged.pageCount      // 3
+merged.passedThrough  // true when one PDF was given and returned unchanged
 
 // One document opened on its own - its pages, their size, their text.
-const pages = await Scanmate.extract('returned.pdf', { metadata: true })
-pages[0].metadata.textItems
+const pages = await Scanmate.extract('returned.pdf', { includeText: true })
+pages[0].image.raster            // the rendered page
+pages[0].metadata.textItems      // its text layer, where it has one
 ```
 
-They are `static` because they need no session: there is no original, no scan and nothing to remember. Each loads only the package it needs - `Scanmate.merge` pulls in `@scanmate/merge` and nothing else, `Scanmate.extract` only `@scanmate/extract` - so neither starts a reader or touches a comparison.
+**`Scanmate.merge(sources, options?)`** takes the same sources the constructor does — a path, a `URL`, bytes, a decoded raster, or a mix — and returns a [`MergeResult`](https://www.npmjs.com/package/@scanmate/merge). `options` is `MergeOptions`, passed straight through: `pageSize`, `margin`, `imageDpi`, `encoding`, `quality`, `passThrough`.
 
-`merged.pdf` goes straight into a session as either side, and the constructor still merges an array for you when you do have both documents in hand.
+**`Scanmate.extract(pdf, options?)`** takes bytes or where to find them — not a raster, since a raster is not a PDF — and returns [`ExtractedPage[]`](https://www.npmjs.com/package/@scanmate/extract). `options` is `ExtractOptions`: `dpi` and its `fallbackDpi`/`minDpi`/`maxDpi` bounds, `pages` to select a range, `includeText` to read the text layer, `output` and `quality` to choose or skip encoding.
+
+Both are `static` because they need no session: there is no original, no scan and nothing to remember. Each loads only the package it needs, so neither starts a reader, an aligner or a comparison — measured on a real four-page OCF, `Scanmate.extract` resolved `@scanmate/extract` alone, and a following `Scanmate.merge` added only `@scanmate/merge`.
+
+`merged.pdf` goes straight into a session as either side:
+
+```ts
+const scan = new Scanmate('issued.pdf', merged.pdf)
+```
+
+The constructor still merges an array for you when you do have both documents in hand, so this is not a second way to do the same job — it is the same step for the case where the comparison comes later, or never.
 
 ## Inputs
 

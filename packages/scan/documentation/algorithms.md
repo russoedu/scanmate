@@ -122,6 +122,8 @@ Measured, not asserted. A child process runs an align-only session against the
 | a PDF pair | plus `extract`, `pdfjs-dist`, `@napi-rs/canvas` |
 | anything that reads | plus `ocr`, `tesseract.js`, a language model |
 | a side given as an array | plus `merge`, `@cantoo/pdf-lib` |
+| `Scanmate.extract` alone | `scan`, `extract` — no session, no reader |
+| `Scanmate.merge` alone | `scan`, `merge` — no session, no reader |
 
 **`sharp` is the floor.** Every stage depends on `@scanmate/ink`, which imports
 sharp at module top level, so there is no pure-JavaScript path and no point
