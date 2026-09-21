@@ -1,7 +1,7 @@
 {
   "name": "@scanmate/extract",
   "version": "0.0.1",
-  "description": "PDF pages as rasters with their metadata: text layer with positions, scanned-or-born-digital, real resolution - and an original paired with its scan.",
+  "description": "PDF pages as rasters with their metadata: text layer with positions, scanned-or-born-digital, real resolution, an original paired with its scan - and where its fields are, found from the labels it prints.",
   "license": "MIT",
   "author": "Eduardo Russo",
   "repository": {

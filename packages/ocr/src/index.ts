@@ -29,8 +29,6 @@ export { createTesseractEngine, DEFAULT_TESSERACT_OPTIONS } from './ocr-engine'
 export type { OcrEngine, OcrLine, OcrWord, RecognisedText, RecogniseHints, TesseractCacheOptions, TesseractEngine, TesseractEngineOptions, TesseractSettings } from './ocr-engine'
 export { compareTexts } from './text-similarity'
 export type { ScoreMetric, TextMetrics } from './text-similarity'
-export { DEFAULT_NORMALISE, normaliseText, tokenise } from './text-normalisation'
-export type { NormaliseOptions } from './text-normalisation'
 
 // --- Building blocks ---
 
@@ -39,4 +37,3 @@ export type { CellOptions, PrintAbstention, PrintCheck, PrintPolarity, PrintVeri
 export { claimWords, DEFAULT_RECHECK_PASSES, judgeRun, judgeRuns, matchWords, readRun, recheckRun } from './page-reading'
 export type { Claims, MatchOptions, Recheck, RecheckOptions, RecheckPass, Reference, Verdict, WordMatch } from './page-reading'
 export { cosine, dice, jaccard, jaroWinkler, levenshtein, levenshteinSimilarity, wordDistance, wordRecall } from './text-similarity'
-export { diacriticsMap, foldConfusables, foldDiacritics } from './text-normalisation'

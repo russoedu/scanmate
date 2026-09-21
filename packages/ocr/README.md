@@ -68,6 +68,8 @@ Measured on three real scans of a 7-page order form, with the text layer as grou
 
 Text is normalised the same way on both sides before comparing: NFKC, typography (quotes, dashes, spaces), line-end hyphens, diacritics (the project's 86-base table), case, and OCR noise such as table rules and specks. Punctuation and OCR confusables (`0/o`, `1/l`, `rn/m`) are **kept** by default. Folding them hides exactly the substitutions a forger makes. Every step is an option (`normalise`).
 
+The normaliser itself - `normaliseText`, `tokenise`, `DEFAULT_NORMALISE` and the folding tables - lives in `@scanmate/ink` from 0.10.0, so that `@scanmate/extract` can match labels exactly as this package matches words without loading an OCR engine. Import it from there; it is no longer exported here.
+
 ## The engine, and writing nothing to disk
 
 tesseract.js 7 (WebAssembly) with the English best_int model, which read as well as the standard model on real scans at a quarter of the size. Other languages: `npm install @tesseract.js-data/<code>` and pass `tesseract: { languages: ['eng', 'por'] }`.

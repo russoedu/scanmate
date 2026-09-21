@@ -1,6 +1,6 @@
 import type { ReadPage } from '@scanmate/ocr'
 import type { ScanmateRect } from '@scanmate/ink'
-import type { NormaliseOptions } from '@scanmate/ocr'
+import type { NormaliseOptions } from '@scanmate/ink'
 
 /** Text that must be on a page of the returned document - the brief's `{ page, content }`. */
 export interface ExpectedContent {

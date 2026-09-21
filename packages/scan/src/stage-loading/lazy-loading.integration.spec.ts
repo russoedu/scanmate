@@ -60,4 +60,16 @@ describe('what a session loads', () => {
 
     expect(loaded).toEqual([])
   }, 180_000)
+
+  it('locates fields with the PDF reader alone - no reader of pixels, no other stage', async () => {
+    const resolved = await resolvedBy('locate-only.mjs')
+
+    expect(resolved).toContain('DONE')
+    expect(resolved).toContain('@scanmate/extract')
+
+    const loaded = ['@scanmate/ocr', '@scanmate/find', '@scanmate/audit', '@scanmate/diff', '@scanmate/align', '@scanmate/enhance', '@scanmate/merge', 'tesseract.js', '@cantoo/pdf-lib']
+      .filter(name => resolved.includes(name))
+
+    expect(loaded).toEqual([])
+  }, 180_000)
 })

@@ -14,6 +14,10 @@
  * scanned page. By default each pair is rendered at the scan's own resolution,
  * which is what makes the two sides directly comparable.
  *
+ * It also finds where a document's fields are from the labels it prints -
+ * `locateFields` - so a signature box can be named by "Signature of U.S.
+ * person" instead of by coordinates that move with the content.
+ *
  * pdf.js does the parsing and `@napi-rs/canvas` - a prebuilt Skia addon with
  * nothing to install on the host - does the drawing.
  */
@@ -22,6 +26,8 @@ export { inspectDocument } from './document-inspection'
 export type { DocumentInfo, DocumentInspection, InspectedPage, InspectOptions } from './document-inspection'
 export { extractPages, extractPageStream, extractPair, extractPairStream } from './page-extraction'
 export type { ExtractedPage, ExtractOptions, ExtractPairOptions, PagePairing, PageSelection, PairedDocument, PairedPage } from './page-extraction'
+export { locateFields, resolveFields } from './field-location'
+export type { AnchorCorner, AnchorMatch, FieldOffset, FieldSpec, LocatablePage, LocatedAnchor, LocatedFields, LocateOptions, LocationProblem } from './field-location'
 
 export type { EmbeddedImage, PageKind, PageMetadata } from './page-inspection'
 export type { DpiChoice } from './page-rendering'
@@ -35,6 +41,7 @@ export { DEFAULT_DPI_LIMITS, nativeDpi, pageDpi, pairDpi, renderPage } from './p
 export type { DpiLimits, RenderOptions } from './page-rendering'
 export { planPairs, selectPages } from './page-extraction'
 export { readTextLayer } from './text-layer'
+export { locateAnchor, MAX_WORD_GAP, placeField } from './field-location'
 export type { TextLayer } from './text-layer'
 
 // --- Synthetic PDFs, for tests and deployment smoke checks ---

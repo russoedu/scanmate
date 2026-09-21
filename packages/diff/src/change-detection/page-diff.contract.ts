@@ -1,4 +1,4 @@
-import type { AlignedPage, Bleed, ImageFormat, InkOptions, ProgressCallback, Raster, ScanmateRect } from '@scanmate/ink'
+import type { AlignedPage, Bleed, ImageFormat, InkOptions, PageRegion, ProgressCallback, Raster, ScanmateRect } from '@scanmate/ink'
 
 import type { Masks } from '../region-comparison'
 
@@ -14,15 +14,12 @@ import type { Masks } from '../region-comparison'
 export type CoordinateUnits = 'points' | 'pixels'
 
 /** A place on a page where a change is expected - a signature box, a tick box. */
-export interface ExpectedChange {
-  /** One-based page number in the original. */
-  page:   number
-  id:     string
-  x:      number
-  y:      number
-  width:  number
-  height: number
-}
+/**
+ * A region where a change is expected - a field someone fills in. The shared
+ * `PageRegion`, so a field located from its label by `@scanmate/extract` and
+ * checked by eye with `@scanmate/merge` arrives here as it is.
+ */
+export type ExpectedChange = PageRegion
 
 /**
  * An aligned page with what the pixel comparison found on it.

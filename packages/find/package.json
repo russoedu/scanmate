@@ -1,7 +1,7 @@
 {
   "name": "@scanmate/find",
   "version": "0.0.1",
-  "description": "Is required content on each page of a scan, and where the original prints it? Approximate search with figures held exact, and regions from anchors.",
+  "description": "Is required content on each page of a scan, and where the original prints it? Approximate search with figures held exact.",
   "license": "MIT",
   "author": "Eduardo Russo",
   "repository": {

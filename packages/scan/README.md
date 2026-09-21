@@ -108,13 +108,14 @@ That is measured, not asserted: a test spawns a child process with a module hook
 | `report()` | everything known, joined by page | whatever has run |
 | `dispose()` | — | — |
 
-And two that need no session at all, because there is nothing to compare:
+And four that need no session at all, because there is nothing to compare:
 
 | method | returns | loads |
 |---|---|---|
 | `Scanmate.merge(sources, options?)` | `MergeResult` — `pdf`, `pageCount`, `pages`, `passedThrough` | `@scanmate/merge` only |
 | `Scanmate.extract(pdf, options?)` | `ExtractedPage[]` — each with `page`, `image`, `metadata` | `@scanmate/extract` only |
 | `Scanmate.mark(pdf, marks, options?)` | `MarkResult` — `pdf`, `drawn`, `warnings` | `@scanmate/merge` only |
+| `Scanmate.locate(pdf, specs, options?)` | `LocatedFields` — `regions`, `anchors`, `problems` | `@scanmate/extract` only |
 
 Results are also readable **synchronously**, as `undefined` until the stage has settled. They never start work:
 
@@ -195,6 +196,56 @@ await Scanmate.mark('protected.pdf', marks, { password: '…' })   // one that n
 ```
 
 A missing or wrong password raises a `PdfPasswordError` saying which. The obvious alternative - telling pdf-lib to ignore the encryption, as its own error suggests - is measured to hand back a PDF whose marks are silently missing, so it is not offered. The marked copy is for looking at: drawing on a signed document invalidates its digital signature, as any edit does.
+
+## Finding the fields from their labels
+
+Coordinates typed by hand are right for one layout, and a generated document's fields move whenever its content does. `Scanmate.locate` names each field by the label the original prints beside it, and finds where that label landed:
+
+```ts
+const { regions, problems } = await Scanmate.locate('fw9.pdf', [
+  {
+    anchor: 'Signature of U.S. person',
+    fields: {
+      signature: { dx: 44, dy: -3.8, width: 262, height: 22 },
+      date:      { dx: 328, dy: -3.8, width: 171, height: 22 },
+    },
+  },
+])
+
+if (problems.length > 0) throw new Error(JSON.stringify(problems))
+await Scanmate.mark('fw9.pdf', regions)                                  // see them first
+const report = await new Scanmate('fw9.pdf', 'returned.pdf', { expected: regions }).audit()
+```
+
+On the W-9, that label is two runs on two lines, and it resolves to exactly the coordinates the example above typed by hand: x 120, y 577, 262 × 22.
+
+**The regions are ready to use.** Each is a `PageRegion` - `page`, `id`, `x`, `y`, `width`, `height` in points from the top-left of the page as displayed - which is what `expected`, `diff()` and `mark` take.
+
+**A label is matched as printed, by whole words**, across the runs a text layer splits it into and onto the next line when it wraps. `'Date'` never finds `Update`; `'Signature'` finds `Signature:`.
+
+**Nothing is guessed.** The whole document is searched, and a label printed more than once is reported as `anchor-ambiguous` until you name the `occurrence` (counted in page order) or the `page`. A missing label, a field off its page, two fields overlapping or an id used twice all come back in `problems`, and `regions` holds only what was placed.
+
+**`from`** measures a field from any corner of its label - `'top-right'` for a field that follows its label on the line, so it stays put when the label's wording changes.
+
+Static, like the others: it reads the original's text and renders nothing, so only `@scanmate/extract` loads - about 200 ms on the W-9. [`@scanmate/extract`](https://www.npmjs.com/package/@scanmate/extract) documents how a label is matched.
+
+## Every type, from one package
+
+Every option bag and result a session speaks is a stage's own type, and all of them are exported from here, so a project that installs only `@scanmate/scan` can name any of them:
+
+```ts
+import type { AuditReport, FieldSpec, PageDiff, PageRegion, ScanmateRect } from '@scanmate/scan'
+```
+
+They are type-only exports, erased before anything runs, so naming a type never loads its stage. Five names mean different things in two stages, and are renamed here so that both can be reached:
+
+| here | is | from |
+|---|---|---|
+| `DrawLabelOptions` | `LabelOptions` | `@scanmate/ink` - drawing a synthetic label |
+| `ComponentLabelOptions` | `LabelOptions` | `@scanmate/diff` - labelling connected ink |
+| `FeatureMatchOptions` | `MatchOptions` | `@scanmate/align` - matching keypoints |
+| `WordMatchOptions` | `MatchOptions` | `@scanmate/ocr` - matching read words to printed ones |
+| `WordVerdict` | `Verdict` | `@scanmate/ocr` - one word's verdict; `Verdict` here is the audit's |
 
 ## Inputs
 

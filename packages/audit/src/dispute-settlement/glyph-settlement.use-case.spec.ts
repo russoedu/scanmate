@@ -1,7 +1,7 @@
 import type { InkProbe } from '@scanmate/diff'
 import { createRaster, drawLabel, labelSize } from '@scanmate/ink'
 import type { Raster, TextRun } from '@scanmate/ink'
-import { DEFAULT_NORMALISE } from '@scanmate/ocr'
+import { DEFAULT_NORMALISE } from '@scanmate/ink'
 import type { MatchOptions, OcrEngine, RecognisedText, TextDifference } from '@scanmate/ocr'
 
 import { settleDisputes } from './settle-dispute.use-case'

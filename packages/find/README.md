@@ -4,10 +4,6 @@
 
 Checks whether the content that must be on each page is there, and whether it's where the original puts it.
 
-![the signer fields, resolved from the words the form prints](./assets/regions.jpg)
-
-*The signer fields, resolved from the words the form itself prints rather than from coordinates typed into a config. Made from the [IRS Form W-9](https://www.irs.gov/pub/irs-pdf/fw9.pdf) (a work of the United States government, in the public domain): filled in as a generator would, printed, signed by hand and scanned crooked.*
-
 ## Install
 
 ```bash
@@ -44,34 +40,9 @@ The search is approximate (Sellers' algorithm), so OCR's slips in words are forg
 
 On two real scans of an order form (120 and 144 dpi), every one of 7 amounts with a single digit forged was reported as not identifiable. On the unaltered 144-dpi scan, every required value was found in place.
 
-## Regions from anchors
+## Field regions moved to `@scanmate/extract`
 
-Field boxes move with the document's content, but not relative to their labels. `resolveRegions` works in three steps:
-
-1. It finds an anchor in the original's text items, joining runs on one line.
-2. It places fields at offsets from the anchor's top-left corner.
-3. It checks that each field is on the page, finite, and not overlapping another.
-
-The result feeds `@scanmate/diff`'s expected regions:
-
-```ts
-import { extractPages } from '@scanmate/extract'
-import { resolveRegions } from '@scanmate/find'
-
-const [page] = await extractPages('fw9-issued.pdf', { pages: [1] })
-// The W-9 prints "Signature of U.S. person" at the left of its signature row; the
-// two cells of that row sit at these offsets from it, measured off the form.
-const { regions, problems } = resolveRegions(page.metadata.textItems, { width: 612, height: 792 }, {
-  anchor: 'Signature of',
-  fields: {
-    signature: { dx: 44, dy: -4, width: 262, height: 22 },
-    date:      { dx: 328, dy: -4, width: 171, height: 22 },
-  },
-})
-// problems: anchor missing or ambiguous, fields off the page or overlapping - empty when all is well
-```
-
-An anchor must occur exactly once unless `occurrence` names which one to use.
+Placing field boxes from the labels a document prints used to live here, as `resolveRegions`. It reads only the original's text layer and never a scan, so it now lives with that text layer in `@scanmate/extract`, as `locateFields` - with labels that wrap across lines, whole-word matching, every page searched at once, and page numbers on the regions it returns. Reaching it there no longer loads the OCR engine.
 
 ## How it decides
 

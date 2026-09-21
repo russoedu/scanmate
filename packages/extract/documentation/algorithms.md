@@ -138,6 +138,53 @@ flowchart LR
 bytes leaves the caller holding a zero-length array; this package passes a copy,
 and any caller doing its own `getDocument` should too.
 
+## Finding a field from its label
+
+```mermaid
+flowchart TD
+  A[anchor text] --> B[normalised words<br/>edge punctuation set aside]
+  B --> C[every run: its words, in its own reading frame]
+  C --> D[match word by word from each first word]
+  D -->|run ends first| E{what follows it?}
+  E -->|nearest run on its line,<br/>gap under 4 line heights| D
+  E -->|first run of the next line under it,<br/>within 1.8 line heights| D
+  D -->|all words matched| F[box around the words]
+  F --> G{how many places,<br/>across the document?}
+  G -->|none| H[anchor-missing]
+  G -->|several, none named| I[anchor-ambiguous]
+  G -->|one, or the named one| J[fields at offsets from the chosen corner]
+  J --> K{finite, positive, on the page,<br/>no overlap, ids unique?}
+  K -->|no| L[named problem]
+  K -->|yes| M[regions, in points, with their page]
+```
+
+**Words, not characters.** A label is matched word for word, so it can never be
+found inside another word - `Date` is not in `Update` - and the punctuation at a
+word's edges is set aside on both sides, so `Signature:` is still `Signature`.
+Punctuation inside a word is kept: `U.S.` is not `US`.
+
+**Runs, then lines.** A text layer splits a phrase wherever the generator changed
+anything, and a form wraps a long label. From the end of a run the match may
+continue into exactly two places: the nearest run after it on its line, and the
+first run of the next line that sits under it. At most one of each, so no run is
+ever skipped. On the W-9, "Signature of" and "U.S. person" are two runs 8.4
+points apart on 8.35-point lines - well inside the 1.8 line heights allowed; a
+paragraph further down is not.
+
+**Each run in its own frame.** A run's box is projected onto its own baseline and
+its own "down", so a label turned a quarter reads down the page and continues on
+the line beside it, exactly as upright text reads across and continues below.
+Runs turned differently are never joined.
+
+**Boxes are exact where the runs are.** A run's width is known; its words' widths
+are not. Where the label starts or ends inside a run, that edge is placed in
+proportion to its characters, and the match says `estimated: true`. Where it
+starts and ends with its runs, the box is the runs' own.
+
+**Ambiguity is a named outcome.** Occurrences are counted across the document in
+page order, and top to bottom within a page. Zero matches and two matches are
+different problems, both the caller's to handle, and neither is guessed at.
+
 ## Constants
 
 | option | default | |

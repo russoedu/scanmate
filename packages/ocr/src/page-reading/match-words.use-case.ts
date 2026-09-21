@@ -1,5 +1,5 @@
-import { normaliseText } from '../text-normalisation'
-import type { NormaliseOptions } from '../text-normalisation'
+import { normaliseText } from '@scanmate/ink'
+import type { NormaliseOptions } from '@scanmate/ink'
 import { levenshteinSimilarity } from '../text-similarity'
 import type { PlacedText, TextDifference } from './ocr-report.contract'
 

@@ -5,7 +5,7 @@ import { collectInto, mergeVerifiedFigures, printPolarity, verifyPrintedRun } fr
 import type { TemplateStore, Templates } from '../print-verification'
 import { createTesseractEngine } from '../ocr-engine'
 import type { OcrEngine, RecognisedText } from '../ocr-engine'
-import { DEFAULT_NORMALISE } from '../text-normalisation'
+import { DEFAULT_NORMALISE } from '@scanmate/ink'
 import { compareTexts } from '../text-similarity'
 import { claimWords, judgeRun, judgeRuns } from './match-words.use-case'
 import type { MatchOptions, Reference } from './match-words.use-case'

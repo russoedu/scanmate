@@ -3,7 +3,7 @@ import type { AlignPagesOptions } from '@scanmate/align'
 import type { ComparedPage, DiffOptions, ExpectedChange, PageDiff } from '@scanmate/diff'
 import type { EnhancePagesOptions } from '@scanmate/enhance'
 import type { ExtractPairOptions } from '@scanmate/extract'
-import type { ExtractedPage, ExtractOptions } from '@scanmate/extract'
+import type { ExtractedPage, ExtractOptions, FieldSpec, LocatedFields, LocateOptions } from '@scanmate/extract'
 import type { ExpectedContent, FindOptions, FindReport } from '@scanmate/find'
 import type { MarkOptions, MarkResult, MergeOptions, MergeResult, PageMark } from '@scanmate/merge'
 import type { PipelineStage, ScanmateBinarySource, ScanmateSource } from '@scanmate/ink'
@@ -102,6 +102,32 @@ export class Scanmate {
     const { markPages } = await loadMerge()
 
     return await markPages(pdf, marks, options)
+  }
+
+  /**
+   * Find where a document's fields are from the labels it prints.
+   *
+   * Coordinates typed by hand are right for one layout; a generated document's
+   * fields move whenever its content does. Name each field by its label and an
+   * offset from it instead, and this finds the label in the text layer - across
+   * runs and wrapped lines, by whole words - and places the field:
+   *
+   * ```ts
+   * const { regions, problems } = await Scanmate.locate('issued.pdf', [
+   *   { anchor: 'Signature of U.S. person', fields: { signature: { dx: 44, dy: -3.8, width: 262, height: 22 } } },
+   * ])
+   * if (problems.length === 0) await Scanmate.mark('issued.pdf', regions)
+   * ```
+   *
+   * The regions are exactly what `expected` and `mark` take. An anchor printed
+   * more than once is refused rather than guessed at; name the `occurrence` or
+   * the `page`. Static: it reads the original's text and renders nothing, so
+   * only `@scanmate/extract` loads.
+   */
+  static async locate (pdf: ScanmateBinarySource, specs: readonly FieldSpec[], options: LocateOptions = {}): Promise<LocatedFields> {
+    const { locateFields } = await loadExtract()
+
+    return await locateFields(pdf, specs, options)
   }
 
   readonly #original: ScanmateDocument

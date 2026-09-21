@@ -1,6 +1,6 @@
 import { diffPage, probeInk } from '@scanmate/diff'
-import { encodeImage } from '@scanmate/ink'
-import { createTesseractEngine, DEFAULT_NORMALISE, ocrPages } from '@scanmate/ocr'
+import { DEFAULT_NORMALISE, encodeImage } from '@scanmate/ink'
+import { createTesseractEngine, ocrPages } from '@scanmate/ocr'
 import type { OcrEngine, PageOcr } from '@scanmate/ocr'
 
 import { renderEvidence } from '../audit-evidence'

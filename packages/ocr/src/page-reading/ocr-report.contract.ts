@@ -3,7 +3,7 @@ import type { ProgressCallback, ReadablePage } from '@scanmate/ink'
 import type { OcrEngine, TesseractEngineOptions } from '../ocr-engine'
 import type { PrintAbstention, VerifyOptions } from '../print-verification'
 import type { RecheckOptions } from './recheck-run.use-case'
-import type { NormaliseOptions } from '../text-normalisation'
+import type { NormaliseOptions } from '@scanmate/ink'
 import type { ScoreMetric, TextMetrics } from '../text-similarity'
 
 /** A run of text placed on the page, in PDF points from the top-left - what `@scanmate/extract` calls a text item. */
