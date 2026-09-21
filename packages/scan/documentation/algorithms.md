@@ -53,6 +53,23 @@ Each method runs its prerequisites, so any order works. The rule is one line:
 given, so enhancing behind the caller's back would move their scores away from
 what the packages produce when called directly.
 
+## The two ends, without a comparison
+
+`Scanmate.merge` and `Scanmate.extract` are static, and that is the whole of what
+they say: they need no session, because a session exists to hold an original
+beside a scan and remember what was measured between them. Assembling a PDF from
+photographs, or opening one to see what it holds, has neither side and nothing
+worth remembering.
+
+It also keeps what loads honest. A caller merging eight photographs to store for
+later gets `@scanmate/merge`; a caller opening a document to read its text gets
+`@scanmate/extract`. Neither starts a reader, an aligner or a comparison, and
+neither can be made to by accident.
+
+The constructor still takes an array and merges it, so nothing here is a second
+way to do the same job - it is the same step, for the case where the comparison
+comes later or not at all.
+
 ## What is remembered, and when it is forgotten
 
 Two decisions carry the cache.

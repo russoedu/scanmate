@@ -33,6 +33,19 @@ vi.mock('@scanmate/extract', () => ({
 
     return { pages: [page(1)], unpaired: { original: [], scanned: [] }, pageCount: { original: 1, scanned: 1 } }
   }),
+  extractPages: vi.fn(async () => {
+    calls.push('extractPages')
+
+    return [{ page: 1, image: page(1).original, metadata: {} }]
+  }),
+}))
+
+vi.mock('@scanmate/merge', () => ({
+  mergeDocuments: vi.fn(async (sources: readonly unknown[]) => {
+    calls.push('mergeDocuments')
+
+    return { pdf: new Uint8Array([1, 2, 3]), pageCount: sources.length, pages: [], passedThrough: false }
+  }),
 }))
 
 vi.mock('@scanmate/align', () => ({
@@ -217,6 +230,23 @@ describe('Scanmate', () => {
     await scan.ocr()
 
     expect(calls).toEqual(['extractPair', 'alignPages', 'enhancePages', 'createTesseractEngine', 'ocrPages'])
+  })
+})
+
+describe('Scanmate, the two ends', () => {
+  it('merges pages that arrived separately, with no session and no comparison', async () => {
+    const merged = await Scanmate.merge(['a.jpg', 'b.jpg', 'c.jpg'])
+
+    expect(merged.pageCount).toBe(3)
+    // Nothing was extracted, aligned or read: there is nothing to compare yet.
+    expect(calls).toEqual(['mergeDocuments'])
+  })
+
+  it('extracts one document on its own, without an original to compare it to', async () => {
+    const pages = await Scanmate.extract('returned.pdf')
+
+    expect(pages).toHaveLength(1)
+    expect(calls).toEqual(['extractPages'])
   })
 })
 
