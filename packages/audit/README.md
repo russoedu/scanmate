@@ -120,6 +120,33 @@ import { findContent } from '@scanmate/find'
 const found = findContent(audit.pages, [{ page: 1, content: ['Account 4412-9087-3355'] }])
 ```
 
+## Measuring the thresholds
+
+Automatic acceptance is only as safe as the thresholds behind it, and "0.85 looks right" is not something anyone can sign off. `calibrateAudit` measures them on documents someone has checked by hand: for every combination of thresholds, which altered documents would have passed, and which genuine ones would have been held up.
+
+```ts
+import { auditPages, calibrateAudit, sampleAudit } from '@scanmate/audit'
+
+// Once per labelled document - the slow part, hours for a real corpus:
+const sample = sampleAudit(await auditPages(pages, options), { id: 'order-118', genuine: true }, options)
+await save(sample)   // a few numbers per page, plain JSON
+
+// Any time afterwards, in milliseconds:
+const report = calibrateAudit(samples, { minTextScore: [0.8, 0.85, 0.9], minChangeArea: [1, 2, 4] })
+report.best                       // no false accept, fewest false reviews
+report.best?.falseAcceptUpper     // how far this corpus can vouch for that "no"
+report.points                     // every combination, safest first
+```
+
+- **Counted by document**, because that is what is accepted: a document passes only when every page does.
+- **A false accept is an altered document that passes**; a false review is a genuine one held up. The report names each, so the documents behind a rate can be looked at.
+- **Each rate has an upper bound** - the top of its 95% Wilson interval - because a small corpus proves little. No false accept in 20 altered documents still allows 16%; it takes about 75 to bring that under 5%.
+- **Three thresholds are swept**: `minTextScore`, and the least ink added (`minChangeArea`) or lost (`minMissingArea`), in mm², that sends a page to review. A mark the reading also saw words in is never dropped for its size, and every other finding always counts.
+- **Areas can only be raised.** A mark smaller than the audit ran with was never reported, so grid values below it are listed in `unreachable` rather than guessed at. Audit the corpus with low area thresholds to leave room to sweep.
+- **`best` is chosen on the corpus it is measured on**, so it flatters itself. Confirm it on documents it was not chosen on.
+
+`Scanmate.calibrate` in `@scanmate/scan` runs the whole corpus from file paths, one document at a time.
+
 ## Options
 
 | Option | Default | |

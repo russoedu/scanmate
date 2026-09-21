@@ -246,6 +246,51 @@ Turn it off with `legend: false`.
 Side by side rather than a crop, because the question a reviewer is answering is
 "is this line as it was printed?", which needs both lines in view.
 
+## Calibration
+
+The verdict is a decision rule with thresholds in it, and a threshold is a
+claim about a corpus: that at this value, altered documents are caught and
+genuine ones are not. `calibrateAudit` checks that claim against documents
+someone has labelled by hand.
+
+```mermaid
+flowchart LR
+  A[labelled corpus] --> B[audit each document once]
+  B --> C[sample: text score and findings per page]
+  C --> D[replay the verdict at every grid point]
+  D --> E[false accepts and false reviews, by document]
+  E --> F[rates, with 95% upper bounds]
+```
+
+**Audit once, sweep many times.** Auditing is the slow part - the reading, the
+pixel comparison, the settled disputes. What a threshold decides on is a few
+numbers per page: the text score, and each finding's kind, its ink area when it
+is a mark added or lost, and whether the reading saw words there. That sample
+is plain data, so a corpus audited overnight can be swept again in milliseconds
+with any thresholds.
+
+**The replay is the verdict.** A page goes to review when its text score is
+below `minTextScore`, or when some finding counts. A mark added counts when its
+area reaches `minChangeArea`, ink lost when it reaches `minMissingArea`, and a
+mark the reading saw words in always counts - an overwritten figure can be
+small. Every other finding always counts. It is the audit's own rule, applied
+to what the audit reported.
+
+**Raise, never lower.** The pixel comparison reports nothing below its own area
+thresholds, so a sweep cannot know what a lower one would have seen. Grid
+values below what any sample ran with are dropped and listed as unreachable.
+
+**By document, with a bound.** Both mistakes are counted per document, because
+a document is accepted whole. Each rate carries the upper end of its 95% Wilson
+score interval: with no false accept among n altered documents it is about
+3.84 / (n + 3.84), so 20 documents vouch for no better than 16% and it takes
+about 75 to get under 5%. The rate that matters for automatic acceptance is
+the false accept rate's bound, not the rate.
+
+**The best point is only a candidate.** It is the one with no false accept and
+the fewest false reviews - on the corpus it was chosen from. Confirm it on
+documents it was not chosen on before relying on it.
+
 ## Constants
 
 | option | default | |
