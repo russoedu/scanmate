@@ -187,6 +187,15 @@ warnings                               // anything off its page, or on a page th
 
 **It says what it could not do.** A mark on a page the document does not have is skipped and reported; one that reaches past the edge of its page is drawn and reported, because a region running off the page is itself a positioning error.
 
+**Signed documents open as they are.** A signed PDF usually arrives encrypted, locked against editing but readable by anyone. It is decrypted as it is read, with nothing to pass, and the marks are drawn on it. A PDF that needs a password to be read at all takes `password`:
+
+```ts
+await Scanmate.mark('signed.pdf', marks)                         // a signed PDF: nothing to add
+await Scanmate.mark('protected.pdf', marks, { password: '…' })   // one that needs a password to open
+```
+
+A missing or wrong password raises a `PdfPasswordError` saying which. The obvious alternative - telling pdf-lib to ignore the encryption, as its own error suggests - is measured to hand back a PDF whose marks are silently missing, so it is not offered. The marked copy is for looking at: drawing on a signed document invalidates its digital signature, as any edit does.
+
 ## Inputs
 
 Either side may be a path, a `URL`, bytes, a decoded raster - or an **array** of those, which is merged into one PDF first. That is how a returned document usually arrives: eight photographs of a signed contract.

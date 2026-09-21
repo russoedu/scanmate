@@ -1,3 +1,4 @@
+import { PDFDocument } from '@cantoo/pdf-lib'
 import { createSyntheticPdf } from '@scanmate/extract'
 import type { Raster, ScanmateRect } from '@scanmate/ink'
 
@@ -95,6 +96,34 @@ describe('Scanmate.mark', () => {
       'signature is on page 3, and the document has 1',
       'date reaches past the edge of page 1, which is 595.3 x 841.9 pt',
     ])
+  }, 60_000)
+
+  it('draws on a signed-style PDF, encrypted with an owner password alone, and the marks show', async () => {
+    // The document a signing service hands back: readable by anyone, locked
+    // against editing. pdf-lib refuses it by default, and the fix its own error
+    // suggests - ignoreEncryption - saves a PDF whose marks are silently missing.
+    const { pdf, text } = await measured(0)
+    const signed = await PDFDocument.load(pdf)
+    signed.encrypt({ ownerPassword: 'owner', userPassword: '' })
+    const locked = await signed.save()
+
+    const { pdf: marked, drawn, warnings } = await Scanmate.mark(locked, [{ page: 1, ...text }], { bleed: 0, labels: false })
+
+    expect(drawn).toBe(1)
+    expect(warnings).toEqual([])
+    // Not merely saved: drawn where it should be, and visible once rendered.
+    expect(worstEdge(await drawnBox(locked, marked), text)).toBeLessThanOrEqual(2)
+  }, 60_000)
+
+  it('opens a PDF that needs a password to be read, given it, and says so plainly when it is not', async () => {
+    const { pdf, text } = await measured(0)
+    const secured = await PDFDocument.load(pdf)
+    secured.encrypt({ ownerPassword: 'owner', userPassword: 'secret' })
+    const locked = await secured.save()
+
+    await expect(Scanmate.mark(locked, [{ page: 1, ...text }])).rejects.toMatchObject({ name: 'PdfPasswordError', given: false })
+    const { drawn } = await Scanmate.mark(locked, [{ page: 1, ...text }], { password: 'secret' })
+    expect(drawn).toBe(1)
   }, 60_000)
 
   it('refuses something that is not a PDF', async () => {
