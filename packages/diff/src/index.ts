@@ -10,6 +10,9 @@
  * diffs[0].unexpected  // changes outside every expected region, one box each
  * ```
  *
+ * `readCheckboxes` asks the plainer question a form is full of - which boxes
+ * are ticked - of each side on its own.
+ *
  * Every function here assumes both images already share a canvas - which is what
  * `@scanmate/align` produces. Feed it a raw scan and every rectangle names a
  * different part of the page in each image.
@@ -18,6 +21,9 @@
 export { DEFAULT_MIN_CHANGE_AREA, DEFAULT_MIN_MISSING_AREA, diffPage, diffPages } from './change-detection'
 export type { Change, ComparedPage, CoordinateUnits, DiffOptions, ExpectedChange, ExpectedResult, InkProbe, PageDiff, ProbeRect, RegionInkMetrics } from './change-detection'
 
+export { readCheckboxes } from './checkbox-reading'
+export type { Checkbox, CheckboxOptions, CheckboxReading, CheckboxSide, CheckboxState } from './checkbox-reading'
+
 export { compareRegions, diffDocument, renderDiff } from './region-comparison'
 export type { DocumentDiff, Region, RegionOptions, RegionReport } from './region-comparison'
 
@@ -25,5 +31,6 @@ export type { DocumentDiff, Region, RegionOptions, RegionReport } from './region
 
 export { annotateOverlay, composePanels, composeSideBySide, connectedComponents, EXPECTED_MARGIN, IDENTIFIED, labelComponents, measureRegionInk, mergeBoxes, MISSING, NOT_IDENTIFIED, probeInk, REFERENCE, UNEXPECTED, UNSETTLED } from './change-detection'
 export type { Annotation, Component, Panel, LabelledComponents, LabelOptions, MergedBox, RegionInk, RegionInkOptions, Rgba } from './change-detection'
+export { checkboxesFromMasks } from './checkbox-reading'
 export { buildMasks, measureRegion, OVERLAY_DIFFERENT, OVERLAY_SHARED, paintOverlay } from './region-comparison'
 export type { Masks } from './region-comparison'
