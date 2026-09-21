@@ -181,6 +181,27 @@ export async function resampleRaster (image: Raster, width: number, height: numb
   return { width: info.width, height: info.height, data: asClamped(new Uint8Array(data)) }
 }
 
+/**
+ * A Gaussian blur of a raster, through libvips.
+ *
+ * For whole-page blurs - the mask an unsharp sharpening subtracts. On an A4
+ * page at 300 dpi, a sharpening built on it took 110 ms against 580-650 for
+ * three box blurs in JavaScript. The kernels that must stay synchronous blur
+ * with `boxBlur` / `boxBlurRaster` instead.
+ *
+ * @param sigma - Standard deviation, in pixels: at least 0.3, as libvips asks.
+ */
+export async function blurRaster (image: Raster, sigma: number): Promise<Raster> {
+  if (!Number.isFinite(sigma) || sigma < 0.3) throw new RangeError(`a blur needs a sigma of at least 0.3 pixels: got ${sigma}`)
+
+  const { data, info } = await sharp(bytesOf(image), { raw: { width: image.width, height: image.height, channels: 4 } })
+    .blur(sigma)
+    .raw()
+    .toBuffer({ resolveWithObject: true })
+
+  return { width: info.width, height: info.height, data: asClamped(new Uint8Array(data)) }
+}
+
 /** Read what a file claims about itself without decoding its pixels. */
 export async function readImageMetadata (input: ScanmateSource): Promise<ImageMetadata> {
   if (isRaster(input))

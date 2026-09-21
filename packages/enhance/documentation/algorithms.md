@@ -84,6 +84,27 @@ The enhanced image is for **reading only**. The pixel comparison keeps working
 on the aligned scan, because enhancement moves edges by a fraction of a pixel
 and a diff is a question about edges.
 
+## Sharpening, last
+
+An unsharp mask - the page, plus `amount` times what a blur of it throws away -
+applied after enlarging and levelling, and both orders matter. Enlarging first
+sets the radius: a stroke taken from 93 dpi to 300 is three times the width it
+was scanned at, so a radius fitted to the original resolution sharpens detail
+that is no longer there. Levelling first gives it edges to work on rather than
+paper shading.
+
+The blur is three box blurs of radius `round(sigma)` in `enhanceRaster`, which
+must stay synchronous, and a Gaussian in libvips in `enhanceScan` and
+`enhancePages` (`sharpenRaster`). Three box blurs of radius r are a Gaussian of
+sigma sqrt(r(r + 1)), and that is the sigma libvips is given, so the tuning
+done with the box blurs still holds. Measured:
+
+| | three box blurs, JavaScript | Gaussian, libvips |
+|---|---|---|
+| the mask, A4 at 300 dpi | 580-650 ms | 110 ms |
+| difference on a real W-9 page | | 0.33-0.39 grey levels on average |
+| OCR word recall, 9 pages of 3 real scans at 93-144 dpi | 0.409 | 0.485, no page lower by more than 0.021 |
+
 ## Constants
 
 | option | default | |

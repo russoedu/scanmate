@@ -57,6 +57,7 @@ The window also picks up large dark areas, such as a solid header bar or shaded 
 | `despeckleThreshold` | `0.01` | Noise level, on the 0–1 grey scale, above which `'auto'` despeckles. |
 | `despeckleRadius` | `1` | 3×3 window. |
 | `backgroundFraction` | `1/16` | Background window, as a share of the shorter side. |
+| `sharpen` | `false` | `{ sigma, amount? }`: an unsharp mask on the enlarged, levelled page. `@scanmate/scan` chooses it per document by measurement. |
 | `output` | `'png'` | Encoding of `image`; `'none'` skips it. |
 | `source` (`enhancePages`) | `'aligned'` | Or `'scanned'`, the scan as it came. |
 
