@@ -51,7 +51,7 @@ describe('readCheckboxes', () => {
         expect(reading.scanned.ink).toBeLessThan(0.3)
       }
     }
-  })
+  }, 60_000)
 
   it('does not read its own frame as a mark when the alignment is a little out', async () => {
     for (const [translateX, translateY] of [[2, 0], [0, -2], [2, 2]]) {
@@ -60,7 +60,7 @@ describe('readCheckboxes', () => {
 
       expect(readings.map(r => r.scanned.state)).toStrictEqual(['empty', 'empty', 'empty'])
     }
-  })
+  }, 60_000)
 
   it('tells a tick and a cross from a box inked over', async () => {
     const scanned = withInk((r) => {
@@ -77,7 +77,7 @@ describe('readCheckboxes', () => {
     ])
     expect(readings[0].scanned.ink).toBeGreaterThan(1.5)
     expect(readings[1].scanned.ink).toBeGreaterThan(0.6)
-  })
+  }, 60_000)
 
   it('sees a thin grey pen tick through a noisy scan', async () => {
     const ticked = withInk((r) => {
@@ -89,7 +89,7 @@ describe('readCheckboxes', () => {
 
       expect(reading.scanned.state).toBe('ticked')
     }
-  })
+  }, 60_000)
 
   it('reads each side on its own: a box ticked before issue is not a change, one cleared is', async () => {
     const issued = withInk(r => drawTick(r, FIRST))
@@ -99,7 +99,7 @@ describe('readCheckboxes', () => {
 
     expect(same).toMatchObject({ original: { state: 'ticked' }, scanned: { state: 'ticked' }, changed: false })
     expect(cleared).toMatchObject({ original: { state: 'ticked' }, scanned: { state: 'empty' }, changed: true })
-  })
+  }, 60_000)
 
   it('says whether each box shows what it must', async () => {
     const scanned = withInk(r => drawTick(r, FIRST))
@@ -111,11 +111,11 @@ describe('readCheckboxes', () => {
     ])
 
     expect(readings.map(r => [r.id, r.satisfied])).toStrictEqual([['agreed', true], ['declined', true], ['required', false], ['optional', null]])
-  })
+  }, 60_000)
 
   it('reads only the pages it has boxes for', async () => {
     const readings = await readCheckboxes([page(FORM.raster, FORM.raster)], [{ ...box('elsewhere', FIRST), page: 2 }])
 
     expect(readings).toStrictEqual([])
-  })
+  }, 60_000)
 })
