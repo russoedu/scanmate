@@ -24,6 +24,9 @@
  * each page at the same time, and what both saw at one place is one finding,
  * corroborated.
  *
+ * `writeEvidencePdf` puts the whole audit in one file for whoever reviews it:
+ * the verdict, and every page's evidence image with what to look at in words.
+ *
  * `calibrateAudit` measures the verdict itself: over a corpus someone has
  * labelled by hand, how often a set of thresholds would pass an altered
  * document, and how often it would hold up a genuine one.
@@ -37,6 +40,8 @@
 export { auditPages, DEFAULT_MIN_TEXT_SCORE } from './page-audit'
 export type { AuditedPage, AuditOptions, AuditReport, PageAudit, Verdict } from './page-audit'
 export type { AuditFinding, ExplainedDifference, FindingKind } from './finding-correlation'
+export { writeEvidencePdf } from './evidence-document'
+export type { EvidencePdfOptions } from './evidence-document'
 export { calibrateAudit, DEFAULT_CALIBRATION_GRID, documentPasses, sampleAudit } from './audit-calibration'
 export type { CalibrationGrid, CalibrationLabel, CalibrationPoint, CalibrationReport, CalibrationSample, CalibrationThresholds, SampledFinding, SampledPage } from './audit-calibration'
 

@@ -41,6 +41,7 @@
     "!**/*.js.map"
   ],
   "dependencies": {
+    "@cantoo/pdf-lib": "^2.11.1",
     "@scanmate/diff": "^0.0.1",
     "@scanmate/find": "^0.0.1",
     "@scanmate/ink": "^0.0.1",
