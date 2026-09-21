@@ -107,7 +107,10 @@ flowchart TD
 **The glyph match comes before the re-reading** because it is the better
 instrument and the cheaper one: it asks *are these the same glyphs?* of the ink
 itself, where re-reading asks an engine what it sees and hopes the answer is
-stable. It settles the W-9's certification line — fifty-two characters the
+stable. The match itself belongs to `@scanmate/ocr`, and
+[its documentation shows the whole of it in pictures](https://github.com/russoedu/scanmate/blob/main/packages/ocr/documentation/print-verification.md)
+- which way round the print is, where one character ends and the next begins,
+what each glyph is compared against, and what a refusal looks like. It settles the W-9's certification line — fifty-two characters the
 reading mangled into `1am` — in about 120 ms.
 
 **It may clear a run; it may not condemn one.** Swept over 327 runs of four real
