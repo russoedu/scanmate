@@ -1,4 +1,4 @@
-import type { DiffOptions, ExpectedChange, PageDiff } from '@scanmate/diff'
+import type { Checkbox, CheckboxOptions, CheckboxReading, DiffOptions, ExpectedChange, PageDiff } from '@scanmate/diff'
 import type { ImageFormat, ProgressCallback, Raster, ReadablePage } from '@scanmate/ink'
 import type { OcrOptions, PageOcr, TextDifference } from '@scanmate/ocr'
 
@@ -8,6 +8,15 @@ import type { AuditFinding, ExplainedDifference, FindingKind } from '../finding-
 export interface AuditOptions {
   /** Regions where a change is expected - a signature box, a tick box - in points from the top-left. */
   expected?:     readonly ExpectedChange[]
+  /**
+   * Boxes to read as ticked or not, on both sides. A tick in one is never
+   * unexpected ink, and an empty one is never a field left empty: a box is a
+   * finding only when it does not show what its `expect` asks, is inked over,
+   * or was ticked on the original and comes back empty.
+   */
+  checkboxes?:   readonly Checkbox[]
+  /** How a box is read. */
+  checkbox?:     Pick<CheckboxOptions, 'inset' | 'minTickArea' | 'struckFill'>
   /** Options for the full reading. The text layer, the recheck and the engine are `@scanmate/ocr`'s. */
   ocr?:          Omit<OcrOptions, 'onProgress'>
   /** Options for the pixel comparison. Rectangles are always in points, so the two comparisons line up. */
@@ -43,6 +52,8 @@ export interface PageAudit {
   text:           PageOcr
   /** The full pixel comparison: expected regions, unexpected and missing ink, the overlay. */
   pixels:         PageDiff
+  /** Each of the page's `checkboxes`, as the original has it and as the scan does. */
+  checkboxes:     CheckboxReading[]
   /** How each disputed difference was settled, and what each re-read said. */
   settled:        Settlement[]
   /** The original, the aligned scan and the overlay, with the findings drawn. */

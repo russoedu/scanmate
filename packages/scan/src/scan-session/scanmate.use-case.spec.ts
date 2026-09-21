@@ -89,6 +89,11 @@ vi.mock('@scanmate/diff', () => ({
 
     return pages.map(page => ({ ...page, diff: { page: page.page, expected: [], unexpected: [], missing: [], probes: [], masks: null } }))
   }),
+  readCheckboxes: vi.fn(async (_pages: unknown, boxes: readonly { id: string }[]) => {
+    calls.push('readCheckboxes')
+
+    return boxes.map(box => ({ id: box.id, scanned: { state: 'ticked' } }))
+  }),
 }))
 
 vi.mock('@scanmate/find', () => ({
@@ -303,6 +308,31 @@ describe('Scanmate, reusing an audit', () => {
     expect(joined[0].audit).toBeDefined()
     expect(joined[0].text).toBeDefined()
     expect(joined[0].diff).toBeDefined()
+  })
+
+  it('reads checkboxes from the aligned pages, once, and hands the same boxes to the audit', async () => {
+    const boxes = [{ page: 1, id: 'consent', x: 40, y: 400, width: 12, height: 12, expect: 'ticked' as const }]
+    const scan = session({ checkboxes: boxes })
+    const read = await scan.checkboxes()
+    await scan.checkboxes()
+
+    expect(read).toMatchObject([{ id: 'consent' }])
+    expect(calls.filter(c => c === 'readCheckboxes')).toHaveLength(1)
+    expect(calls).not.toContain('ocrPages')
+
+    const { auditPages } = await import('@scanmate/audit')
+    await scan.audit()
+    expect(vi.mocked(auditPages).mock.lastCall?.[1]).toMatchObject({ checkboxes: boxes })
+  })
+
+  it('keeps the pixels of an audit that read checkboxes away from a diff that did not', async () => {
+    // The audit measured the boxes as regions: their ticks were not unexpected
+    // ink to it, and would be to a diff that was never told about them.
+    const scan = session({ checkboxes: [{ page: 1, id: 'consent', x: 40, y: 400, width: 12, height: 12 }] })
+    await scan.audit()
+    await scan.diff()
+
+    expect(calls.filter(c => c === 'diffPages')).toHaveLength(1)
   })
 
   it('still runs a real diff when the caller asks for something the audit did not produce', async () => {

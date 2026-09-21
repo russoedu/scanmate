@@ -103,6 +103,7 @@ That is measured, not asserted: a test spawns a child process with a module hook
 | `enhance(options?)` | a cleaned copy alongside | `align` - and it overrides the automatic choice |
 | `ocr(options?)` | how closely the text matches | prepared pages, or `enhance` if you ran it |
 | `diff(expected?, options?)` | what changed, and whether it should have | `align` |
+| `checkboxes(boxes?, options?)` | which boxes are ticked, on both sides | `align` |
 | `find(content?, options?)` | whether required content is there | `ocr` |
 | `audit(options?)` | the verdict, with its evidence | prepared pages, or `enhance` if you ran it |
 | `report()` | everything known, joined by page | whatever has run |
@@ -229,6 +230,24 @@ On the W-9, that label is two runs on two lines, and it resolves to exactly the 
 **`from`** measures a field from any corner of its label - `'top-right'` for a field that follows its label on the line, so it stays put when the label's wording changes.
 
 Static, like the others: it reads the original's text and renders nothing, so only `@scanmate/extract` loads - about 200 ms on the W-9. [`@scanmate/extract`](https://www.npmjs.com/package/@scanmate/extract) documents how a label is matched.
+
+## Checkboxes
+
+Ticked or not is read on each side, past each box's printed frame, and an empty box is an answer rather than a field someone forgot:
+
+```ts
+const scan = new Scanmate('issued.pdf', 'returned.pdf', {
+  checkboxes: [
+    { page: 1, id: 'consent',    x: 36, y: 612, width: 13, height: 13, expect: 'ticked' },
+    { page: 1, id: 'newsletter', x: 36, y: 640, width: 13, height: 13 },
+  ],
+})
+const boxes = await scan.checkboxes()   // aligns, then reads: nothing that reads text loads
+boxes[0].scanned.state                  // 'empty' | 'ticked' | 'struck'
+const report = await scan.audit()       // the same boxes: a finding only where one is wrong
+```
+
+`audit()` reports a box that does not show what its `expect` asks, one inked over so its answer cannot be told, and one ticked on the original that comes back empty - and never calls a tick unexpected ink. The boxes' coordinates can come from `Scanmate.locate`, placed from the label printed beside each. `@scanmate/diff` documents how a box is read and what was measured.
 
 ## Measuring the thresholds on your documents
 

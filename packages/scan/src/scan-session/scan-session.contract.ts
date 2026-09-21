@@ -1,6 +1,6 @@
 import type { AuditOptions, PageAudit } from '@scanmate/audit'
 import type { AlignPagesOptions, AlignResult } from '@scanmate/align'
-import type { DiffOptions, ExpectedChange, PageDiff } from '@scanmate/diff'
+import type { Checkbox, DiffOptions, ExpectedChange, PageDiff } from '@scanmate/diff'
 import type { EnhancePagesOptions, EnhancedImage } from '@scanmate/enhance'
 import type { ExtractPairOptions } from '@scanmate/extract'
 import type { ExpectedContent, FindOptions, PageFind } from '@scanmate/find'
@@ -48,6 +48,8 @@ export type ReadableScanmatePage = AlignedScanmatePage & { enhanced?: EnhancedIm
 export interface ScanmateOptions {
   /** Regions where a change is expected. The default for `diff()` and `audit()`. */
   expected?:   readonly ExpectedChange[]
+  /** Boxes to read as ticked or not. The default for `checkboxes()` and `audit()`. */
+  checkboxes?: readonly Checkbox[]
   /** Content that must be present. The default for `find()`. */
   content?:    readonly ExpectedContent[]
   /** Every stage's events, on one callback. Never part of a stage's fingerprint. */
@@ -71,7 +73,7 @@ export interface ScanmateOptions {
   ocr?:     Omit<OcrOptions, 'onProgress' | 'engine'>
   diff?:    Omit<DiffOptions, 'onProgress'>
   find?:    FindOptions
-  audit?:   Omit<AuditOptions, 'onProgress' | 'expected' | 'ocr' | 'diff'>
+  audit?:   Omit<AuditOptions, 'onProgress' | 'expected' | 'checkboxes' | 'ocr' | 'diff'>
 }
 
 /** Everything the session knows about one page, joined by page number. */

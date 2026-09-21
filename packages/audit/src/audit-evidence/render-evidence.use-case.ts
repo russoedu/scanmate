@@ -26,7 +26,7 @@ import type { AuditFinding, FindingKind } from '../finding-correlation'
  * |---|---|---|
  * | blue | every place being asked about | required content that reads correctly |
  * | green | | a field that was filled in |
- * | red | | a field left empty or covered, content or a figure that changed |
+ * | red | | a field left empty or covered, a box ticked wrongly, content or a figure that changed |
  * | pink | | the band where ink still counts as a field's |
  * | orange | | ink added where nothing was expected |
  * | cyan | printed ink the scan lost | the same place, where it is not |
@@ -44,6 +44,9 @@ const COLOURS: Readonly<Record<FindingKind, Rgba>> = {
   'text-added':          NOT_IDENTIFIED,
   'expected-empty':      NOT_IDENTIFIED,
   'expected-overfilled': NOT_IDENTIFIED,
+  'checkbox-mismatch':   NOT_IDENTIFIED,
+  'checkbox-struck':     NOT_IDENTIFIED,
+  'checkbox-cleared':    NOT_IDENTIFIED,
 }
 
 /** The legend, in the order it reads. */

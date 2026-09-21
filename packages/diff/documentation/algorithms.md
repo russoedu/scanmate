@@ -195,6 +195,29 @@ back, not to the document that asked the question.
 `composePanels` is the same machinery with the count left open, which is how
 `@scanmate/audit` adds the overlay itself as a third panel.
 
+## Reading a checkbox
+
+```mermaid
+flowchart LR
+  A[box, frame and all] --> B[inset a fifth of its side]
+  B --> C[ink inside, per side<br/>grain under 2 px dropped]
+  C --> D{half the inside inked?}
+  D -->|yes| S[struck]
+  D -->|no| E{at least 0.6 mm2?}
+  E -->|yes| T[ticked]
+  E -->|no| M[empty]
+```
+
+A checkbox is read, not compared. The original's ink mask and the scan's are
+each measured inside the box, past its frame, and each side gets a state of its
+own. Measuring the *added* ink instead - which is what an expected region does -
+cannot tell a box ticked before issue from an untouched one, and has no answer
+for a box whose tick was erased.
+
+The scan's mask is its normal-threshold one, not the faint one. The faint mask
+sees a hairline the normal one misses, but it also turns heavy sensor noise into
+0.6-0.8 mm² of speckle inside an empty box - enough to invent a tick.
+
 ## Constants
 
 | option | default | |

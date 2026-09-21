@@ -63,6 +63,11 @@ A page **passes** only when it has no findings and its text score is high enough
 | `text-changed` / `text-missing` / `text-added` | The reading disagrees with the original where the pixels saw nothing. |
 | `expected-empty` / `expected-overfilled` | An expected region left empty, or covered rather than filled in. |
 | `text-unsettled` | The reading disagrees, the ink at that run is identical, and re-reading both sides could not settle it. |
+| `checkbox-mismatch` | A box does not show what its `expect` asks. |
+| `checkbox-struck` | A box is inked over: whether it is ticked cannot be told. |
+| `checkbox-cleared` | A box ticked on the original comes back empty. |
+
+**Checkboxes are read, not expected.** Pass them as `checkboxes`, with `expect: 'ticked' | 'empty'` where the answer is fixed. A tick in one is never unexpected ink, and an empty one is never a field left empty; only a box that is wrong is a finding. Each page's `checkboxes` carries every box's reading, on both sides.
 
 Each finding carries its position in points, a one-sentence summary, and its evidence (`text`, `pixels`).
 
@@ -152,6 +157,7 @@ report.points                     // every combination, safest first
 | Option | Default | |
 |---|---|---|
 | `expected` | none | Regions where a change is expected, in points (`locateFields` in `@scanmate/extract` builds them from the labels the original prints). |
+| `checkboxes` | none | Boxes to read as ticked or not, each with an optional `expect`. `checkbox` sets how they are read. |
 | `ocr` | `@scanmate/ocr` defaults | Engine, languages and cache, the recheck, thresholds. Pass `ocr.engine` to share one engine across audits. |
 | `diff` | `@scanmate/diff` defaults | Tolerances, minimum areas, form-line handling. Rectangles are always in points. |
 | `settle` | `quorum: 2`, three passes | How a disagreement between the reading and the pixels is settled. |
