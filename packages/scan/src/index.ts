@@ -23,6 +23,7 @@ export { Scanmate } from './scan-session'
 export type { AlignedScanmatePage, EnhancedScanmatePage, ReadableScanmatePage, ScanmateOptions, ScanmatePageReport } from './scan-session'
 export type { ScanmateDocument, ScanmatePage } from './document-input'
 export type { CalibrateOptions, CalibrationCase, CorpusCalibration } from './corpus-calibration'
+export type { BatchInfo, BatchOptions } from './batch-running'
 
 // --- Every type the stages speak ---
 //
@@ -93,5 +94,5 @@ export type {
 
 export { MissingStageError, loadedStages } from './stage-loading'
 export { fingerprint } from './stage-caching'
-export { SharedEngine } from './reading-engine'
+export { LazyEngine, SharedEngine } from './reading-engine'
 export type { EngineLease } from './reading-engine'

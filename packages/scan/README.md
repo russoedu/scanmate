@@ -110,7 +110,7 @@ That is measured, not asserted: a test spawns a child process with a module hook
 | `report()` | everything known, joined by page | whatever has run |
 | `dispose()` | — | — |
 
-And five that need no session of your own:
+And six that need no session of your own:
 
 | method | returns | loads |
 |---|---|---|
@@ -119,6 +119,7 @@ And five that need no session of your own:
 | `Scanmate.mark(pdf, marks, options?)` | `MarkResult` — `pdf`, `drawn`, `warnings` | `@scanmate/merge` only |
 | `Scanmate.locate(pdf, specs, options?)` | `LocatedFields` — `regions`, `anchors`, `problems` | `@scanmate/extract` only |
 | `Scanmate.calibrate(corpus, options?)` | `CorpusCalibration` — `samples`, `report` | everything an audit loads |
+| `Scanmate.inBatches(original, scanned, work, options?)` | what `work` returned, per batch | what `work` uses |
 
 Results are also readable **synchronously**, as `undefined` until the stage has settled. They never start work:
 
@@ -323,29 +324,25 @@ Remembering every stage is the point of the class and also its largest risk. A t
 
 So: **`Scanmate` is a short-lived per-document object, not a service singleton.** One per document, `dispose()` when done. A long-lived instance in a request handler is a leak.
 
-For a document longer than a handful of pages, take it a few pages at a time. `extract.pages` selects the range, and disposing between batches bounds the peak to one batch rather than the whole document:
+For a document longer than a handful of pages, take it a few pages at a time. `Scanmate.inBatches` runs your work on one session per range of pages, disposing each before opening the next, so the peak is one batch however long the document is:
 
 ```ts
-import { inspectDocument } from '@scanmate/extract'
-
-// Reads the page dictionaries and renders nothing, so it costs almost nothing.
-const { pageCount } = await inspectDocument('issued.pdf')
-
-for (let first = 1; first <= pageCount; first += 4) {
-  const range = `${first}-${Math.min(first + 3, pageCount)}`
-  const scan = new Scanmate('issued.pdf', 'returned.pdf', { extract: { pages: range } })
-  try {
-    const report = await scan.audit()
-    await file(report)          // keep the verdicts, let the pixels go
-  } finally {
-    await scan.dispose()
-  }
-}
+const verdicts = await Scanmate.inBatches('issued.pdf', 'returned.pdf', async (scan, batch) => {
+  const report = await scan.audit()
+  await file(`evidence-${batch.index}.pdf`, await scan.evidence())
+  // Keep the verdicts; let the pixels go.
+  return report.pages.map(({ audit }) => ({ page: audit.page, verdict: audit.verdict, reasons: audit.reasons }))
+}, { batch: 4, expected })
 ```
 
-The count matters: a range running past the last page is a `RangeError`, not a quietly empty batch - asking for page 9 of an 8-page document is exactly the mistake this pipeline exists to catch.
+- **Keep what you return small.** A report carries its pages, and its pages carry their pixels: return the reports and nothing was saved. Verdicts, reasons, an evidence PDF's bytes are all fine.
+- **Done once, not per batch:** a side given as an array is merged once, and one OCR engine serves every batch - started only if a batch reads, so a run that only compares pixels starts none.
+- **`extract.pages` still selects**, and the selection is what gets batched. Page numbers stay the original's throughout, so the batches join back up by `page`. `onBatch` hears about each batch as it finishes.
+- **A pair of images is one page**, so it is one batch.
 
-The cost is re-opening the PDF per batch, which is small next to the rasters. Page numbers stay the original's throughout, so the batches join back up by `page`.
+The cost is re-opening the PDF per batch, which is small next to the rasters.
+
+Why not a `batch` option on the constructor? Because a session that returned the whole document's reports would be holding the whole document's pixels - which is the thing batching exists to avoid. The batch has to end, and be disposed, before its memory is free; a callback per batch is the shape that lets it.
 
 There is deliberately **no `keep` option**. One was typed, exported and documented in 0.2.0 and 0.2.1, and read by nothing - so a caller who set it believed they had bounded their memory and had not. It was removed in 0.4.0 rather than left standing as a promise. Dropping consumed rasters is not a small change either: every stage hands pages back, so each report *carries* the page objects and through them their pixels, and separating the two means `PageImage.raster` becoming nullable for every package and every consumer. Batching works today and costs nobody a null check.
 
