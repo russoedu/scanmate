@@ -3,8 +3,7 @@ import { createRaster, encodeImage } from '@scanmate/ink'
 import type { OcrEngine } from '@scanmate/ocr'
 
 import { LazyEngine } from '../reading-engine'
-import type { ScanmateOptions } from '../scan-session/scan-session.contract'
-import { Scanmate } from '../scan-session'
+import type { ScanmateOptions } from '../session-contract'
 import { runInBatches } from './run-in-batches.use-case'
 
 /** A document of `count` pages, each saying which it is. */
@@ -111,17 +110,4 @@ describe('runInBatches', () => {
 
     await expect(runInBatches(pdf, pdf, async () => null, { batch: 0 }, factory)).rejects.toThrow(RangeError)
   })
-})
-
-describe('Scanmate.inBatches', () => {
-  it('hands each batch a real session over just its pages', async () => {
-    const pdf = await document(5)
-    const pages = await Scanmate.inBatches(pdf, pdf, async (scan) => {
-      const extracted = await scan.pages()
-
-      return extracted.map(page => page.page)
-    }, { batch: 2, extract: { dpi: 36 } })
-
-    expect(pages).toStrictEqual([[1, 2], [3, 4], [5]])
-  }, 120_000)
 })

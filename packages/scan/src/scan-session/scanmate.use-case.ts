@@ -22,7 +22,7 @@ import { SharedEngine } from '../reading-engine'
 import { fingerprint, StageCache } from '../stage-caching'
 import { loadAlign, loadAudit, loadDiff, loadEnhance, loadExtract, loadFind, loadMerge, loadOcr, loadedStages } from '../stage-loading'
 import { relayAuditProgress } from './progress-relay.mapper'
-import type { AlignedScanmatePage, EnhancedScanmatePage, ReadableScanmatePage, ScanmateOptions, ScanmatePageReport } from './scan-session.contract'
+import type { AlignedScanmatePage, EnhancedScanmatePage, ReadableScanmatePage, ScanmateOptions, ScanmatePageReport } from '../session-contract'
 
 /**
  * One returned document, compared with the one that was issued.

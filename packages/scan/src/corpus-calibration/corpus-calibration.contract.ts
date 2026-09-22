@@ -3,7 +3,7 @@ import type { ExpectedChange } from '@scanmate/diff'
 import type { ReadablePage } from '@scanmate/ink'
 
 import type { ScanmateDocument } from '../document-input'
-import type { ScanmateOptions } from '../scan-session/scan-session.contract'
+import type { ScanmateOptions } from '../session-contract'
 
 /** One document in a labelled corpus: what was issued, what came back, and what it is known to be. */
 export interface CalibrationCase extends CalibrationLabel {

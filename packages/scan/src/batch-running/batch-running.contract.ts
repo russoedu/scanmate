@@ -1,4 +1,4 @@
-import type { ScanmateOptions } from '../scan-session/scan-session.contract'
+import type { ScanmateOptions } from '../session-contract'
 
 export interface BatchOptions extends ScanmateOptions {
   /**
