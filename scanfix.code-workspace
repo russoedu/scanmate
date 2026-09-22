@@ -256,6 +256,20 @@
         "script": "scan:build",
         "problemMatcher": [],
         "group": "build"
+      },
+      {
+        "label": "seal: qa",
+        "type": "npm",
+        "script": "seal:qa",
+        "problemMatcher": [],
+        "group": "qa"
+      },
+      {
+        "label": "seal: build",
+        "type": "npm",
+        "script": "seal:build",
+        "problemMatcher": [],
+        "group": "build"
       }
     ]
   },

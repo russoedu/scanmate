@@ -305,6 +305,17 @@ A first run on twelve real documents - three scans of one order form at 93, 120 
 
 **Each case may carry `options` of its own** - which pages to take, a resolution, a tolerance - merged over the run's, since a corpus is rarely uniform.
 
+**Measured, on 75 documents.** Three real scans of one seven-page form at 93,
+120 and 144 dpi, each page kept as it came and altered three ways - a digit
+replaced by another cut from the same number, a word painted out, a stroke added
+in the margin. No threshold anywhere on the grid let an altered document pass.
+What the thresholds could not fix was the scan: at 144 dpi every genuine page
+passed with no findings and every altered one was caught by the finding that
+names what was done, while at 93 dpi genuine and altered were indistinguishable,
+both buried under readings that could not be settled. **Scan quality decides
+this, not tuning.** The [audit's own documentation](./documentation/audit.md#what-calibration-showed)
+has the table, the bounds, and what a corpus of one form does not prove.
+
 **Save the samples.** Each is a few numbers per page. `onCase` hands them over as they are done, so a run that stops at document 40 is not lost, and `calibrateAudit` from the audit sweeps them again with other thresholds without reading a page. The audit documents what is swept, how, and why `best` has to be confirmed on documents it was not chosen on.
 
 ## Every type, from one package
@@ -392,6 +403,10 @@ On a real seven-page order form and its 144-dpi scan, in batches of three, it ca
 Why not a `batch` option on the constructor? Because a session that returned the whole document's reports would be holding the whole document's pixels - which is the thing batching exists to avoid. The batch has to end, and be disposed, before its memory is free; a callback per batch is the shape that lets it.
 
 There is deliberately **no `keep` option**. One was typed, exported and documented in 0.2.0 and 0.2.1, and read by nothing - so a caller who set it believed they had bounded their memory and had not. It was removed in 0.4.0 rather than left standing as a promise. Dropping consumed rasters is not a small change either: every stage hands pages back, so each report *carries* the page objects and through them their pixels, and separating the two means `PageImage.raster` becoming nullable for every package and every consumer. Batching works today and costs nobody a null check.
+
+## A signed return asks a different question
+
+A document that comes back **born-digital and signed** carries its own evidence: [`@scanmate/seal`](../seal) checks each signature against the bytes it covers, which says whether the file changed after it was signed. Nothing in this package can answer that, and a signature cannot answer what this package does - whether the document says what was agreed. A signed return deserves both.
 
 ## The stages inside this package
 

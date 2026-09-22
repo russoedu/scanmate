@@ -23,6 +23,9 @@
     },
     {
       "path": "./packages/scan"
+    },
+    {
+      "path": "./packages/seal"
     }
   ],
   "compilerOptions": {}
