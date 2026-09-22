@@ -2,7 +2,7 @@ import { checkGroups } from './checkbox-group.policy'
 import type { CheckboxReading, CheckboxState } from './checkbox.contract'
 
 function box (id: string, state: CheckboxState): CheckboxReading {
-  const side = { state, ink: 0, fill: 0 }
+  const side = { state, ink: 0, fill: 0, solid: 0 }
 
   return { id, page: 1, box: { x: 0, y: 0, width: 8, height: 8 }, original: { ...side, state: 'empty' }, scanned: side, changed: state !== 'empty', expect: null, satisfied: null }
 }

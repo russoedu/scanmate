@@ -265,6 +265,8 @@ const { regions, problems } = await Scanmate.locate('fw9.pdf',
 
 Those five resolve to exactly the boxes measured off the rendered form. With a pen tick drawn in the first and the page compared as an image, `scan.checkboxes()` read it as ticked (1.15 mm²) and the other four as empty.
 
+Box states are `empty`, `ticked` and `struck`. `struck` means solid ink - blacked out or scribbled over - not merely a high coverage: two 0.5 mm strokes fill half of the W-9's 3 mm box, and that is an ordinary tick. A light pencil tick may read as empty; `@scanmate/scan`'s pixel comparison documents what was measured.
+
 **Boxes answered together.** "Check only one of the following seven boxes" is a rule over several boxes, not one. Give it as a group, and the audit judges it once every page is read:
 
 ```ts
