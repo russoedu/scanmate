@@ -185,10 +185,11 @@ for d in <src>/*/; do echo "$(find "$d" -maxdepth 1 -name '*.ts' ! -name 'index.
 # (type imports included) and report any cycle; use madge or dpdm if installed.
 ```
 
-If the repository already enforces these - in scanmate, `tools/eslint/slice-boundaries.mjs`
-(rules `slices/file-role`, `slices/no-deep-import`, `slices/no-slice-cycle`) - run its
-lint first and start from what it reports; keep the plugin's role list in step with
-the table above when either changes.
+If the repository already enforces these - `@mnci/eslint-config` ships them as an
+opt-in block, `mnci({ verticalSlices: true })`, with rules `vertical-slices/file-role`,
+`vertical-slices/no-deep-import` and `vertical-slices/no-slice-cycle` - run its lint
+first and start from what it reports. The role list there is the table above; keep
+the two in step when either changes.
 
 Where the repository has lint but not these rules, prefer to enforce rather than audit: an
 `import/no-restricted-paths` or `eslint-plugin-boundaries` zone per subfeature that

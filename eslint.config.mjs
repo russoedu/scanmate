@@ -1,7 +1,5 @@
 import mnci from '@mnci/eslint-config'
 
-import slices from './tools/eslint/slice-boundaries.mjs'
-
 export default [
   {
     name:    'local/ignored-docs-and-generated-files',
@@ -14,20 +12,11 @@ export default [
       'playground-output/**',
     ],
   },
-  ...mnci({ workspaceRoot: import.meta.dirname }),
-  {
-    // Vertical feature slices, enforced: role-suffixed kebab-case files, a
-    // subfeature reached only through its index.ts, and no two subfeatures
-    // importing each other. See .claude/agents/vertical-slice-architect.md.
-    name:    'local/vertical-slices',
-    files:   ['packages/*/src/**/*.ts'],
-    plugins: { slices },
-    rules:   {
-      'slices/file-role':      'error',
-      'slices/no-deep-import': 'error',
-      'slices/no-slice-cycle': 'error',
-    },
-  },
+  // Vertical feature slices, enforced by @mnci/eslint-config's opt-in block:
+  // role-suffixed kebab-case files, a subfeature reached only through its
+  // index, and no two subfeatures importing each other. See
+  // .claude/agents/vertical-slice-architect.md for the rules behind it.
+  ...mnci({ workspaceRoot: import.meta.dirname, verticalSlices: ['packages/*/src/**/*.ts'] }),
   {
     name:  'local/image-kernels',
     files: ['packages/{ink,align,extract,merge,scan}/src/**/*.ts'],
