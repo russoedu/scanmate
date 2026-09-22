@@ -1,7 +1,8 @@
 import type { ScanmateDocument } from '../document-input'
 import { runInBatches } from '../batch-running'
 import type { ScanmateOptions } from '../session-contract'
-import { loadAudit, loadMerge } from '../stage-loading'
+import { combineSummaries, summariseAudit, writeEvidenceCover, writeEvidencePdf } from '../evidence-document'
+import { loadMerge } from '../stage-loading'
 import type { AuditingBatchSession, BatchEvidence, BatchEvidenceOptions } from './batch-evidence.contract'
 
 type OpenSession = (original: ScanmateDocument, scanned: ScanmateDocument, options: ScanmateOptions) => AuditingBatchSession
@@ -21,7 +22,6 @@ export async function writeBatchEvidence (
   open: OpenSession,
 ): Promise<BatchEvidence> {
   const { evidence = {}, ...batch } = options
-  const { combineSummaries, summariseAudit, writeEvidenceCover, writeEvidencePdf } = await loadAudit()
 
   const parts = await runInBatches(original, scanned, async (scan) => {
     const report = await scan.audit()

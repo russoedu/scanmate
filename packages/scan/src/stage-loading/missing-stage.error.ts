@@ -1,15 +1,12 @@
-import type { PipelineStage } from '@scanmate/ink'
+/** The stages that live in packages of their own, loaded the first time they are used. */
+export type LoadedStage = 'merge' | 'extract' | 'align' | 'ocr'
 
-/** The package each stage lives in. */
-export const STAGE_PACKAGES: Readonly<Record<PipelineStage, string>> = {
+/** The package each of those stages lives in. */
+export const STAGE_PACKAGES: Readonly<Record<LoadedStage, string>> = {
   merge:   '@scanmate/merge',
   extract: '@scanmate/extract',
   align:   '@scanmate/align',
-  enhance: '@scanmate/enhance',
   ocr:     '@scanmate/ocr',
-  diff:    '@scanmate/diff',
-  find:    '@scanmate/find',
-  audit:   '@scanmate/audit',
 }
 
 /**
@@ -21,10 +18,10 @@ export const STAGE_PACKAGES: Readonly<Record<PipelineStage, string>> = {
  * caller asked for or what to install.
  */
 export class MissingStageError extends Error {
-  readonly stage:       PipelineStage
+  readonly stage:       LoadedStage
   readonly packageName: string
 
-  constructor (stage: PipelineStage, cause: unknown) {
+  constructor (stage: LoadedStage, cause: unknown) {
     const packageName = STAGE_PACKAGES[stage]
     super(`the ${stage} stage needs ${packageName}, which could not be loaded - install it with "npm install ${packageName}"`, { cause })
     this.name = 'MissingStageError'

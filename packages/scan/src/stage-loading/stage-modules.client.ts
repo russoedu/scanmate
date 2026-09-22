@@ -1,24 +1,23 @@
 import type * as AlignModule from '@scanmate/align'
-import type * as AuditModule from '@scanmate/audit'
-import type * as DiffModule from '@scanmate/diff'
-import type * as EnhanceModule from '@scanmate/enhance'
 import type * as ExtractModule from '@scanmate/extract'
-import type * as FindModule from '@scanmate/find'
-import type { PipelineStage } from '@scanmate/ink'
 import type * as InkModule from '@scanmate/ink'
 import type * as MergeModule from '@scanmate/merge'
 import type * as OcrModule from '@scanmate/ocr'
 
 import { MissingStageError } from './missing-stage.error'
+import type { LoadedStage } from './missing-stage.error'
 
 /**
  * A stage package is loaded the first time its stage is used, and not before.
  *
- * Every `@scanmate/*` import in this package is either an `import type`, which
- * TypeScript erases before anything runs, or an `await import()` here. There is
- * not one static value import, and that is the whole feature: a session that
- * only aligns never evaluates `tesseract.js`, never reads a language model,
- * never loads `pdfjs-dist` or `@cantoo/pdf-lib`.
+ * Every import of a stage package - `@scanmate/ocr`, `align`, `extract`,
+ * `merge` - is either an `import type`, which TypeScript erases before anything
+ * runs, or an `await import()` here. There is not one static value import of
+ * them, and that is the whole feature: a session that only aligns never
+ * evaluates `tesseract.js`, never reads a language model, never loads
+ * `pdfjs-dist` or `@cantoo/pdf-lib`. `@scanmate/ink` is the exception, imported
+ * as a value by this package's own stages: it is the floor every stage stands
+ * on, and loading it costs `sharp` and nothing more.
  *
  * What it cannot avoid is `sharp`. Every stage depends on `@scanmate/ink`, which
  * loads libvips at module top level, so the floor for any method at all is ink
@@ -39,14 +38,14 @@ import { MissingStageError } from './missing-stage.error'
  * that proves anything spawns a child process and watches what it resolves.
  */
 
-const loaded = new Set<PipelineStage>()
+const loaded = new Set<LoadedStage>()
 
-/** Which stage packages this process has loaded so far. */
-export function loadedStages (): ReadonlySet<PipelineStage> {
+/** Which stage packages this process has loaded so far. The pixel comparison, enhancement, content search and audit are this package's own code, and always here. */
+export function loadedStages (): ReadonlySet<LoadedStage> {
   return new Set(loaded)
 }
 
-async function stage<Module> (name: PipelineStage, loading: Promise<Module>): Promise<Module> {
+async function stage<Module> (name: LoadedStage, loading: Promise<Module>): Promise<Module> {
   try {
     const module = await loading
     loaded.add(name)
@@ -86,37 +85,9 @@ export function loadAlign (): Promise<typeof AlignModule> {
   return align
 }
 
-let enhance: Promise<typeof EnhanceModule> | undefined
-export function loadEnhance (): Promise<typeof EnhanceModule> {
-  enhance ??= stage('enhance', import('@scanmate/enhance'))
-
-  return enhance
-}
-
 let ocr: Promise<typeof OcrModule> | undefined
 export function loadOcr (): Promise<typeof OcrModule> {
   ocr ??= stage('ocr', import('@scanmate/ocr'))
 
   return ocr
-}
-
-let diff: Promise<typeof DiffModule> | undefined
-export function loadDiff (): Promise<typeof DiffModule> {
-  diff ??= stage('diff', import('@scanmate/diff'))
-
-  return diff
-}
-
-let find: Promise<typeof FindModule> | undefined
-export function loadFind (): Promise<typeof FindModule> {
-  find ??= stage('find', import('@scanmate/find'))
-
-  return find
-}
-
-let audit: Promise<typeof AuditModule> | undefined
-export function loadAudit (): Promise<typeof AuditModule> {
-  audit ??= stage('audit', import('@scanmate/audit'))
-
-  return audit
 }

@@ -1,5 +1,6 @@
-import type { AuditReport, CalibrationGrid, CalibrationLabel, CalibrationReport, CalibrationSample } from '@scanmate/audit'
-import type { ExpectedChange } from '@scanmate/diff'
+import type { AuditReport } from '../page-audit'
+import type { CalibrationGrid, CalibrationLabel, CalibrationReport, CalibrationSample } from '../audit-calibration'
+import type { ExpectedChange } from '../change-detection'
 import type { ReadablePage } from '@scanmate/ink'
 
 import type { ScanmateDocument } from '../document-input'

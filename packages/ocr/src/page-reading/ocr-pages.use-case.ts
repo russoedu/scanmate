@@ -126,7 +126,7 @@ async function readPage (page: ReadablePage, engine: OcrEngine, options: OcrOpti
   const claims = claimWords(references, scanned.side.words, scanned.lineOf, rules)
   // Words over ink the original itself printed - a logo, a heading set as an
   // image - belong to the original even though its text layer lacks them.
-  // Writing over printed matter is for @scanmate/diff to see, not this.
+  // Writing over printed matter is for the pixel comparison to see, not this.
   const originalDpi = page.original.dpi ?? assumeDpi
   const originalGray = toGrayscale(page.original.raster)
   claims.added = claims.added

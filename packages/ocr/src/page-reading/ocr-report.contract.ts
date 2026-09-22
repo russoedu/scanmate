@@ -10,7 +10,7 @@ import type { ScoreMetric, TextMetrics } from '../text-similarity'
 
 /**
  * What `ocrPages` reads: an aligned page, and optionally its enhanced image
- * (`@scanmate/enhance`) and the original's text layer (`@scanmate/extract`).
+ * (enhancement) and the original's text layer (`@scanmate/extract`).
  * Only the original's text layer is ever used. A scan's own text layer is
  * ignored, deliberately - hidden or stale text must not vouch for what the
  * paper shows.

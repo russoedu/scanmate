@@ -9,8 +9,8 @@ import type { ScanmateRect } from '../plane-geometry'
  *
  * One shape for the whole journey a field makes: located from its label by
  * `@scanmate/extract`, drawn on the original by `@scanmate/merge` to be checked
- * by eye, and measured as an expected change by `@scanmate/diff` and
- * `@scanmate/audit`. Each hands it to the next as it is, so there is nothing to
+ * by eye, and measured as an expected change by the pixel comparison and
+ * The audit. Each hands it to the next as it is, so there is nothing to
  * convert between them and no place for a field to move on the way.
  */
 export interface PageRegion extends ScanmateRect {

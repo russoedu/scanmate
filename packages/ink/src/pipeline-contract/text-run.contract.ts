@@ -34,7 +34,7 @@ export interface TextRun extends ScanmateOrientedRect {
  *
  * Positions are PDF points (1/72 inch) from the top-left corner of the page as
  * displayed - after its `/Rotate` - which is the frame a rendered page is in,
- * and the one `@scanmate/diff` takes regions in. Multiply by `dpi / 72` for
+ * and the one the pixel comparison takes regions in. Multiply by `dpi / 72` for
  * pixels of a page rendered at `dpi`.
  */
 export type PdfTextRun = Required<TextRun>

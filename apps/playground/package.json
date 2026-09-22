@@ -114,8 +114,8 @@
   },
   "dependencies": {
     "@scanmate/align": "*",
-    "@scanmate/diff": "*",
     "@scanmate/extract": "*",
+    "@scanmate/scan": "*",
     "@scanmate/ink": "*"
   }
 }

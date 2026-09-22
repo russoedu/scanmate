@@ -2,6 +2,12 @@ import { createRaster } from '@scanmate/ink'
 import type { StageEvent } from '@scanmate/ink'
 
 import { Scanmate } from './scanmate.use-case'
+import type * as EnhancementModule from '../scan-enhancement'
+import type * as ChangeDetectionModule from '../change-detection'
+import type * as CheckboxModule from '../checkbox-reading'
+import type * as ContentSearchModule from '../content-search'
+import type * as EvidenceModule from '../evidence-document'
+import type * as PageAuditModule from '../page-audit'
 
 /**
  * The stages are mocked, so these tests are about the session's own behaviour:
@@ -56,7 +62,8 @@ vi.mock('@scanmate/align', () => ({
   }),
 }))
 
-vi.mock('@scanmate/enhance', () => ({
+vi.mock('../scan-enhancement', async importOriginal => ({
+  ...await importOriginal<typeof EnhancementModule>(),
   enhancePages: vi.fn(async (pages: readonly object[]) => {
     calls.push('enhancePages')
 
@@ -83,12 +90,17 @@ vi.mock('@scanmate/ocr', () => ({
   }),
 }))
 
-vi.mock('@scanmate/diff', () => ({
+vi.mock('../change-detection', async importOriginal => ({
+  ...await importOriginal<typeof ChangeDetectionModule>(),
   diffPages: vi.fn(async (pages: readonly { page: number }[]) => {
     calls.push('diffPages')
 
     return pages.map(page => ({ ...page, diff: { page: page.page, expected: [], unexpected: [], missing: [], probes: [], masks: null } }))
   }),
+}))
+
+vi.mock('../checkbox-reading', async importOriginal => ({
+  ...await importOriginal<typeof CheckboxModule>(),
   readCheckboxes: vi.fn(async (_pages: unknown, boxes: readonly { id: string }[]) => {
     calls.push('readCheckboxes')
 
@@ -96,7 +108,8 @@ vi.mock('@scanmate/diff', () => ({
   }),
 }))
 
-vi.mock('@scanmate/find', () => ({
+vi.mock('../content-search', async importOriginal => ({
+  ...await importOriginal<typeof ContentSearchModule>(),
   findContent: vi.fn((pages: readonly { page: number }[]) => {
     calls.push('findContent')
 
@@ -109,12 +122,17 @@ vi.mock('@scanmate/find', () => ({
   }),
 }))
 
-vi.mock('@scanmate/audit', () => ({
+vi.mock('../evidence-document', async importOriginal => ({
+  ...await importOriginal<typeof EvidenceModule>(),
   writeEvidencePdf: vi.fn(async () => {
     calls.push('writeEvidencePdf')
 
     return new Uint8Array([0x25, 0x50, 0x44, 0x46])
   }),
+}))
+
+vi.mock('../page-audit', async importOriginal => ({
+  ...await importOriginal<typeof PageAuditModule>(),
   auditPages: vi.fn(async (pages: readonly { page: number }[]) => {
     calls.push('auditPages')
 
@@ -325,7 +343,7 @@ describe('Scanmate, reusing an audit', () => {
     expect(calls.filter(c => c === 'readCheckboxes')).toHaveLength(1)
     expect(calls).not.toContain('ocrPages')
 
-    const { auditPages } = await import('@scanmate/audit')
+    const { auditPages } = await import('../page-audit')
     await scan.audit()
     expect(vi.mocked(auditPages).mock.lastCall?.[1]).toMatchObject({ checkboxes: boxes })
   })

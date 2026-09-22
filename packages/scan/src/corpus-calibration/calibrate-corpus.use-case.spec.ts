@@ -1,4 +1,4 @@
-import type { AuditReport } from '@scanmate/audit'
+import type { AuditReport } from '../page-audit'
 import type { ReadablePage } from '@scanmate/ink'
 import type { OcrEngine } from '@scanmate/ocr'
 

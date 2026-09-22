@@ -97,6 +97,6 @@ export type { Bleed, ResolvedBleed } from './region-bleed'
 export { createSyntheticDocument, drawSignature, drawTick, simulateScan } from './synthetic-document'
 export type { DocumentOptions, ScanOptions, SimulatedScan, SyntheticDocument } from './synthetic-document'
 
-/** Drawing primitives for building fixtures. Consumed by sibling specs and `@scanmate/diff`. */
+/** Drawing primitives for building fixtures. Consumed by sibling specs and the pixel comparison. */
 export { drawLabel, drawLine, fillRect, labelSize, strokeRect } from './synthetic-document'
 export type { LabelOptions } from './synthetic-document'
