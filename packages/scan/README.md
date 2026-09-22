@@ -110,7 +110,7 @@ That is measured, not asserted: a test spawns a child process with a module hook
 | `report()` | everything known, joined by page | whatever has run |
 | `dispose()` | — | — |
 
-And six that need no session of your own:
+And seven that need no session of your own:
 
 | method | returns | loads |
 |---|---|---|
@@ -120,6 +120,7 @@ And six that need no session of your own:
 | `Scanmate.locate(pdf, specs, options?)` | `LocatedFields` — `regions`, `anchors`, `problems` | `@scanmate/extract` only |
 | `Scanmate.calibrate(corpus, options?)` | `CorpusCalibration` — `samples`, `report` | everything an audit loads |
 | `Scanmate.inBatches(original, scanned, work, options?)` | what `work` returned, per batch | what `work` uses |
+| `Scanmate.evidenceInBatches(original, scanned, options?)` | one evidence PDF for the whole document, and its summary | everything an audit loads, and merge |
 
 Results are also readable **synchronously**, as `undefined` until the stage has settled. They never start work:
 
@@ -341,6 +342,20 @@ const verdicts = await Scanmate.inBatches('issued.pdf', 'returned.pdf', async (s
 - **A pair of images is one page**, so it is one batch.
 
 The cost is re-opening the PDF per batch, which is small next to the rasters.
+
+**One evidence PDF for a long document.** Evidence written per batch is one PDF per batch, each with its own cover. `Scanmate.evidenceInBatches` writes one for the whole document instead: each batch is audited and kept only as its summary and its evidence sheets, then one cover is written from all the batches' summaries and put in front of every sheet, in page order:
+
+```ts
+const { pdf, summary } = await Scanmate.evidenceInBatches('agreement.pdf', 'returned.pdf', {
+  batch:    4,
+  expected,
+  evidence: { title: 'Agreement 2291, returned', pages: 'review' },
+})
+summary.verdict            // 'pass' | 'review', for the whole document
+summary.pages              // each page's verdict and reasons, as data
+```
+
+On a real seven-page order form and its 144-dpi scan, in batches of three, it came to one 8-page PDF of 1.7 MB - a cover and seven sheets - in 101 seconds. `evidence.pages: 'review'` gives a sheet only to the pages that need one; the cover still lists every page.
 
 Why not a `batch` option on the constructor? Because a session that returned the whole document's reports would be holding the whole document's pixels - which is the thing batching exists to avoid. The batch has to end, and be disposed, before its memory is free; a callback per batch is the shape that lets it.
 

@@ -107,11 +107,14 @@ await writeFile('order-118-evidence.pdf', pdf)
 | Option | Default | |
 |---|---|---|
 | `title` | `'Audit evidence'` | On the cover and in the PDF's metadata. |
+| `cover` | `true` | `false` writes the sheets alone, to follow a cover written with `writeEvidenceCover`. |
 | `pages` | `'all'` | `'review'` gives a sheet only to the pages that need one; the cover still lists every page. |
 | `format` | `'jpeg'` | How each evidence image is embedded; `'png'` was twice the size on the W-9. |
 | `dpi` | `200` | Of each image at the size it is shown: the one-page W-9 came to 570 KB, against 2.3 MB at the audit's own resolution. Never enlarged. |
 | `quality` | `85` | JPEG quality. |
 | `createdAt` | now | Printed on the cover and set as the PDF's creation date. |
+
+**A long document audited in batches** still gets one cover. `summariseAudit` reduces each batch's report to what the cover says, `combineSummaries` joins them, `writeEvidenceCover` writes the cover alone, and `writeEvidencePdf(report, { cover: false })` writes each batch's sheets alone, to follow it. `Scanmate.evidenceInBatches` in `@scanmate/scan` does all of that in one call.
 
 Findings quote what was read, and OCR reads what it likes; a character the PDF's standard font cannot draw is printed as `?`, visibly, rather than losing the file. The PDF library loads only when this is called - an audit on its own never loads it.
 
