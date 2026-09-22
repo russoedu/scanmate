@@ -21,8 +21,8 @@
 export { DEFAULT_MIN_CHANGE_AREA, DEFAULT_MIN_MISSING_AREA, diffPage, diffPages } from './change-detection'
 export type { Change, ComparedPage, CoordinateUnits, DiffOptions, ExpectedChange, ExpectedResult, InkProbe, PageDiff, ProbeRect, RegionInkMetrics } from './change-detection'
 
-export { readCheckboxes } from './checkbox-reading'
-export type { Checkbox, CheckboxOptions, CheckboxReading, CheckboxSide, CheckboxState } from './checkbox-reading'
+export { checkGroups, readCheckboxes } from './checkbox-reading'
+export type { Checkbox, CheckboxGroup, CheckboxOptions, CheckboxReading, CheckboxSide, CheckboxState, GroupReading } from './checkbox-reading'
 
 export { compareRegions, diffDocument, renderDiff } from './region-comparison'
 export type { DocumentDiff, Region, RegionOptions, RegionReport } from './region-comparison'
