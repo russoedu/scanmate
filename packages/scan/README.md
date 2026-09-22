@@ -393,6 +393,10 @@ Why not a `batch` option on the constructor? Because a session that returned the
 
 There is deliberately **no `keep` option**. One was typed, exported and documented in 0.2.0 and 0.2.1, and read by nothing - so a caller who set it believed they had bounded their memory and had not. It was removed in 0.4.0 rather than left standing as a promise. Dropping consumed rasters is not a small change either: every stage hands pages back, so each report *carries* the page objects and through them their pixels, and separating the two means `PageImage.raster` becoming nullable for every package and every consumer. Batching works today and costs nobody a null check.
 
+## A signed return asks a different question
+
+A document that comes back **born-digital and signed** carries its own evidence: [`@scanmate/seal`](../seal) checks each signature against the bytes it covers, which says whether the file changed after it was signed. Nothing in this package can answer that, and a signature cannot answer what this package does - whether the document says what was agreed. A signed return deserves both.
+
 ## The stages inside this package
 
 Four stages only make sense inside the pipeline, and since 0.18.0 they are this package's own code rather than packages of their own. Everything they exported is exported from here, under the same names:

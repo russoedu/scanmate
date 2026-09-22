@@ -34,7 +34,7 @@ flowchart LR
   I --> J[verdict + evidence]
 ```
 
-Six packages. `@scanmate/scan` holds the whole pipeline; the other five stand on their own for anyone who needs one of them without the rest - and without the rest's dependencies on disk.
+Seven packages. `@scanmate/scan` holds the whole pipeline; the other six stand on their own for anyone who needs one of them without the rest - and without the rest's dependencies on disk.
 
 ## Packages
 
@@ -44,6 +44,7 @@ Six packages. `@scanmate/scan` holds the whole pipeline; the other five stand on
 | [`@scanmate/ocr`](packages/ocr) | **Does the scan still say what the original said?** Read run by run against the original's text layer, with printed figures matched glyph by glyph against the original's own ink. |
 | [`@scanmate/align`](packages/align) | **Where does this scan sit on the original?** Deskewed, rescaled and registered, with a confidence you can act on. |
 | [`@scanmate/extract`](packages/extract) | **What is in this PDF, and where are its fields?** Pages as rasters at the scan's own resolution, page kind, real resolution, the text layer with its geometry - and fields placed from the labels it prints. |
+| [`@scanmate/seal`](packages/seal) | **Is a signed PDF still the document that was signed?** Each signature checked against the bytes it covers: the digest, the signature, what it leaves uncovered, and who the certificate says signed. Not whether that signer is *trusted* - that is a trust list, not a file. |
 | [`@scanmate/merge`](packages/merge) | **How do these photos become one document?** Without re-encoding what is already good, keeping each page's real resolution - and regions drawn onto a PDF to check them. |
 | [`@scanmate/ink`](packages/ink) | The kernel: ink separation, warps, matrices, correlation, text normalisation, and the contracts the stages pass along. |
 

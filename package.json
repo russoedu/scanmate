@@ -37,7 +37,9 @@
     "audit:qa": "nx run audit:lint && nx run audit:test",
     "audit:build": "nx run audit:build",
     "scan:qa": "nx run scan:lint && nx run scan:test",
-    "scan:build": "nx run scan:build"
+    "scan:build": "nx run scan:build",
+    "seal:qa": "nx run seal:lint && nx run seal:test",
+    "seal:build": "nx run seal:build"
   },
   "private": true,
   "devDependencies": {
