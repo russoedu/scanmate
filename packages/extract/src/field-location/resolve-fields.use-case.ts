@@ -1,7 +1,7 @@
 import type { PageRegion, ScanmateRect } from '@scanmate/ink'
 
 import type { AnchorCorner, FieldOffset, FieldSpec, LocatablePage, LocatedAnchor, LocatedFields, LocateOptions, LocationProblem } from './field-location.contract'
-import { locateAnchor } from './locate-anchor.use-case'
+import { locateAnchor } from './locate-anchor.algorithm'
 
 /**
  * Field regions placed from the labels a document prints, instead of at fixed

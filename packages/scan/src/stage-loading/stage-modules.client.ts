@@ -9,7 +9,7 @@ import type * as InkModule from '@scanmate/ink'
 import type * as MergeModule from '@scanmate/merge'
 import type * as OcrModule from '@scanmate/ocr'
 
-import { MissingStageError } from './missing-stage.model'
+import { MissingStageError } from './missing-stage.error'
 
 /**
  * A stage package is loaded the first time its stage is used, and not before.

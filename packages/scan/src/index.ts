@@ -20,7 +20,7 @@
  */
 
 export { Scanmate } from './scan-session'
-export type { AlignedScanmatePage, EnhancedScanmatePage, ReadableScanmatePage, ScanmateOptions, ScanmatePageReport } from './scan-session'
+export type { AlignedScanmatePage, EnhancedScanmatePage, ReadableScanmatePage, ScanmateOptions, ScanmatePageReport } from './session-contract'
 export type { ScanmateDocument, ScanmatePage } from './document-input'
 export type { CalibrateOptions, CalibrationCase, CorpusCalibration } from './corpus-calibration'
 export type { BatchInfo, BatchOptions } from './batch-running'

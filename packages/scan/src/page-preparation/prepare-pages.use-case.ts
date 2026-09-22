@@ -4,7 +4,7 @@ import type { ProgressCallback } from '@scanmate/ink'
 import { loadEnhance, loadOcr } from '../stage-loading'
 import { recipesFor } from './enhancement-recipes.policy'
 import type { Recipe } from './enhancement-recipes.policy'
-import type { AlignedScanmatePage, ReadableScanmatePage } from '../scan-session/scan-session.contract'
+import type { AlignedScanmatePage, ReadableScanmatePage } from '../session-contract'
 
 /** Pages the trial reads. Two is enough on the documents measured; three is the margin. */
 const SAMPLE_PAGES = 3

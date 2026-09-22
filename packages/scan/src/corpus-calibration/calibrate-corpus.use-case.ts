@@ -2,7 +2,7 @@ import type { CalibrationSample } from '@scanmate/audit'
 
 import type { ScanmateDocument } from '../document-input'
 import { SharedEngine } from '../reading-engine'
-import type { ScanmateOptions } from '../scan-session/scan-session.contract'
+import type { ScanmateOptions } from '../session-contract'
 import { loadAudit } from '../stage-loading'
 import type { AuditingSession, CalibrateOptions, CalibrationCase, CorpusCalibration } from './corpus-calibration.contract'
 

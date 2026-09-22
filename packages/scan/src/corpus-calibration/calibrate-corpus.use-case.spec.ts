@@ -2,7 +2,7 @@ import type { AuditReport } from '@scanmate/audit'
 import type { ReadablePage } from '@scanmate/ink'
 import type { OcrEngine } from '@scanmate/ocr'
 
-import type { ScanmateOptions } from '../scan-session/scan-session.contract'
+import type { ScanmateOptions } from '../session-contract'
 import { calibrateCorpus } from './calibrate-corpus.use-case'
 import type { CalibrationCase } from './corpus-calibration.contract'
 

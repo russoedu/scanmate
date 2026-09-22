@@ -3,7 +3,7 @@ import type { ScanmateBinarySource, ScanmateSource } from '@scanmate/ink'
 import { isPdfSource } from '../document-input'
 import type { ScanmateDocument } from '../document-input'
 import { LazyEngine } from '../reading-engine'
-import type { ScanmateOptions } from '../scan-session/scan-session.contract'
+import type { ScanmateOptions } from '../session-contract'
 import { loadExtract, loadMerge, loadOcr } from '../stage-loading'
 import type { BatchInfo, BatchOptions } from './batch-running.contract'
 

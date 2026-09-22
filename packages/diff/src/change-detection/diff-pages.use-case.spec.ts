@@ -2,7 +2,7 @@ import { alignScan } from '@scanmate/align'
 import { cloneRaster, createSyntheticDocument, decodeImage, drawSignature, drawTick, fillRect, IDENTITY, simulateScan } from '@scanmate/ink'
 import type { AlignedPage, Raster, ScanmateRect, StageEvent } from '@scanmate/ink'
 
-import { IDENTIFIED, NOT_IDENTIFIED, REFERENCE, UNEXPECTED } from './annotate-overlay.use-case'
+import { IDENTIFIED, NOT_IDENTIFIED, REFERENCE, UNEXPECTED } from './annotate-overlay.algorithm'
 import { diffPage, diffPages } from './diff-pages.use-case'
 import type { ExpectedChange } from './page-diff.contract'
 

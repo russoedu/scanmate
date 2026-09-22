@@ -1,6 +1,6 @@
 /** Where the printing is, and which way up it is. */
 
-export { contentExtent } from './content-extent.use-case'
-export type { ContentExtent } from './content-extent.use-case'
-export { estimateSkew, profileSharpness } from './estimate-skew.use-case'
-export type { SkewOptions } from './estimate-skew.use-case'
+export { contentExtent } from './content-extent.algorithm'
+export type { ContentExtent } from './content-extent.algorithm'
+export { estimateSkew, profileSharpness } from './estimate-skew.algorithm'
+export type { SkewOptions } from './estimate-skew.algorithm'

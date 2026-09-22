@@ -3,15 +3,15 @@ import type { AlignedPage, BinaryImage, ScanmateRect } from '@scanmate/ink'
 
 import { buildMasks, measureRegion, paintOverlay } from '../region-comparison'
 import type { Masks } from '../region-comparison'
-import { annotateOverlay, EXPECTED_MARGIN, IDENTIFIED, MISSING, NOT_IDENTIFIED, REFERENCE, UNEXPECTED } from './annotate-overlay.use-case'
-import type { Annotation } from './annotate-overlay.use-case'
-import { connectedComponents } from './connected-components.use-case'
-import { mergeBoxes } from './merge-boxes.use-case'
-import type { MergedBox } from './merge-boxes.use-case'
-import { probeInk } from './probe-ink.use-case'
+import { annotateOverlay, EXPECTED_MARGIN, IDENTIFIED, MISSING, NOT_IDENTIFIED, REFERENCE, UNEXPECTED } from './annotate-overlay.algorithm'
+import type { Annotation } from './annotate-overlay.algorithm'
+import { connectedComponents } from './connected-components.algorithm'
+import { mergeBoxes } from './merge-boxes.algorithm'
+import type { MergedBox } from './merge-boxes.algorithm'
+import { probeInk } from './probe-ink.algorithm'
 import type { Change, ComparedPage, DiffOptions, ExpectedChange, ExpectedResult, InkProbe, PageDiff } from './page-diff.contract'
-import { measureRegionInk } from './region-ink.use-case'
-import { composeSideBySide } from './side-by-side.use-case'
+import { measureRegionInk } from './region-ink.algorithm'
+import { composeSideBySide } from './side-by-side.algorithm'
 
 /**
  * What changed on each page, and whether it was supposed to.
