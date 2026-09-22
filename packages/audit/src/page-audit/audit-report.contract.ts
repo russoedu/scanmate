@@ -1,4 +1,4 @@
-import type { Checkbox, CheckboxOptions, CheckboxReading, DiffOptions, ExpectedChange, PageDiff } from '@scanmate/diff'
+import type { Checkbox, CheckboxGroup, CheckboxOptions, CheckboxReading, DiffOptions, ExpectedChange, GroupReading, PageDiff } from '@scanmate/diff'
 import type { ImageFormat, ProgressCallback, Raster, ReadablePage } from '@scanmate/ink'
 import type { OcrOptions, PageOcr, TextDifference } from '@scanmate/ocr'
 
@@ -7,31 +7,37 @@ import type { AuditFinding, ExplainedDifference, FindingKind } from '../finding-
 
 export interface AuditOptions {
   /** Regions where a change is expected - a signature box, a tick box - in points from the top-left. */
-  expected?:     readonly ExpectedChange[]
+  expected?:       readonly ExpectedChange[]
   /**
    * Boxes to read as ticked or not, on both sides. A tick in one is never
    * unexpected ink, and an empty one is never a field left empty: a box is a
    * finding only when it does not show what its `expect` asks, is inked over,
    * or was ticked on the original and comes back empty.
    */
-  checkboxes?:   readonly Checkbox[]
+  checkboxes?:     readonly Checkbox[]
+  /**
+   * Boxes answered together - "check only one of the following". Judged across
+   * the whole document once every page is read; one that is not answered as its
+   * rule asks is a finding on the page of its first box.
+   */
+  checkboxGroups?: readonly CheckboxGroup[]
   /** How a box is read. */
-  checkbox?:     Pick<CheckboxOptions, 'inset' | 'minTickArea' | 'struckFill'>
+  checkbox?:       Pick<CheckboxOptions, 'inset' | 'minTickArea' | 'struckFill'>
   /** Options for the full reading. The text layer, the recheck and the engine are `@scanmate/ocr`'s. */
-  ocr?:          Omit<OcrOptions, 'onProgress'>
+  ocr?:            Omit<OcrOptions, 'onProgress'>
   /** Options for the pixel comparison. Rectangles are always in points, so the two comparisons line up. */
-  diff?:         Omit<DiffOptions, 'onProgress' | 'units' | 'output' | 'sideBySide'>
+  diff?:           Omit<DiffOptions, 'onProgress' | 'units' | 'output' | 'sideBySide'>
   /** How a disagreement between the reading and the pixels is settled. */
-  settle?:       Omit<SettlementInput, 'differences' | 'probes' | 'original' | 'scanned' | 'engine' | 'rules'>
+  settle?:         Omit<SettlementInput, 'differences' | 'probes' | 'original' | 'scanned' | 'engine' | 'rules'>
   /**
    * A page whose text score falls below this is too unreliable to pass on the
    * findings alone: at low resolution OCR misses changes it should see.
    * Default `0.85`.
    */
-  minTextScore?: number
+  minTextScore?:   number
   /** Encoding of the evidence image and of the pixel overlay. `'none'` keeps only rasters. Default `'png'`. */
-  output?:       ImageFormat | 'none'
-  onProgress?:   ProgressCallback
+  output?:         ImageFormat | 'none'
+  onProgress?:     ProgressCallback
 }
 
 /** `pass`: nothing for anyone to look at. `review`: see `reasons`. */
@@ -71,6 +77,8 @@ export interface AuditReport<Page extends ReadablePage = ReadablePage> {
   textScore: number
   /** The pages handed in, each carrying its own verdict as `page.audit`. */
   pages:     Array<AuditedPage<Page>>
+  /** Each of the `checkboxGroups`, as the scan answers it. */
+  groups:    GroupReading[]
   summary: {
     pages:        number
     passed:       number

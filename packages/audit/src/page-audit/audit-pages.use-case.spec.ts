@@ -92,6 +92,12 @@ function printed (total: string): SyntheticPdfPage {
   }
 }
 
+/** A fine pen tick - a third of a millimetre at 72 dpi - through a box. */
+function fine (raster: Raster, box: { x: number, y: number }): void {
+  drawLine(raster, box.x + 3, box.y + 7, box.x + 6, box.y + 10, 1, 20)
+  drawLine(raster, box.x + 6, box.y + 10, box.x + 11, box.y + 3, 1, 20)
+}
+
 describe('auditPages', () => {
   it('passes a page signed where expected, reading as printed', async () => {
     const audit = await auditPages([page(signed())], { expected: EXPECTED, ocr: { engine: reads(AS_PRINTED), targetDpi: null, recheck: false }, output: 'none' })
@@ -142,6 +148,32 @@ describe('auditPages', () => {
 
     expect(refused.verdict).toBe('review')
     expect(refused.pages[0].audit.findings).toMatchObject([{ kind: 'checkbox-mismatch', subject: 'consent', summary: '"consent" must be empty, and is ticked' }])
+  })
+
+  it('judges a group of boxes across the page: one of these, and only one', async () => {
+    const second = FORM.regions['tick-2']
+    const checkboxes = [{ page: 1, id: 'individual', ...TICK }, { page: 1, id: 'c-corporation', ...second }]
+    const checkboxGroups = [{ id: 'classification', boxes: ['individual', 'c-corporation'], ticked: 'exactly-one' as const }]
+    const run = async (raster: Raster) => await auditPages([page(raster)], {
+      expected: EXPECTED, checkboxes, checkboxGroups, ocr: { engine: reads(AS_PRINTED), targetDpi: null, recheck: false }, output: 'none',
+    })
+
+    const one = signed()
+    fine(one, TICK)
+    const answered = await run(one)
+    expect(answered.verdict).toBe('pass')
+    expect(answered.groups).toMatchObject([{ id: 'classification', ticked: ['individual'], satisfied: true }])
+
+    const both = signed()
+    fine(both, TICK)
+    fine(both, second)
+    const doubled = await run(both)
+    expect(doubled.verdict).toBe('review')
+    expect(doubled.groups[0]).toMatchObject({ ticked: ['individual', 'c-corporation'], satisfied: false })
+    expect(doubled.pages[0].audit.findings).toMatchObject([
+      { kind: 'checkbox-group', subject: 'classification', summary: '"classification" must have exactly one box ticked, and 2 are: individual, c-corporation' },
+    ])
+    expect(doubled.summary.findings).toStrictEqual({ 'checkbox-group': 1 })
   })
 
   it('reports an expected region left empty, and the amount that was altered', async () => {

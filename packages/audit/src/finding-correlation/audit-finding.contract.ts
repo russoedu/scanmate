@@ -1,4 +1,4 @@
-import type { Change, CheckboxReading, ExpectedResult } from '@scanmate/diff'
+import type { Change, CheckboxReading, ExpectedResult, GroupReading } from '@scanmate/diff'
 import type { ScanmateRect } from '@scanmate/ink'
 import type { TextDifference } from '@scanmate/ocr'
 
@@ -21,6 +21,8 @@ import type { TextDifference } from '@scanmate/ocr'
  * - `checkbox-struck`: a box is inked over, so which answer it gives cannot be
  *   told - blacked out, or a tick scribbled over to take it back.
  * - `checkbox-cleared`: a box ticked on the original comes back empty.
+ * - `checkbox-group`: boxes answered together are not answered as their rule
+ *   asks - two ticked where one may be, or none where one must be.
  */
 export type FindingKind =
   'unexpected-mark' |
@@ -33,7 +35,8 @@ export type FindingKind =
   'expected-overfilled' |
   'checkbox-mismatch' |
   'checkbox-struck' |
-  'checkbox-cleared'
+  'checkbox-cleared' |
+  'checkbox-group'
 
 export interface AuditFinding {
   kind:         FindingKind
@@ -51,6 +54,8 @@ export interface AuditFinding {
   subject?:     string
   /** The box it concerns, as both sides have it. */
   checkbox?:    CheckboxReading
+  /** The group of boxes it concerns, as the scan answers it. */
+  group?:       GroupReading
 }
 
 /** A text difference that needs no one's attention, and why. */

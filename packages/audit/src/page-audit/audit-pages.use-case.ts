@@ -1,14 +1,15 @@
-import { checkboxesFromMasks, diffPage, probeInk } from '@scanmate/diff'
+import { checkboxesFromMasks, checkGroups, diffPage, probeInk } from '@scanmate/diff'
+import type { PageDiff } from '@scanmate/diff'
 import { DEFAULT_NORMALISE, encodeImage } from '@scanmate/ink'
 import { createTesseractEngine, ocrPages } from '@scanmate/ocr'
 import type { OcrEngine, PageOcr } from '@scanmate/ocr'
 
 import { renderEvidence } from '../audit-evidence'
 import { settleDisputes } from '../dispute-settlement'
-import { correlateFindings } from '../finding-correlation'
-import type { FindingKind } from '../finding-correlation'
+import { correlateFindings, groupFinding } from '../finding-correlation'
+import type { AuditFinding, FindingKind } from '../finding-correlation'
 import type { AuditOptions, AuditReport, AuditedPage } from './audit-report.contract'
-import type { ReadablePage } from '@scanmate/ink'
+import type { Raster, ReadablePage } from '@scanmate/ink'
 
 /** Below this text score a page is too unreliable to pass on its findings alone - unless `minTextScore` says otherwise. */
 export const DEFAULT_MIN_TEXT_SCORE = 0.85
@@ -117,18 +118,7 @@ export async function auditPages<Page extends ReadablePage> (pages: readonly Pag
       if (text.score < minTextScore)
         reasons.push(`the text reads too poorly to trust (score ${text.score.toFixed(2)} below ${minTextScore}): changes may have gone unseen`)
 
-      const evidenceRaster = renderEvidence(page.original.raster, page.aligned.raster, {
-        dpi,
-        expected:    diff.expected.filter(region => !boxIds.has(region.id)),
-        findings,
-        overlay:     diff.diffRaster,
-        // The same bleed the comparison measured with, so the band drawn is the band checked.
-        bleed:       options.diff?.bleed,
-        bleedTop:    options.diff?.bleedTop,
-        bleedRight:  options.diff?.bleedRight,
-        bleedBottom: options.diff?.bleedBottom,
-        bleedLeft:   options.diff?.bleedLeft,
-      })
+      const evidenceRaster = drawEvidence(page, diff, findings, boxIds, options)
       audits.push({
         ...page,
         audit: {
@@ -161,6 +151,24 @@ export async function auditPages<Page extends ReadablePage> (pages: readonly Pag
     if (options.ocr?.engine === undefined) await engine.terminate()
   }
 
+  // Groups are judged across the document, so only now that every page is read.
+  // One not answered as its rule asks goes on the page of its first box, and
+  // that page's evidence is drawn again to show it.
+  const groups = checkGroups(audits.flatMap(page => page.audit.checkboxes), options.checkboxGroups ?? [])
+  const unmet = groups.filter(g => g.satisfied === false)
+  for (const group of unmet) {
+    const ids = new Set(options.checkboxGroups?.find(g => g.id === group.id)?.boxes)
+    const target = audits.find(page => page.audit.checkboxes.some(box => ids.has(box.id)))
+    if (target === undefined) continue
+    const { audit } = target
+    const finding = groupFinding(group, audit.checkboxes.filter(box => ids.has(box.id)))
+    audit.findings.push(finding)
+    audit.reasons.push(finding.summary)
+    audit.verdict = 'review'
+    audit.evidenceRaster = drawEvidence(target, audit.pixels, audit.findings, new Set(audit.checkboxes.map(box => box.id)), options)
+    audit.evidenceImage = output === 'none' ? null : await encodeImage(audit.evidenceRaster, { format: output })
+  }
+
   const counts: Partial<Record<FindingKind, number>> = {}
   const every = audits.flatMap(page => page.audit.findings)
   for (const finding of every) counts[finding.kind] = (counts[finding.kind] ?? 0) + 1
@@ -169,6 +177,7 @@ export async function auditPages<Page extends ReadablePage> (pages: readonly Pag
     verdict:   audits.every(page => page.audit.verdict === 'pass') ? 'pass' : 'review',
     textScore: documentScore(readings),
     pages:     audits,
+    groups,
     summary:   {
       pages:        audits.length,
       passed:       audits.filter(page => page.audit.verdict === 'pass').length,
@@ -176,6 +185,22 @@ export async function auditPages<Page extends ReadablePage> (pages: readonly Pag
       corroborated: every.filter(f => f.corroborated).length,
     },
   }
+}
+
+/** The original, the scan and the overlay, with the page's findings drawn and its checkboxes left to the findings. */
+function drawEvidence (page: ReadablePage, diff: PageDiff, findings: readonly AuditFinding[], boxIds: ReadonlySet<string>, options: AuditOptions): Raster {
+  return renderEvidence(page.original.raster, page.aligned.raster, {
+    dpi:         page.original.dpi ?? 150,
+    expected:    diff.expected.filter(region => !boxIds.has(region.id)),
+    findings,
+    overlay:     diff.diffRaster,
+    // The same bleed the comparison measured with, so the band drawn is the band checked.
+    bleed:       options.diff?.bleed,
+    bleedTop:    options.diff?.bleedTop,
+    bleedRight:  options.diff?.bleedRight,
+    bleedBottom: options.diff?.bleedBottom,
+    bleedLeft:   options.diff?.bleedLeft,
+  })
 }
 
 /**
