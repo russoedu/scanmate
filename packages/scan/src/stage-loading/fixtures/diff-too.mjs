@@ -1,4 +1,4 @@
-/** Aligns and diffs. The diff package must load; a reader still must not. */
+/** Aligns and compares the pixels. Neither a reader nor a PDF library may load. */
 import { createRaster } from '@scanmate/ink'
 import { Scanmate } from '@scanmate/scan'
 

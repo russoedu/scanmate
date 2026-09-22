@@ -72,7 +72,7 @@ problems   // [] - or why a field could not be placed, or should not be trusted
 - **The whole document is searched**, and each region carries its page. A label printed twice is refused as `anchor-ambiguous` rather than guessed at: name the `occurrence` (counted in page order) or the `page`.
 - **`from`** measures the offsets from any corner of the label. A field to the right of its label is best measured from `'top-right'`, so it does not move when the label's wording does.
 - **The regions are checked**: off the page, overlapping another on its page, zero-sized, or an id used twice all come back in `problems`.
-- **Turned pages and turned text work.** Everything is in points from the top-left of the page as displayed - the frame `@scanmate/diff` measures in and `markPages` draws in - so the regions go straight to either.
+- **Turned pages and turned text work.** Everything is in points from the top-left of the page as displayed - the frame the pixel comparison measures in and `markPages` draws in - so the regions go straight to either.
 
 It reads the text layer and renders nothing: about 200 ms on the W-9. `resolveFields` does the same from text already in hand, and `locateAnchor` only finds a label. A label inside a longer run has its edges placed in proportion to its characters, and says so with `estimated: true`.
 

@@ -1,7 +1,8 @@
 import type { OcrEngine, OcrOptions } from '@scanmate/ocr'
 import type { ProgressCallback } from '@scanmate/ink'
 
-import { loadEnhance, loadOcr } from '../stage-loading'
+import { enhancePages } from '../scan-enhancement'
+import { loadOcr } from '../stage-loading'
 import { recipesFor } from './enhancement-recipes.policy'
 import type { Recipe } from './enhancement-recipes.policy'
 import type { AlignedScanmatePage, ReadableScanmatePage } from '../session-contract'
@@ -93,7 +94,6 @@ export async function applyRecipe (
   onProgress?: ProgressCallback,
 ): Promise<ReadableScanmatePage[]> {
   if (recipe.enhance === null) return [...pages]
-  const { enhancePages } = await loadEnhance()
 
   return await enhancePages(pages, { ...recipe.enhance, onProgress })
 }

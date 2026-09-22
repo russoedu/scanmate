@@ -1,0 +1,221 @@
+import { checkboxesFromMasks, checkGroups } from '../checkbox-reading'
+import { diffPage, probeInk } from '../change-detection'
+import type { PageDiff } from '../change-detection'
+import { DEFAULT_NORMALISE, encodeImage } from '@scanmate/ink'
+import type { OcrEngine, PageOcr } from '@scanmate/ocr'
+
+import { loadOcr } from '../stage-loading'
+
+import { renderEvidence } from '../audit-evidence'
+import { settleDisputes } from '../dispute-settlement'
+import { correlateFindings, groupFinding } from '../finding-correlation'
+import type { AuditFinding, FindingKind } from '../finding-correlation'
+import type { AuditOptions, AuditReport, AuditedPage } from './audit-report.contract'
+import type { Raster, ReadablePage } from '@scanmate/ink'
+
+/** Below this text score a page is too unreliable to pass on its findings alone - unless `minTextScore` says otherwise. */
+export const DEFAULT_MIN_TEXT_SCORE = 0.85
+
+/**
+ * The final audit: every aligned page read in full and compared pixel by
+ * pixel, the two answers merged, and a verdict with its evidence.
+ *
+ * The reading (`@scanmate/ocr`) catches what changes the words - a digit, a
+ * name, a clause - and says where. The pixel comparison (the pixel comparison)
+ * catches what changes the ink - a signature, a stamp, a mark, a paragraph gone
+ * - and checks each expected region was filled in. Neither sees what the other
+ * does, so the two run **alongside each other** on every page: the engine reads
+ * in its own worker while the masks are built here, which is wall-clock this
+ * pipeline used to spend twice.
+ *
+ * They are not merely merged afterwards. Where both saw something at the same
+ * place it becomes one finding, corroborated - but where they *disagree*, the
+ * disagreement is settled rather than decided by precedence. The reading says a
+ * run changed and the ink at that run says nothing moved: `settleDisputes` then
+ * reads both crops the same way and compares the two readings to each other,
+ * which cancels the systematic misreadings that make OCR disagree with a page
+ * it is looking straight at. See `../dispute-settlement`.
+ *
+ * Required content is not part of this. The content search answers a different
+ * question - whether the *original* says what it was supposed to say, which no
+ * comparison of the two copies can - and a caller who wants it asks it directly,
+ * of the reading this returns.
+ *
+ * A page passes when there is nothing to look at: every expected region filled
+ * in, nothing unexpected, the text as printed or settled as a misreading, and a
+ * text score high enough to trust that silence. Everything else is for review,
+ * with the reasons and the evidence page to check them against.
+ */
+export async function auditPages<Page extends ReadablePage> (pages: readonly Page[], options: AuditOptions = {}): Promise<AuditReport<Page>> {
+  const { expected = [], checkboxes = [], minTextScore = DEFAULT_MIN_TEXT_SCORE, output = 'png', onProgress } = options
+  // The reader is loaded here, not when this module is: importing the package
+  // never starts tesseract.
+  const { createTesseractEngine, ocrPages } = await loadOcr()
+  // One engine for the whole run: the page readings and every disputed re-read.
+  const engine: OcrEngine = options.ocr?.engine ?? await createTesseractEngine(options.ocr?.tesseract)
+
+  const audits: Array<AuditedPage<Page>> = []
+  const readings: PageOcr[] = []
+  try {
+    for (const [position, page] of pages.entries()) {
+      // A box is measured as a region, so a tick is never unexpected ink; what
+      // it means is decided from its reading, not from whether it gained ink.
+      const boxes = checkboxes.filter(box => box.page === page.page)
+      const boxIds = new Set(boxes.map(box => box.id))
+      const regions = [
+        ...expected.filter(region => region.page === page.page),
+        ...boxes.map(({ page: at, id, x, y, width, height }) => ({ page: at, id, x, y, width, height })),
+      ]
+      // Both comparisons of the same page at once: tesseract works in its own
+      // worker while the masks are built here, so the two cost about one.
+      const [reading, diff] = await Promise.all([
+        ocrPages([page], { ...options.ocr, engine, onProgress }),
+        (async () => {
+          const begun = Date.now()
+          onProgress?.({ stage: 'diff', phase: 'start', page: page.page, index: position + 1, total: pages.length })
+          const result = await diffPage(page, regions, {
+            ...options.diff, units: 'points', output, sideBySide: false, keepMasks: true,
+          })
+          onProgress?.({
+            stage:      'diff',
+            phase:      'done',
+            page:       page.page,
+            index:      position + 1,
+            total:      pages.length,
+            durationMs: Date.now() - begun,
+            detail:     { unexpected: result.unexpected.length, missing: result.missing.length, identified: result.expected.filter(region => region.identified).length },
+          })
+
+          return result
+        })(),
+      ])
+      const text = reading.pages[0].text
+      readings.push(text)
+
+      const started = Date.now()
+      onProgress?.({ stage: 'audit', phase: 'start', page: page.page, index: position + 1, total: pages.length })
+
+      // Where the two disagree: ask the ink at that very run, and if the ink says
+      // nothing moved, read both sides again and compare them with each other.
+      const dpi = page.original.dpi ?? 150
+      const probes = diff.masks === null ? [] : probeInk(diff.masks, text.differences, { dpi, units: 'points' })
+      const settled = await settleDisputes({
+        differences: text.differences,
+        probes,
+        original:    { raster: page.original.raster, dpi },
+        scanned:     { raster: page.aligned.raster, dpi },
+        engine,
+        runs:        page.metadata?.original?.textItems ?? [],
+        rules:       {
+          normalise:         options.ocr?.normalise ?? DEFAULT_NORMALISE,
+          matchThreshold:    options.ocr?.matchThreshold ?? 0.8,
+          minWordConfidence: options.ocr?.minWordConfidence ?? 60,
+        },
+        ...options.settle,
+      })
+      const ticks = diff.masks === null ? [] : checkboxesFromMasks(diff.masks, boxes, { ...options.checkbox, dpi })
+      // Four binary images the size of the page; nothing needs them now.
+      diff.masks = null
+
+      const { findings, explained, noise } = correlateFindings({ text: text.differences, pixels: diff, settled, checkboxes: ticks })
+
+      const reasons = findings.map(f => f.summary)
+      if (text.score < minTextScore)
+        reasons.push(`the text reads too poorly to trust (score ${text.score.toFixed(2)} below ${minTextScore}): changes may have gone unseen`)
+
+      const evidenceRaster = drawEvidence(page, diff, findings, boxIds, options)
+      audits.push({
+        ...page,
+        audit: {
+          page:          page.page,
+          verdict:       reasons.length === 0 ? 'pass' : 'review',
+          reasons,
+          findings,
+          explained,
+          noise,
+          settled,
+          checkboxes:    ticks,
+          text,
+          pixels:        diff,
+          evidenceRaster,
+          evidenceImage: output === 'none' ? null : await encodeImage(evidenceRaster, { format: output }),
+        },
+      })
+
+      onProgress?.({
+        stage:      'audit',
+        phase:      'done',
+        page:       page.page,
+        index:      position + 1,
+        total:      pages.length,
+        durationMs: Date.now() - started,
+        detail:     { verdict: audits.at(-1)?.audit.verdict, findings: findings.length },
+      })
+    }
+  } finally {
+    if (options.ocr?.engine === undefined) await engine.terminate()
+  }
+
+  // Groups are judged across the document, so only now that every page is read.
+  // One not answered as its rule asks goes on the page of its first box, and
+  // that page's evidence is drawn again to show it.
+  const groups = checkGroups(audits.flatMap(page => page.audit.checkboxes), options.checkboxGroups ?? [])
+  const unmet = groups.filter(g => g.satisfied === false)
+  for (const group of unmet) {
+    const ids = new Set(options.checkboxGroups?.find(g => g.id === group.id)?.boxes)
+    const target = audits.find(page => page.audit.checkboxes.some(box => ids.has(box.id)))
+    if (target === undefined) continue
+    const { audit } = target
+    const finding = groupFinding(group, audit.checkboxes.filter(box => ids.has(box.id)))
+    audit.findings.push(finding)
+    audit.reasons.push(finding.summary)
+    audit.verdict = 'review'
+    audit.evidenceRaster = drawEvidence(target, audit.pixels, audit.findings, new Set(audit.checkboxes.map(box => box.id)), options)
+    audit.evidenceImage = output === 'none' ? null : await encodeImage(audit.evidenceRaster, { format: output })
+  }
+
+  const counts: Partial<Record<FindingKind, number>> = {}
+  const every = audits.flatMap(page => page.audit.findings)
+  for (const finding of every) counts[finding.kind] = (counts[finding.kind] ?? 0) + 1
+
+  return {
+    verdict:   audits.every(page => page.audit.verdict === 'pass') ? 'pass' : 'review',
+    textScore: documentScore(readings),
+    pages:     audits,
+    groups,
+    summary:   {
+      pages:        audits.length,
+      passed:       audits.filter(page => page.audit.verdict === 'pass').length,
+      findings:     counts,
+      corroborated: every.filter(f => f.corroborated).length,
+    },
+  }
+}
+
+/** The original, the scan and the overlay, with the page's findings drawn and its checkboxes left to the findings. */
+function drawEvidence (page: ReadablePage, diff: PageDiff, findings: readonly AuditFinding[], boxIds: ReadonlySet<string>, options: AuditOptions): Raster {
+  return renderEvidence(page.original.raster, page.aligned.raster, {
+    dpi:         page.original.dpi ?? 150,
+    expected:    diff.expected.filter(region => !boxIds.has(region.id)),
+    findings,
+    overlay:     diff.diffRaster,
+    // The same bleed the comparison measured with, so the band drawn is the band checked.
+    bleed:       options.diff?.bleed,
+    bleedTop:    options.diff?.bleedTop,
+    bleedRight:  options.diff?.bleedRight,
+    bleedBottom: options.diff?.bleedBottom,
+    bleedLeft:   options.diff?.bleedLeft,
+  })
+}
+
+/**
+ * The document's reading score: the mean of the pages', weighted by how much
+ * text each carries, so a three-word page does not outvote a dense one.
+ */
+function documentScore (pages: readonly PageOcr[]): number {
+  if (pages.length === 0) return 1
+  const characters = pages.reduce((sum, page) => sum + page.metrics.characters, 0)
+  if (characters === 0) return pages.reduce((sum, page) => sum + page.score, 0) / pages.length
+
+  return pages.reduce((sum, page) => sum + page.score * page.metrics.characters, 0) / characters
+}

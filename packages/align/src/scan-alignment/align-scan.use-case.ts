@@ -31,7 +31,7 @@ interface Contender {
  *    the OCR engine's own layout analysis is comparing different documents.
  * 2. *Was the box at (x, y) signed?* That is a question about a fixed
  *    rectangle, and a fixed rectangle only means something once both images
- *    agree on where (x, y) is. See `@scanmate/diff`.
+ *    agree on where (x, y) is. See the pixel comparison.
  *
  * ## The pipeline
  *

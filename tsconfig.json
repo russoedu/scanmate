@@ -4,9 +4,6 @@
   "files": [],
   "references": [
     {
-      "path": "./packages/image-fix"
-    },
-    {
       "path": "./apps/playground"
     },
     {
@@ -16,25 +13,13 @@
       "path": "./packages/align"
     },
     {
-      "path": "./packages/diff"
-    },
-    {
       "path": "./packages/extract"
-    },
-    {
-      "path": "./packages/enhance"
     },
     {
       "path": "./packages/merge"
     },
     {
       "path": "./packages/ocr"
-    },
-    {
-      "path": "./packages/find"
-    },
-    {
-      "path": "./packages/audit"
     },
     {
       "path": "./packages/scan"

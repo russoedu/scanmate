@@ -1,5 +1,5 @@
 import { PDFDocument } from '@cantoo/pdf-lib'
-import type { AuditReport } from '@scanmate/audit'
+import type { AuditReport } from '../page-audit'
 import { createSyntheticPdf, inspectDocument } from '@scanmate/extract'
 import { createRaster } from '@scanmate/ink'
 import type { ReadablePage } from '@scanmate/ink'

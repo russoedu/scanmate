@@ -13,10 +13,12 @@
  * await scan.dispose()
  * ```
  *
- * Each stage runs what it needs, remembers what it did, and is loaded only when
- * it is used: a session that only aligns never evaluates tesseract or a PDF
- * library. The stages remain usable on their own - this is the convenient door,
- * not the only one.
+ * Each stage runs what it needs, remembers what it did, and the stage packages
+ * are loaded only when used: a session that only aligns never evaluates
+ * tesseract or a PDF library. The pixel comparison, enhancement, the content
+ * search and the audit are this package's own code, exported below for use on
+ * their own; the reader, the aligner, the PDF reader and the assembler are
+ * packages of their own.
  */
 
 export { Scanmate } from './scan-session'
@@ -25,6 +27,51 @@ export type { ScanmateDocument, ScanmatePage } from './document-input'
 export type { CalibrateOptions, CalibrationCase, CorpusCalibration } from './corpus-calibration'
 export type { BatchInfo, BatchOptions } from './batch-running'
 export type { BatchEvidence, BatchEvidenceOptions } from './batch-evidence'
+
+// --- The pixel comparison: what changed on a page, and whether it should have - and which boxes are ticked ---
+
+export { DEFAULT_MIN_CHANGE_AREA, DEFAULT_MIN_MISSING_AREA, diffPage, diffPages } from './change-detection'
+export type { Change, ComparedPage, CoordinateUnits, DiffOptions, ExpectedChange, ExpectedResult, InkProbe, PageDiff, ProbeRect, RegionInkMetrics } from './change-detection'
+export { checkGroups, readCheckboxes } from './checkbox-reading'
+export type { Checkbox, CheckboxGroup, CheckboxOptions, CheckboxReading, CheckboxSide, CheckboxState, GroupReading } from './checkbox-reading'
+export { compareRegions, diffDocument, renderDiff } from './region-comparison'
+export type { DocumentDiff, Region, RegionOptions, RegionReport } from './region-comparison'
+export { annotateOverlay, composePanels, composeSideBySide, connectedComponents, EXPECTED_MARGIN, IDENTIFIED, labelComponents, measureRegionInk, mergeBoxes, MISSING, NOT_IDENTIFIED, probeInk, REFERENCE, UNEXPECTED, UNSETTLED } from './change-detection'
+export type { Annotation, Component, Panel, LabelledComponents, LabelOptions as ComponentLabelOptions, MergedBox, RegionInk, RegionInkOptions } from './change-detection'
+export { checkboxesFromMasks } from './checkbox-reading'
+export { buildMasks, measureRegion, OVERLAY_DIFFERENT, OVERLAY_SHARED, paintOverlay } from './region-comparison'
+export type { Masks } from './region-comparison'
+
+// --- Enhancement: even lighting, white paper, dark ink - for the reader, never the evidence ---
+
+export { enhancePages, enhanceScan } from './scan-enhancement'
+export type { EnhancedImage, EnhancedPage, EnhancePagesOptions, EnhanceResult, EnhanceScanOptions } from './scan-enhancement'
+export type { AppliedEnhancement, EnhanceOptions, SharpenOptions } from './illumination-correction'
+export { DEFAULT_ENHANCE_OPTIONS, enhanceRaster, estimateContrastPoints, resolveContrastPoints, sharpenRaster } from './illumination-correction'
+export type { ContrastPoints, EnhancedRaster } from './illumination-correction'
+export { despeckle, estimateNoiseSigma } from './noise-reduction'
+
+// --- Content search: whether what must be on a page is there, and where the original puts it ---
+
+export { findContent } from './content-search'
+export type { ContentResult, ExpectedContent, FindOptions, FindReport, FoundBy, Occurrence, PageFind } from './content-search'
+export { approximateSearch, bestMatch, wordSpan } from './approximate-search'
+export type { ApproximateMatch, SearchOptions } from './approximate-search'
+
+// --- The audit: the reading and the pixels merged into one verdict, its evidence, and its calibration ---
+
+export { auditPages, DEFAULT_MIN_TEXT_SCORE } from './page-audit'
+export type { AuditedPage, AuditOptions, AuditReport, PageAudit, Verdict } from './page-audit'
+export type { AuditFinding, ExplainedDifference, FindingKind } from './finding-correlation'
+export { combineSummaries, summariseAudit, writeEvidenceCover, writeEvidencePdf } from './evidence-document'
+export type { EvidencePdfOptions, EvidenceSummary, SummarisedPage } from './evidence-document'
+export { calibrateAudit, DEFAULT_CALIBRATION_GRID, documentPasses, sampleAudit } from './audit-calibration'
+export type { CalibrationGrid, CalibrationLabel, CalibrationPoint, CalibrationReport, CalibrationSample, CalibrationThresholds, SampledFinding, SampledPage } from './audit-calibration'
+export { correlateFindings } from './finding-correlation'
+export type { Correlation, CorrelationInput } from './finding-correlation'
+export { INK_EVIDENCE, QUORUM, SETTLEMENT_PASSES, settleDisputes } from './dispute-settlement'
+export type { Settlement, SettlementInput } from './dispute-settlement'
+export { renderEvidence, TEXT_DIFFERENCE } from './audit-evidence'
 
 // --- Every type the stages speak ---
 //
@@ -60,10 +107,6 @@ export type {
   PhaseCorrelationResult, RansacOptions, RansacResult, ScoredModel,
 } from '@scanmate/align'
 export type {
-  AppliedEnhancement, ContrastPoints, EnhancedImage, EnhancedPage, EnhancedRaster, EnhanceOptions,
-  EnhancePagesOptions, EnhanceResult, EnhanceScanOptions, SharpenOptions,
-} from '@scanmate/enhance'
-export type {
   CellOptions, Claims, MatchOptions as WordMatchOptions, OcrEngine, OcrLine, OcrOptions, OcrReport, OcrWord,
   PageOcr, PlacedText, PrintAbstention, PrintCheck, PrintPolarity, PrintVerification, ReadPage, Recheck,
   RecheckOptions, RecheckPass, RecognisedText, RecogniseHints, Reference, RunReading, ScoreMetric, SideText,
@@ -71,26 +114,9 @@ export type {
   TextDifference, TextMetrics, Verdict as WordVerdict, VerifyOptions, WordMatch,
 } from '@scanmate/ocr'
 export type {
-  Annotation, Change, Checkbox, CheckboxGroup, CheckboxOptions, CheckboxReading, CheckboxSide, CheckboxState,
-  ComparedPage, Component, CoordinateUnits, DiffOptions, DocumentDiff, ExpectedChange, ExpectedResult,
-  GroupReading, InkProbe, LabelledComponents, LabelOptions as ComponentLabelOptions, Masks, MergedBox,
-  PageDiff, Panel, ProbeRect, Region, RegionInk, RegionInkMetrics, RegionInkOptions, RegionOptions,
-  RegionReport,
-} from '@scanmate/diff'
-export type {
-  ApproximateMatch, ContentResult, ExpectedContent, FindOptions, FindReport, FoundBy, Occurrence, PageFind,
-  SearchOptions,
-} from '@scanmate/find'
-export type {
   Affine, Embedding, MarkOptions, MarkResult, MergedPage, MergeOptions, MergeResult, OpenPdfOptions,
   PageGeometry, PageMark, PageSize, Placement, ResolvedSource, SourceKind,
 } from '@scanmate/merge'
-export type {
-  AuditedPage, AuditFinding, AuditOptions, AuditReport, CalibrationGrid, CalibrationLabel, CalibrationPoint,
-  CalibrationReport, CalibrationSample, CalibrationThresholds, Correlation, CorrelationInput,
-  EvidencePdfOptions, EvidenceSummary, ExplainedDifference, FindingKind, PageAudit, SampledFinding,
-  SampledPage, Settlement, SettlementInput, SummarisedPage, Verdict,
-} from '@scanmate/audit'
 
 // --- Building blocks ---
 

@@ -1,12 +1,14 @@
-import type { AuditOptions, AuditReport, EvidencePdfOptions } from '@scanmate/audit'
+import type { AuditOptions, AuditReport } from '../page-audit'
+import type { EvidencePdfOptions } from '../evidence-document'
 import type { AlignPagesOptions } from '@scanmate/align'
-import type { Checkbox, CheckboxOptions, CheckboxReading, ComparedPage, DiffOptions, ExpectedChange, PageDiff } from '@scanmate/diff'
-import type { EnhancePagesOptions } from '@scanmate/enhance'
+import type { Checkbox, CheckboxOptions, CheckboxReading } from '../checkbox-reading'
+import type { ComparedPage, DiffOptions, ExpectedChange, PageDiff } from '../change-detection'
+import type { EnhancePagesOptions } from '../scan-enhancement'
 import type { ExtractPairOptions } from '@scanmate/extract'
 import type { ExtractedPage, ExtractOptions, FieldSpec, LocatedFields, LocateOptions } from '@scanmate/extract'
-import type { ExpectedContent, FindOptions, FindReport } from '@scanmate/find'
+import type { ExpectedContent, FindOptions, FindReport } from '../content-search'
 import type { MarkOptions, MarkResult, MergeOptions, MergeResult, PageMark } from '@scanmate/merge'
-import type { PipelineStage, ScanmateBinarySource, ScanmateSource } from '@scanmate/ink'
+import type { ScanmateBinarySource, ScanmateSource } from '@scanmate/ink'
 import type { OcrOptions, OcrReport, ReadPage } from '@scanmate/ocr'
 
 import { pixelsFromAudit, readingFromAudit } from '../audit-reuse'
@@ -22,7 +24,14 @@ import { resolveDocument } from '../document-input'
 import type { ScanmateDocument, ScanmatePage } from '../document-input'
 import { SharedEngine } from '../reading-engine'
 import { fingerprint, StageCache } from '../stage-caching'
-import { loadAlign, loadAudit, loadDiff, loadEnhance, loadExtract, loadFind, loadMerge, loadOcr, loadedStages } from '../stage-loading'
+import { writeEvidencePdf } from '../evidence-document'
+import { auditPages } from '../page-audit'
+import { diffPages } from '../change-detection'
+import { readCheckboxes } from '../checkbox-reading'
+import { findContent } from '../content-search'
+import { enhancePages } from '../scan-enhancement'
+import { loadAlign, loadExtract, loadMerge, loadOcr, loadedStages } from '../stage-loading'
+import type { LoadedStage } from '../stage-loading'
 import { relayAuditProgress } from './progress-relay.mapper'
 import type { AlignedScanmatePage, EnhancedScanmatePage, ReadableScanmatePage, ScanmateOptions, ScanmatePageReport } from '../session-contract'
 
@@ -157,7 +166,7 @@ export class Scanmate {
    * corpus of any size costs the memory of its largest document; one OCR engine
    * serves them all. The corpus can be an async iterable, to read cases as they
    * are needed. `samples` are plain data: save them, and sweep other thresholds
-   * later with `calibrateAudit` from `@scanmate/audit` without reading a page
+   * later with `calibrateAudit` from the audit without reading a page
    * again.
    */
   static async calibrate (corpus: Iterable<CalibrationCase> | AsyncIterable<CalibrationCase>, options: CalibrateOptions = {}): Promise<CorpusCalibration> {
@@ -316,7 +325,6 @@ export class Scanmate {
 
     return this.#cache.run('enhance', fingerprint(enhance), async () => {
       const pages = await this.align()
-      const { enhancePages } = await loadEnhance()
 
       return await enhancePages(pages, { ...enhance, onProgress: this.#options.onProgress })
     })
@@ -342,7 +350,6 @@ export class Scanmate {
 
     return this.#cache.run('diff', fingerprint({ regions, diff }), async () => {
       const pages = await this.align()
-      const { diffPages } = await loadDiff()
 
       return await diffPages(pages, regions, { ...diff, onProgress: this.#options.onProgress })
     })
@@ -355,14 +362,13 @@ export class Scanmate {
    * printed frame - so a box ticked before it was issued is read as ticked on
    * both, and an empty one is an answer, not a field someone forgot. `audit()`
    * reads the same boxes and turns into findings only the ones that are wrong.
-   * Loads `@scanmate/diff`, and nothing that reads text.
+   * Loads the pixel comparison, and nothing that reads text.
    */
   async checkboxes (boxes?: readonly Checkbox[], options?: CheckboxOptions): Promise<CheckboxReading[]> {
     const wanted = boxes ?? this.#options.checkboxes ?? []
 
     return this.#cache.run('checkboxes', fingerprint({ wanted, options, diff: this.#options.diff?.ink }), async () => {
       const pages = await this.align()
-      const { readCheckboxes } = await loadDiff()
 
       return await readCheckboxes(pages, wanted, { ink: this.#options.diff?.ink, ...options })
     })
@@ -375,7 +381,6 @@ export class Scanmate {
 
     return this.#cache.run('find', fingerprint({ wanted, find }), async () => {
       const reading = await this.ocr()
-      const { findContent } = await loadFind()
       const started = Date.now()
       // findContent is synchronous and reports nothing; the session says when it ran.
       const total = reading.pages.length
@@ -405,7 +410,6 @@ export class Scanmate {
 
     return this.#cache.run('audit', fingerprint({ audit, expected, checkboxes, ocr: this.#options.ocr, diff: this.#options.diff }), async () => {
       const pages = await this.#readable()
-      const { auditPages } = await loadAudit()
       const { engine } = await this.#engine.lease()
       const order = new Map(pages.map((page, index) => [page.page, index + 1]))
       const report = await auditPages(pages, {
@@ -448,7 +452,6 @@ export class Scanmate {
    */
   async evidence (options?: EvidencePdfOptions): Promise<Uint8Array> {
     const report = await this.audit()
-    const { writeEvidencePdf } = await loadAudit()
 
     return await writeEvidencePdf(report, options)
   }
@@ -502,7 +505,7 @@ export class Scanmate {
    * Process-wide, not per session: module evaluation happens once, so a second
    * session loads nothing and a per-instance count would say so misleadingly.
    */
-  get loaded (): ReadonlySet<PipelineStage> { return loadedStages() }
+  get loaded (): ReadonlySet<LoadedStage> { return loadedStages() }
 
   // --- ending it ------------------------------------------------------------
 

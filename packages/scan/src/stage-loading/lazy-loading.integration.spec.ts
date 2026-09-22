@@ -43,19 +43,20 @@ describe('what a session loads', () => {
     expect(resolved).toContain('@scanmate/ink')
 
     // Named one by one so a failure says which package crept back in.
-    const loaded = ['@scanmate/diff', '@scanmate/ocr', '@scanmate/audit', '@scanmate/find', '@scanmate/extract', '@scanmate/merge', 'tesseract.js', 'pdfjs-dist', '@cantoo/pdf-lib', '@napi-rs/canvas']
+    const loaded = ['@scanmate/ocr', '@scanmate/extract', '@scanmate/merge', 'tesseract.js', 'pdfjs-dist', '@cantoo/pdf-lib', '@napi-rs/canvas']
       .filter(name => resolved.includes(name))
 
     expect(loaded).toEqual([])
   }, 180_000)
 
-  it('loads the pixel comparison when it is asked for, and still no reader', async () => {
+  it('compares pixels without loading a reader or a PDF library', async () => {
+    // The pixel comparison is this package's own code now, so it is always
+    // there; what must still not load is everything it does not need.
     const resolved = await resolvedBy('diff-too.mjs')
 
     expect(resolved).toContain('DONE')
-    expect(resolved).toContain('@scanmate/diff')
 
-    const loaded = ['@scanmate/ocr', '@scanmate/audit', 'tesseract.js', 'pdfjs-dist', '@cantoo/pdf-lib']
+    const loaded = ['@scanmate/ocr', 'tesseract.js', 'pdfjs-dist', '@cantoo/pdf-lib', '@napi-rs/canvas']
       .filter(name => resolved.includes(name))
 
     expect(loaded).toEqual([])
@@ -67,7 +68,7 @@ describe('what a session loads', () => {
     expect(resolved).toContain('DONE')
     expect(resolved).toContain('@scanmate/extract')
 
-    const loaded = ['@scanmate/ocr', '@scanmate/find', '@scanmate/audit', '@scanmate/diff', '@scanmate/align', '@scanmate/enhance', '@scanmate/merge', 'tesseract.js', '@cantoo/pdf-lib']
+    const loaded = ['@scanmate/ocr', '@scanmate/align', '@scanmate/merge', 'tesseract.js', '@cantoo/pdf-lib']
       .filter(name => resolved.includes(name))
 
     expect(loaded).toEqual([])

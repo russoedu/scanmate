@@ -4,7 +4,7 @@ import type { Bleed, ScanmateRect } from '@scanmate/ink'
  * One region to draw, where the document's own fields are expected to be.
  *
  * In points, from the top-left of the page as displayed - the same coordinates
- * `@scanmate/extract` reports text in, and the same shape as `@scanmate/diff`'s
+ * `@scanmate/extract` reports text in, and the same shape as the pixel comparison's
  * `ExpectedChange`. So the array about to be handed to an audit can be drawn
  * as it is, and what is checked visually is exactly what will be measured.
  */

@@ -34,10 +34,10 @@
       "path": "../../packages/ink/tsconfig.lib.json"
     },
     {
-      "path": "../../packages/extract/tsconfig.lib.json"
+      "path": "../../packages/scan/tsconfig.lib.json"
     },
     {
-      "path": "../../packages/diff/tsconfig.lib.json"
+      "path": "../../packages/extract/tsconfig.lib.json"
     },
     {
       "path": "../../packages/align/tsconfig.lib.json"

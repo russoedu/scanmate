@@ -1,9 +1,9 @@
-import type { CalibrationSample } from '@scanmate/audit'
+import type { CalibrationSample } from '../audit-calibration'
 
 import type { ScanmateDocument } from '../document-input'
 import { SharedEngine } from '../reading-engine'
 import type { ScanmateOptions } from '../session-contract'
-import { loadAudit } from '../stage-loading'
+import { calibrateAudit, sampleAudit } from '../audit-calibration'
 import type { AuditingSession, CalibrateOptions, CalibrationCase, CorpusCalibration } from './corpus-calibration.contract'
 
 type OpenSession = (original: ScanmateDocument, scanned: ScanmateDocument, options: ScanmateOptions) => AuditingSession
@@ -23,7 +23,6 @@ export async function calibrateCorpus (
   open: OpenSession,
 ): Promise<CorpusCalibration> {
   const { grid, onCase, ...session } = options
-  const { calibrateAudit, sampleAudit } = await loadAudit()
   const engine = new SharedEngine(session.engine, () => session.ocr?.tesseract)
   const samples: CalibrationSample[] = []
 

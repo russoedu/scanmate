@@ -17,7 +17,7 @@ import { fileURLToPath } from 'node:url'
  */
 
 const packages = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
-const STAGES = ['ink', 'extract', 'align', 'enhance', 'ocr', 'diff', 'find', 'merge', 'audit']
+const STAGES = ['ink', 'extract', 'align', 'ocr', 'merge']
 const barrel = readFileSync(join(packages, 'scan/src/index.ts'), 'utf8')
 
 /** The names in each `export type { ... } from '<from>'` of a barrel, as `[exported, as]`. */

@@ -2,8 +2,8 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { basename, resolve } from 'node:path'
 import type { AlignResult } from '@scanmate/align'
 import { alignPages, alignScan } from '@scanmate/align'
-import type { Region, RegionReport } from '@scanmate/diff'
-import { compareRegions, diffPages, renderDiff } from '@scanmate/diff'
+import type { Region, RegionReport } from '@scanmate/scan'
+import { compareRegions, diffPages, renderDiff } from '@scanmate/scan'
 import { extractPair } from '@scanmate/extract'
 import type { Raster, TransformModel } from '@scanmate/ink'
 import {
@@ -17,7 +17,7 @@ import {
 } from '@scanmate/ink'
 
 /**
- * A harness for looking at what `@scanmate/align` and `@scanmate/diff` actually did.
+ * A harness for looking at what `@scanmate/align` and `@scanmate/scan`'s pixel comparison actually did.
  *
  * Unit tests prove the matrix is right to a fraction of a pixel; they cannot
  * tell you that a scan of a real form came out legible. This writes the

@@ -1,4 +1,5 @@
-import type { AuditReport, EvidencePdfOptions, EvidenceSummary } from '@scanmate/audit'
+import type { AuditReport } from '../page-audit'
+import type { EvidencePdfOptions, EvidenceSummary } from '../evidence-document'
 import type { ReadablePage } from '@scanmate/ink'
 
 import type { BatchOptions, BatchSession } from '../batch-running'

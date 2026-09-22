@@ -15,7 +15,7 @@ import { resolveFields } from './resolve-fields.use-case'
  *
  * Reads the text layer and renders nothing. The regions are in points from the
  * top-left of each page as displayed - the frame `markPages` draws in and
- * `@scanmate/diff` measures in - so they go straight to either. When every spec
+ * The pixel comparison measures in - so they go straight to either. When every spec
  * names its page, only those pages are read.
  */
 export async function locateFields (pdf: ScanmateBinarySource, specs: readonly FieldSpec[], options: LocateOptions = {}): Promise<LocatedFields> {

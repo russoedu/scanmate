@@ -1,4 +1,4 @@
-import type { EnhancePagesOptions } from '@scanmate/enhance'
+import type { EnhancePagesOptions } from '../scan-enhancement'
 
 /**
  * The ways a page can be made readable, in the order they are tried.

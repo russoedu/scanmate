@@ -2,7 +2,7 @@
 
 # `@scanmate/scan`
 
-One class over the whole pipeline: hand it the document you issued and the one that came back, and ask it questions.
+One class over the whole pipeline: hand it the document you issued and the one that came back, and ask it questions. The pixel comparison, enhancement, the content search and the audit live here too, and are exported for use on their own.
 
 ![one session: the scan as it came, aligned, enhanced, and the overlay](./assets/stages.jpg)
 
@@ -250,7 +250,7 @@ boxes[0].scanned.state                  // 'empty' | 'ticked' | 'struck'
 const report = await scan.audit()       // the same boxes: a finding only where one is wrong
 ```
 
-`audit()` reports a box that does not show what its `expect` asks, one inked over so its answer cannot be told, and one ticked on the original that comes back empty - and never calls a tick unexpected ink. `@scanmate/diff` documents how a box is read and what was measured.
+`audit()` reports a box that does not show what its `expect` asks, one inked over so its answer cannot be told, and one ticked on the original that comes back empty - and never calls a tick unexpected ink. The pixel comparison documents how a box is read and what was measured.
 
 **Placing boxes from their labels.** A form's boxes sit beside labels it prints, at the same offset each time - so `Scanmate.locate` places them as it places any field. On the W-9 every tax-classification box with a one-line label is 8.5 points square, 13.85 points left of its label's first letter and 0.33 above it, measured off the form:
 
@@ -299,7 +299,7 @@ report.best?.falseAcceptUpper  // how far this corpus can vouch for that "no"
 
 **One document at a time.** Each case gets its own session, disposed before the next opens, so a corpus of any size costs the memory of its largest document. One OCR engine serves them all, and no evidence images are made. The corpus can be an async iterable, read as it goes.
 
-**Save the samples.** Each is a few numbers per page. `onCase` hands them over as they are done, so a run that stops at document 40 is not lost, and `calibrateAudit` from `@scanmate/audit` sweeps them again with other thresholds without reading a page. `@scanmate/audit` documents what is swept, how, and why `best` has to be confirmed on documents it was not chosen on.
+**Save the samples.** Each is a few numbers per page. `onCase` hands them over as they are done, so a run that stops at document 40 is not lost, and `calibrateAudit` from the audit sweeps them again with other thresholds without reading a page. The audit documents what is swept, how, and why `best` has to be confirmed on documents it was not chosen on.
 
 ## Every type, from one package
 
@@ -314,7 +314,7 @@ They are type-only exports, erased before anything runs, so naming a type never 
 | here | is | from |
 |---|---|---|
 | `DrawLabelOptions` | `LabelOptions` | `@scanmate/ink` - drawing a synthetic label |
-| `ComponentLabelOptions` | `LabelOptions` | `@scanmate/diff` - labelling connected ink |
+| `ComponentLabelOptions` | `LabelOptions` | the pixel comparison - labelling connected ink |
 | `FeatureMatchOptions` | `MatchOptions` | `@scanmate/align` - matching keypoints |
 | `WordMatchOptions` | `MatchOptions` | `@scanmate/ocr` - matching read words to printed ones |
 | `WordVerdict` | `Verdict` | `@scanmate/ocr` - one word's verdict; `Verdict` here is the audit's |
@@ -387,9 +387,22 @@ Why not a `batch` option on the constructor? Because a session that returned the
 
 There is deliberately **no `keep` option**. One was typed, exported and documented in 0.2.0 and 0.2.1, and read by nothing - so a caller who set it believed they had bounded their memory and had not. It was removed in 0.4.0 rather than left standing as a promise. Dropping consumed rasters is not a small change either: every stage hands pages back, so each report *carries* the page objects and through them their pixels, and separating the two means `PageImage.raster` becoming nullable for every package and every consumer. Batching works today and costs nobody a null check.
 
-## This is the convenient door, not the only one
+## The stages inside this package
 
-Every stage is still its own package and still worth using directly - `alignPages`, `diffPages`, `ocrPages`, `auditPages` and the rest take plain arguments and return plain results. Reach for this class when you want the pipeline; reach for a stage when you want that stage.
+Four stages only make sense inside the pipeline, and since 0.18.0 they are this package's own code rather than packages of their own. Everything they exported is exported from here, under the same names:
+
+| Stage | What it answers | Import from `@scanmate/scan` | Documentation |
+|---|---|---|---|
+| The pixel comparison | What changed on a page, whether it should have, which boxes are ticked | `diffPages`, `diffPage`, `readCheckboxes`, `checkGroups`, `compareRegions`, `probeInk`, ... | [overview](./documentation/pixel-comparison-overview.md), [how it decides](./documentation/pixel-comparison.md) |
+| Enhancement | A page cleaned for reading - even lighting, white paper, dark ink | `enhancePages`, `enhanceScan`, `enhanceRaster`, `sharpenRaster`, ... | [overview](./documentation/enhancement-overview.md), [how it decides](./documentation/enhancement.md) |
+| The content search | Whether what must be on a page is there, and identifiable | `findContent`, `approximateSearch`, ... | [overview](./documentation/content-search-overview.md), [how it decides](./documentation/content-search.md) |
+| The audit | One verdict, its evidence, its evidence PDF, its calibration | `auditPages`, `correlateFindings`, `settleDisputes`, `renderEvidence`, `writeEvidencePdf`, `calibrateAudit`, ... | [overview](./documentation/audit-overview.md), [how it decides](./documentation/audit.md) |
+
+They were `@scanmate/diff`, `@scanmate/enhance`, `@scanmate/find` and `@scanmate/audit` until 0.17.0, now deprecated; moving over is a change of package name in the import and nothing else. They take plain arguments and return plain results, so they are as usable directly as they were - reach for the class when you want the pipeline, and for a stage when you want that stage.
+
+Importing this package still loads no reader and no PDF library: the audit and the dispute settlement load `@scanmate/ocr` when they run, not when they are imported, and the lazy-loading test proves it against the built package.
+
+The stages that stand on their own - reading (`@scanmate/ocr`), alignment (`@scanmate/align`), extraction (`@scanmate/extract`), assembly (`@scanmate/merge`) and the kernel (`@scanmate/ink`) - remain separate packages, so a project that needs one of them does not install the rest.
 
 ## How it decides
 

@@ -30,7 +30,7 @@ export default [
   },
   {
     name:  'local/image-kernels',
-    files: ['packages/{ink,align,diff,extract,enhance,merge,image-fix}/src/**/*.ts'],
+    files: ['packages/{ink,align,extract,merge,scan}/src/**/*.ts'],
     rules: {
       // Every pixel loop in this package is a nested loop, and the cheapest way
       // to skip a pixel is `continue`. The rule wants the inner loop extracted
