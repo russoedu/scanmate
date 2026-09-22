@@ -13,7 +13,7 @@ import * as pkijs from 'pkijs'
  * bytes its `/ByteRange` names - exactly as a signing tool does.
  *
  * It is test scaffolding, not a signing tool: one signature, no timestamp, no
- * appearance, and a certificate that vouches for nobody.
+ * appearance, and certificates that vouch for nobody.
  */
 
 const ALGORITHM = { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256', publicExponent: new Uint8Array([1, 0, 1]), modulusLength: 2048 }
@@ -29,26 +29,43 @@ export interface SigningOptions {
   commonName?: string
   /** When the certificate is valid. Default: from yesterday to tomorrow. */
   validity?:   { from: Date, to: Date }
+  /**
+   * Sign with a certificate issued by an authority, and carry both, the
+   * authority first - which is how a real signature arrives.
+   */
+  chain?:      boolean
 }
 
-/** A self-signed certificate and the key that signed it. */
-async function certificate (commonName: string, validity?: { from: Date, to: Date }): Promise<{ cert: pkijs.Certificate, keys: WebCrypto.CryptoKeyPair }> {
+interface Issued { cert: pkijs.Certificate, keys: WebCrypto.CryptoKeyPair }
+
+/** `CN=` that name, as a distinguished name holds it. */
+function commonNameOf (commonName: string): pkijs.AttributeTypeAndValue[] {
+  return [new pkijs.AttributeTypeAndValue({ type: '2.5.4.3', value: new asn1js.BmpString({ value: commonName }) })]
+}
+
+/**
+ * A certificate and the key that signed it: self-signed, or issued by `issuer`.
+ *
+ * Serial numbers differ between the two, because the serial is how a signature
+ * names which of the certificates it carries actually signed.
+ */
+async function certificate (commonName: string, validity?: { from: Date, to: Date }, issuer?: Issued): Promise<Issued> {
   const keys = await webcrypto.subtle.generateKey(ALGORITHM, true, ['sign', 'verify'])
   const cert = new pkijs.Certificate()
   cert.version = 2
-  cert.serialNumber = new asn1js.Integer({ value: 1 })
-  for (const name of [cert.issuer, cert.subject])
-    name.typesAndValues.push(new pkijs.AttributeTypeAndValue({ type: '2.5.4.3', value: new asn1js.BmpString({ value: commonName }) }))
+  cert.serialNumber = new asn1js.Integer({ value: issuer === undefined ? 1 : 2 })
+  cert.subject.typesAndValues.push(...commonNameOf(commonName))
+  cert.issuer.typesAndValues.push(...(issuer === undefined ? commonNameOf(commonName) : issuer.cert.subject.typesAndValues))
   cert.notBefore.value = validity?.from ?? new Date(Date.now() - 86_400_000)
   cert.notAfter.value = validity?.to ?? new Date(Date.now() + 86_400_000)
   await cert.subjectPublicKeyInfo.importKey(keys.publicKey)
-  await cert.sign(keys.privateKey, 'SHA-256')
+  await cert.sign(issuer?.keys.privateKey ?? keys.privateKey, 'SHA-256')
 
   return { cert, keys }
 }
 
 /** A detached CMS `SignedData` over `covered`. */
-async function sign (covered: Uint8Array, cert: pkijs.Certificate, keys: WebCrypto.CryptoKeyPair): Promise<Uint8Array> {
+async function sign (covered: Uint8Array, cert: pkijs.Certificate, keys: WebCrypto.CryptoKeyPair, carried: pkijs.Certificate[]): Promise<Uint8Array> {
   const digest = new Uint8Array(await webcrypto.subtle.digest('SHA-256', covered))
   // The two attributes a detached CMS signature carries: what was signed, and its digest.
   const contentType = new asn1js.ObjectIdentifier({ value: '1.2.840.113549.1.7.1' })
@@ -68,7 +85,7 @@ async function sign (covered: Uint8Array, cert: pkijs.Certificate, keys: WebCryp
         attributes,
       }),
     })],
-    certificates: [cert],
+    certificates: carried,
   })
   await signed.sign(keys.privateKey, 0, 'SHA-256')
   const info = new pkijs.ContentInfo({ contentType: '1.2.840.113549.1.7.2', content: signed.toSchema(true) })
@@ -79,7 +96,7 @@ async function sign (covered: Uint8Array, cert: pkijs.Certificate, keys: WebCryp
 /** A one-page PDF whose signature covers everything but the signature itself. */
 export async function signedPdf (options: SigningOptions = {}): Promise<Uint8Array> {
   pkijs.setEngine('node', new pkijs.CryptoEngine({ name: 'node', crypto: webcrypto, subtle: webcrypto.subtle }))
-  const { name = 'A Person', when = 'D:20260922120000Z', commonName = 'Test Signer', validity } = options
+  const { name = 'A Person', when = 'D:20260922120000Z', commonName = 'Test Signer', validity, chain = false } = options
 
   const objects = [
     '<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [4 0 R] /SigFlags 3 >> >>',
@@ -120,8 +137,11 @@ export async function signedPdf (options: SigningOptions = {}): Promise<Uint8Arr
   covered.set(bytes.subarray(range[0], range[0] + range[1]), 0)
   covered.set(bytes.subarray(range[2], range[2] + range[3]), range[1])
 
-  const { cert, keys } = await certificate(commonName, validity)
-  const signature = await sign(covered, cert, keys)
+  const authority = chain ? await certificate('Test Authority', validity) : undefined
+  const { cert, keys } = await certificate(commonName, validity, authority)
+  // The authority first: a signature lists what it carries in no particular
+  // order, and the first is as often the authority as the signer.
+  const signature = await sign(covered, cert, keys, authority === undefined ? [cert] : [authority.cert, cert])
   const hex = [...signature].map(byte => byte.toString(16).padStart(2, '0')).join('')
   if (hex.length > ROOM) throw new Error('the signature does not fit the room reserved for it')
   const filled = hex.padEnd(ROOM, '0')

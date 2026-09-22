@@ -28,6 +28,15 @@ describe('verifySignatures', () => {
     expect(report.unbroken).toBe(true)
   }, 60_000)
 
+  it('names the signer, not the authority, when the signature carries a chain', async () => {
+    const pdf = await signedPdf({ commonName: 'A Signing Person', chain: true })
+    const report = await verifySignatures(pdf)
+    const { signer } = report.signatures[0]
+
+    expect(report.signatures[0].intact).toBe(true)
+    expect(signer).toMatchObject({ subject: 'CN=A Signing Person', issuer: 'CN=Test Authority', selfSigned: false })
+  }, 60_000)
+
   it('catches a byte changed after signing', async () => {
     const pdf = await signedPdf()
     const edited = tamper(pdf, '/MediaBox [0 0 200 200]', '/MediaBox [0 0 200 900]')

@@ -70,7 +70,7 @@ async function check (pdf: Uint8Array, field: SignatureField): Promise<Signature
 
     const content = pkijs.ContentInfo.fromBER(asBuffer(field.contents))
     const signed = new pkijs.SignedData({ schema: content.content })
-    const signer = describe(signed.certificates?.find((held): held is Certificate => 'subject' in held))
+    const signer = describe(signerCertificate(signed))
     if (signer !== null && signedAt !== null && (signedAt < signer.notBefore || signedAt > signer.notAfter))
       problems.push({ kind: 'certificate-expired', signedAt })
 
@@ -90,6 +90,29 @@ async function check (pdf: Uint8Array, field: SignatureField): Promise<Signature
   }
 }
 
+/**
+ * The certificate that signed, out of the several a signature carries.
+ *
+ * A real signature carries its whole chain - the signer, whoever issued to
+ * them, and on up - and the first of them is as often a certification
+ * authority as the signer. `SignerInfo` names the one that signed, by its
+ * issuer and serial number, and that is the only way to pick it. Measured on a
+ * real signed document: taking the first reported `O=Entrust.net` where the
+ * signer was a person.
+ */
+function signerCertificate (signed: { signerInfos?: Array<{ sid: unknown }>, certificates?: unknown[] }): Certificate | undefined {
+  const held = (signed.certificates ?? []).filter((candidate): candidate is Certificate => candidate instanceof Object && 'subject' in candidate)
+  const sid = signed.signerInfos?.[0]?.sid as { issuer?: Certificate['issuer'], serialNumber?: Certificate['serialNumber'] } | undefined
+  if (sid?.serialNumber === undefined) return held[0]
+  const wanted = serial(sid.serialNumber)
+
+  return held.find(candidate => serial(candidate.serialNumber) === wanted) ?? held[0]
+}
+
+function serial (number: Certificate['serialNumber']): string {
+  return [...number.valueBlock.valueHexView].map(byte => byte.toString(16).padStart(2, '0')).join('')
+}
+
 /** What a certificate says about itself. */
 function describe (certificate: Certificate | undefined): Signer | null {
   if (certificate === undefined) return null
@@ -99,7 +122,7 @@ function describe (certificate: Certificate | undefined): Signer | null {
   return {
     subject,
     issuer,
-    serialNumber: [...certificate.serialNumber.valueBlock.valueHexView].map(byte => byte.toString(16).padStart(2, '0')).join(''),
+    serialNumber: serial(certificate.serialNumber),
     notBefore:    certificate.notBefore.value,
     notAfter:     certificate.notAfter.value,
     selfSigned:   subject === issuer,

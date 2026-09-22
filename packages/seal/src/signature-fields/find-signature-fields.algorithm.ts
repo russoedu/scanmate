@@ -23,11 +23,17 @@ export function findSignatureFields (pdf: Uint8Array): SignatureField[] {
     const numbers = match[1].trim().split(/\s+/).map(Number)
     if (numbers.length !== 4 || numbers.some(n => !Number.isFinite(n))) continue
 
-    // The dictionary the /ByteRange belongs to: from the nearest `<<` before it
-    // to the `>>` that closes it, which is where /Contents and the rest live.
-    const start = text.lastIndexOf('<<', match.index)
-    const end = text.indexOf('>>', match.index)
-    if (start === -1 || end === -1) continue
+    // The dictionary /ByteRange belongs to, found by balancing brackets rather
+    // than by taking the nearest `<<`. A real signature dictionary holds nested
+    // dictionaries - /Prop_Build names the signing software, and inside it /App
+    // names the application - so the nearest `<<` is usually one of those, and
+    // everything the enclosing dictionary says, /SubFilter included, would be
+    // missed. Measured: on two real signed PDFs, one signed through Adobe Sign,
+    // the nearest-`<<` reading found no /SubFilter at all.
+    const start = enclosingDictionary(text, match.index)
+    if (start === null) continue
+    const end = closingBracket(text, start)
+    if (end === null) continue
     const dictionary = text.slice(start, end)
     const contents = /\/Contents\s*<([\da-fA-F\s]*)>/.exec(dictionary)
     if (contents === null) continue
@@ -45,6 +51,45 @@ export function findSignatureFields (pdf: Uint8Array): SignatureField[] {
   }
 
   return fields
+}
+
+/** Where the dictionary containing `at` begins: backwards, counting brackets. */
+function enclosingDictionary (text: string, at: number): number | null {
+  let depth = 0
+  for (let i = at - 2; i >= 0; i--) {
+    const pair = text.slice(i, i + 2)
+    // Each bracket is consumed whole: a run of `>>>>` closes two dictionaries,
+    // and counting it as three - which reading every position does - leaves the
+    // depth permanently wrong. PDFs are full of such runs.
+    if (pair === '>>') {
+      depth++
+      i--
+    } else if (pair === '<<') {
+      if (depth === 0) return i
+      depth--
+      i--
+    }
+  }
+
+  return null
+}
+
+/** Where that dictionary ends: forwards from its `<<`, counting brackets. */
+function closingBracket (text: string, start: number): number | null {
+  let depth = 0
+  for (let i = start; i < text.length - 1; i++) {
+    const pair = text.slice(i, i + 2)
+    if (pair === '<<') {
+      depth++
+      i++
+    } else if (pair === '>>') {
+      depth--
+      if (depth === 0) return i
+      i++
+    }
+  }
+
+  return null
 }
 
 /** `/Key /Value` - a name, as `/SubFilter` is. */

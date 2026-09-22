@@ -52,9 +52,16 @@ The cryptography is [`pkijs`](https://pkijs.org) over Node's own WebCrypto. The 
 
 ## What it has been tried on
 
-Signatures this package makes itself, in its tests: RSA with SHA-256, one signer, a detached CMS in `adbe.pkcs7.detached`, with the certificate carried in the signature. Those cover the paths that matter - digest, signature, coverage, dates - and each failure is provoked rather than imagined: a byte changed, bytes appended, a certificate out of date, a wrecked cross-reference table.
+Signatures this package makes itself, in its tests: RSA with SHA-256, one signer, a detached CMS in `adbe.pkcs7.detached`, with the certificate carried in the signature. Those cover the paths that matter - digest, signature, coverage, dates, and picking the signer out of a carried chain - and each failure is provoked rather than imagined: a byte changed, bytes appended, a certificate out of date, a wrecked cross-reference table.
 
-**It has not yet been run against a signature from Adobe Acrobat, Adobe Sign, DocuSign or a qualified European provider.** Those use the same standards, and `pkijs` implements them - ECDSA and RSA-PSS keys, `ETSI.CAdES.detached`, full certificate chains, signature timestamps - so they are expected to verify. Expected is not measured: until a real signed document has been through it, treat that as a reasonable belief about a library rather than a result. A file of yours is the way to settle it.
+**And three real signed documents**, run locally and not committed - private papers, which is the only kind there is: a property reservation signed through Adobe Sign in `ETSI.CAdES.detached`, and two `adbe.pkcs7.detached` signatures, one from a commercial signing service and one from a named individual. All three verified as intact, and one of them was found to carry 59,945 bytes appended after signing, reported as `not-covered` with the earlier bytes still vouched for. That is not a pass mark for every producer, but it is a measurement rather than a hope, and two of the three exercised paths the tests here cannot make: a CAdES signature, and a full certificate chain.
+
+Those real files also found two defects that no self-made fixture could:
+
+- A signature dictionary was read by taking the nearest `<<` before `/ByteRange`, which on real signatures lands inside `/Prop_Build <</App<<…>>>>` - the nested dictionary naming the signing software. `/SubFilter` and everything else in the real dictionary went unread. Brackets are now balanced, and a run of `>>>>` is counted as two closers rather than three.
+- The signer was read as the first certificate carried. A real signature carries a chain, and the first of it is as often the authority as the signer; one document reported a certificate authority where a person had signed. The signer is now matched by the issuer and serial that `SignerInfo` names.
+
+Still unmeasured: DocuSign, a qualified European provider, ECDSA or RSA-PSS keys, signature timestamps, and a document with more than one signature. `pkijs` implements all of them, so they are expected to work - expected, not measured. A file of yours is how any of those stops being a guess.
 
 ## Alongside the rest
 
