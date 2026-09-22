@@ -40,8 +40,8 @@
 export { auditPages, DEFAULT_MIN_TEXT_SCORE } from './page-audit'
 export type { AuditedPage, AuditOptions, AuditReport, PageAudit, Verdict } from './page-audit'
 export type { AuditFinding, ExplainedDifference, FindingKind } from './finding-correlation'
-export { writeEvidencePdf } from './evidence-document'
-export type { EvidencePdfOptions } from './evidence-document'
+export { combineSummaries, summariseAudit, writeEvidenceCover, writeEvidencePdf } from './evidence-document'
+export type { EvidencePdfOptions, EvidenceSummary, SummarisedPage } from './evidence-document'
 export { calibrateAudit, DEFAULT_CALIBRATION_GRID, documentPasses, sampleAudit } from './audit-calibration'
 export type { CalibrationGrid, CalibrationLabel, CalibrationPoint, CalibrationReport, CalibrationSample, CalibrationThresholds, SampledFinding, SampledPage } from './audit-calibration'
 

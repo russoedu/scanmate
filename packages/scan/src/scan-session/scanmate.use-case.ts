@@ -10,6 +10,8 @@ import type { PipelineStage, ScanmateBinarySource, ScanmateSource } from '@scanm
 import type { OcrOptions, OcrReport, ReadPage } from '@scanmate/ocr'
 
 import { pixelsFromAudit, readingFromAudit } from '../audit-reuse'
+import { writeBatchEvidence } from '../batch-evidence'
+import type { BatchEvidence, BatchEvidenceOptions } from '../batch-evidence'
 import { runInBatches } from '../batch-running'
 import type { BatchInfo, BatchOptions } from '../batch-running'
 import { calibrateCorpus } from '../corpus-calibration'
@@ -191,6 +193,24 @@ export class Scanmate {
     options: BatchOptions = {},
   ): Promise<Result[]> {
     return await runInBatches(original, scanned, work, options, (one, two, session) => new Scanmate(one, two, session))
+  }
+
+  /**
+   * A long document's evidence as one PDF, audited a few pages at a time.
+   *
+   * `inBatches` bounds the memory; this is the one thing most callers want from
+   * it. Each batch is audited and kept only as its summary and its sheets, then
+   * one cover is written for the whole document and everything is put together:
+   *
+   * ```ts
+   * const { pdf, summary } = await Scanmate.evidenceInBatches('agreement.pdf', 'returned.pdf', {
+   *   batch: 4, expected, evidence: { title: 'Agreement 2291, returned', pages: 'review' },
+   * })
+   * summary.verdict   // 'pass' | 'review', for the whole document
+   * ```
+   */
+  static async evidenceInBatches (original: ScanmateDocument, scanned: ScanmateDocument, options: BatchEvidenceOptions = {}): Promise<BatchEvidence> {
+    return await writeBatchEvidence(original, scanned, options, (one, two, session) => new Scanmate(one, two, session))
   }
 
   readonly #original: ScanmateDocument
