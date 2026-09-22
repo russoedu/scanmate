@@ -1,4 +1,4 @@
-import type { Component } from './connected-components.use-case'
+import type { Component } from './connected-components.algorithm'
 
 /**
  * Join components that belong to one change.

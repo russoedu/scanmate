@@ -1,5 +1,5 @@
-import type { Component } from './connected-components.use-case'
-import { mergeBoxes } from './merge-boxes.use-case'
+import type { Component } from './connected-components.algorithm'
+import { mergeBoxes } from './merge-boxes.algorithm'
 
 function box (x: number, y: number, width: number, height: number, pixels = width * height): Component {
   return { x, y, width, height, pixels }

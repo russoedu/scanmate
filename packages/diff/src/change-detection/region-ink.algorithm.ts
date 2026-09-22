@@ -1,8 +1,8 @@
 import type { BinaryImage, ScanmateRect } from '@scanmate/ink'
 
-import { labelComponents } from './connected-components.use-case'
-import type { Component } from './connected-components.use-case'
-import { mergeBoxes } from './merge-boxes.use-case'
+import { labelComponents } from './connected-components.algorithm'
+import type { Component } from './connected-components.algorithm'
+import { mergeBoxes } from './merge-boxes.algorithm'
 
 /**
  * The shape of the new ink inside one expected region.

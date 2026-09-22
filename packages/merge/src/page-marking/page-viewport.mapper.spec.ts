@@ -1,4 +1,4 @@
-import { toUserSpace, viewportSize, viewportTransform } from './page-viewport.policy'
+import { toUserSpace, viewportSize, viewportTransform } from './page-viewport.mapper'
 
 const A4 = { view: [0, 0, 595, 842] as const, rotation: 0 }
 

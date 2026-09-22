@@ -3,8 +3,8 @@ import { createSyntheticPdf, extractPages, extractPair } from '@scanmate/extract
 import { createGray, simulateScan, toGrayscale } from '@scanmate/ink'
 import type { GrayImage } from '@scanmate/ink'
 
-import { glyphCells } from './glyph-cells.use-case'
-import { collectTemplates } from './glyph-templates.use-case'
+import { glyphCells } from './glyph-cells.algorithm'
+import { collectTemplates } from './glyph-templates.algorithm'
 import { printPolarity } from './print-polarity.policy'
 import { verifyPrintedRun } from './verify-print.use-case'
 import type { PrintVerification } from './verify-print.use-case'

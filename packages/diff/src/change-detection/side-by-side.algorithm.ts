@@ -1,8 +1,8 @@
 import { createRaster } from '@scanmate/ink'
 import type { Raster } from '@scanmate/ink'
 
-import { annotateOverlay } from './annotate-overlay.use-case'
-import type { Annotation, Rgba } from './annotate-overlay.use-case'
+import { annotateOverlay } from './annotate-overlay.algorithm'
+import type { Annotation, Rgba } from './annotate-overlay.algorithm'
 
 /**
  * The original and the aligned scan next to each other, boxed.

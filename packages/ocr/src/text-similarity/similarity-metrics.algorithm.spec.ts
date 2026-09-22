@@ -1,5 +1,5 @@
-import { compareTexts } from './compare-texts.use-case'
-import { cosine, dice, jaccard, jaroWinkler, levenshtein, levenshteinSimilarity, wordDistance, wordRecall } from './similarity-metrics.use-case'
+import { compareTexts } from './compare-texts.algorithm'
+import { cosine, dice, jaccard, jaroWinkler, levenshtein, levenshteinSimilarity, wordDistance, wordRecall } from './similarity-metrics.algorithm'
 
 describe('similarity metrics', () => {
   it('match their textbook values', () => {

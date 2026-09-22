@@ -1,5 +1,5 @@
 import type { Matrix3 } from './geometry.model'
-import { applyPoint, conjugateScale, decompose, IDENTITY, invert, multiply, normalize, rebase, reprojectionError, scaling, similarity, translation } from './matrix3.mapper'
+import { applyPoint, conjugateScale, decompose, IDENTITY, invert, multiply, normalize, rebase, reprojectionError, scaling, similarity, translation } from './matrix3.algorithm'
 
 const DEGREE = Math.PI / 180
 

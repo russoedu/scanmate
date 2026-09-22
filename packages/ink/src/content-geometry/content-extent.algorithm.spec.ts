@@ -1,4 +1,4 @@
-import { contentExtent } from './content-extent.use-case'
+import { contentExtent } from './content-extent.algorithm'
 import { createGray, createRaster } from '../raster-codec'
 import { fillRect } from '../synthetic-document'
 import { inkMap, toGrayscale } from '../ink-separation'

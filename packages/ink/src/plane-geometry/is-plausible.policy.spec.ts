@@ -1,5 +1,5 @@
 import { isPlausible } from './is-plausible.policy'
-import { scaling, similarity } from './matrix3.mapper'
+import { scaling, similarity } from './matrix3.algorithm'
 
 const DEGREE = Math.PI / 180
 

@@ -5,8 +5,8 @@ import type { PDFFont, PDFPage } from '@cantoo/pdf-lib'
 import type { FindingKind } from '../finding-correlation'
 import type { AuditReport, PageAudit } from '../page-audit'
 import type { EvidencePdfOptions } from './evidence-document.contract'
-import { drawable, wrap } from './text-layout.policy'
-import type { Measure } from './text-layout.policy'
+import { drawable, wrap } from './text-layout.algorithm'
+import type { Measure } from './text-layout.algorithm'
 
 /** A4 landscape: the evidence image is three pages wide. */
 const SHEET = { width: 841.89, height: 595.28 }

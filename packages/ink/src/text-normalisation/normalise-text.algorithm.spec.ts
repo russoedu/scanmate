@@ -1,5 +1,5 @@
 import { diacriticsMap, foldDiacritics } from './diacritics.mapper'
-import { normaliseText, tokenise } from './normalise-text.use-case'
+import { normaliseText, tokenise } from './normalise-text.algorithm'
 
 describe('normaliseText', () => {
   it('folds accents, ligatures, full-width forms and case', () => {

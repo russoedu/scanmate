@@ -1,6 +1,6 @@
 import { createGray } from '../raster-codec'
 import { createSyntheticDocument, simulateScan } from '../synthetic-document'
-import { estimateSkew, profileSharpness } from './estimate-skew.use-case'
+import { estimateSkew, profileSharpness } from './estimate-skew.algorithm'
 import { inkMap, toGrayscale } from '../ink-separation'
 
 describe('profileSharpness', () => {

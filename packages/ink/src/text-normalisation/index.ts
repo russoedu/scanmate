@@ -2,5 +2,5 @@
 
 export { foldConfusables } from './confusables.mapper'
 export { diacriticsMap, foldDiacritics } from './diacritics.mapper'
-export { DEFAULT_NORMALISE, normaliseText, tokenise } from './normalise-text.use-case'
-export type { NormaliseOptions } from './normalise-text.use-case'
+export { DEFAULT_NORMALISE, normaliseText, tokenise } from './normalise-text.algorithm'
+export type { NormaliseOptions } from './normalise-text.algorithm'

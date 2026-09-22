@@ -1,6 +1,6 @@
 import type { PointMatch } from '@scanmate/ink'
-import { DESCRIPTOR_WORDS } from './detect-features.use-case'
-import type { FeatureSet } from './detect-features.use-case'
+import { DESCRIPTOR_WORDS } from './detect-features.algorithm'
+import type { FeatureSet } from './detect-features.algorithm'
 
 /**
  * Brute-force descriptor matching.

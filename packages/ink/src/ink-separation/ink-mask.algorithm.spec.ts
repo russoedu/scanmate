@@ -1,5 +1,5 @@
 import type { GrayImage } from '../raster-codec'
-import { binarize, coverage, dilate, otsuThreshold } from './ink-mask.use-case'
+import { binarize, coverage, dilate, otsuThreshold } from './ink-mask.algorithm'
 import { createBinary, createGray } from '../raster-codec'
 
 function grayOf (width: number, height: number, values: number[]): GrayImage {

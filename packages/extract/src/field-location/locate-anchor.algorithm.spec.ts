@@ -1,6 +1,6 @@
 import type { TextRun } from '@scanmate/ink'
 
-import { locateAnchor } from './locate-anchor.use-case'
+import { locateAnchor } from './locate-anchor.algorithm'
 
 /** A run of 8-point text, 5 points a character, like a form's small print. */
 function run (text: string, x: number, y: number, angle = 0): TextRun {

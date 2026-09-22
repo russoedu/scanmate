@@ -1,7 +1,7 @@
 import type { BinaryImage, ScanmateRect } from '@scanmate/ink'
 
-import { measureRegionInk } from './region-ink.use-case'
-import type { RegionInkOptions } from './region-ink.use-case'
+import { measureRegionInk } from './region-ink.algorithm'
+import type { RegionInkOptions } from './region-ink.algorithm'
 
 const OPTIONS: RegionInkOptions = { mergeGap: 6, minChangePixels: 8, lineSpan: 0.9, lineThickness: 2, lineThicknessRatio: 0.04, edgeBand: 0.03 }
 const REGION: ScanmateRect = { x: 20, y: 20, width: 200, height: 60 }

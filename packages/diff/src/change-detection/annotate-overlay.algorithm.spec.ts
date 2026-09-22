@@ -1,6 +1,6 @@
 import { createRaster } from '@scanmate/ink'
 
-import { annotateOverlay, IDENTIFIED, UNEXPECTED } from './annotate-overlay.use-case'
+import { annotateOverlay, IDENTIFIED, UNEXPECTED } from './annotate-overlay.algorithm'
 
 function pixel (raster: ReturnType<typeof createRaster>, x: number, y: number): number[] {
   const i = (y * raster.width + x) * 4

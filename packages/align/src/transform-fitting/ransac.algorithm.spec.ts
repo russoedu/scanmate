@@ -1,7 +1,7 @@
 import { applyPoint, createRandom, similarity } from '@scanmate/ink'
 import type { Matrix3, Point } from '@scanmate/ink'
-import type { Correspondence } from './fit-transform.use-case'
-import { findInliers, ransac } from './ransac.use-case'
+import type { Correspondence } from './fit-transform.algorithm'
+import { findInliers, ransac } from './ransac.algorithm'
 
 const DEGREE = Math.PI / 180
 const TRUTH = similarity(1.25, 4.5 * DEGREE, { x: 400, y: 500 }, { x: 420, y: 480 })

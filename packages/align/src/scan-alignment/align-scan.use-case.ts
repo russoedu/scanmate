@@ -5,8 +5,8 @@ import { estimateCoarse } from '../coarse-estimation'
 import type { AlignOptions, AlignResult, ModelAttempt } from './align-result.contract'
 import { createReferee, toConfidence } from './alignment-referee.use-case'
 import type { Agreement } from './alignment-referee.use-case'
-import { fitResidual, prepareMatches } from './feature-refinement.use-case'
-import type { ResidualFit } from './feature-refinement.use-case'
+import { fitResidual, prepareMatches } from './feature-refinement.algorithm'
+import type { ResidualFit } from './feature-refinement.algorithm'
 import { DEFAULT_MODELS, prefers, sweepOrder } from './model-selection.policy'
 
 /** The best fit so far in a sweep, with everything needed to return it without recomputing. */

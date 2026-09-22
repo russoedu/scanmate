@@ -1,6 +1,6 @@
 import { createGray, createRandom, gaussian } from '@scanmate/ink'
 
-import { estimateNoiseSigma } from './noise-level.use-case'
+import { estimateNoiseSigma } from './noise-level.algorithm'
 
 describe('estimateNoiseSigma', () => {
   it('reads a flat page as noiseless', () => {

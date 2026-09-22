@@ -4,8 +4,8 @@ import { growBy, hasBleed, resolveBleed } from '@scanmate/ink'
 import type { ScanmateBinarySource, ScanmateRect } from '@scanmate/ink'
 
 import { openPdf, readSource } from '../source-reading'
-import { toUserSpace, viewportSize, viewportTransform } from './page-viewport.policy'
-import type { PageGeometry } from './page-viewport.policy'
+import { toUserSpace, viewportSize, viewportTransform } from './page-viewport.mapper'
+import type { PageGeometry } from './page-viewport.mapper'
 import type { MarkOptions, MarkResult, PageMark } from './page-mark.contract'
 
 /**

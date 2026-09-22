@@ -1,5 +1,5 @@
 import type { GrayImage, Raster } from '../raster-codec'
-import { boxBlur, grayToRaster, inkMap, integralImage, toGrayscale } from './ink-map.use-case'
+import { boxBlur, grayToRaster, inkMap, integralImage, toGrayscale } from './ink-map.algorithm'
 import { createGray, createRaster } from '../raster-codec'
 
 function grayOf (width: number, height: number, values: number[]): GrayImage {

@@ -1,6 +1,6 @@
 import { IDENTITY, invert, similarity, translation } from '../plane-geometry'
 import { createGray, createRaster } from '../raster-codec'
-import { sampleGrayBilinear, warpGray, warpRaster } from './warp.use-case'
+import { sampleGrayBilinear, warpGray, warpRaster } from './warp.algorithm'
 import { toGrayscale } from '../ink-separation'
 
 function checker (size: number, cell: number) {

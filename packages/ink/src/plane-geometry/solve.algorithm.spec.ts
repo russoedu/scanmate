@@ -1,4 +1,4 @@
-import { jacobiEigen, smallestEigenvector, solve } from './solve.use-case'
+import { jacobiEigen, smallestEigenvector, solve } from './solve.algorithm'
 
 describe('solve', () => {
   it('solves a well-conditioned 3x3 system', () => {

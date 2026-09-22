@@ -1,8 +1,8 @@
 import type { Matrix3 } from '@scanmate/ink'
 import { applyPoint, createGray, createSyntheticDocument, inkMap, simulateScan, toGrayscale } from '@scanmate/ink'
 import { ransac } from '../transform-fitting'
-import { DESCRIPTOR_WORDS, detectAndDescribe, detectFast, orientation } from './detect-features.use-case'
-import { hamming, matchFeatures, popcount } from './match-features.use-case'
+import { DESCRIPTOR_WORDS, detectAndDescribe, detectFast, orientation } from './detect-features.algorithm'
+import { hamming, matchFeatures, popcount } from './match-features.algorithm'
 
 const PAGE = createSyntheticDocument({ width: 480, height: 620 })
 const PAGE_INK = inkMap(toGrayscale(PAGE.raster))

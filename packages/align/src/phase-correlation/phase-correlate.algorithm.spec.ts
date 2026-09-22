@@ -1,6 +1,6 @@
 import { createGray } from '@scanmate/ink'
 import type { GrayImage } from '@scanmate/ink'
-import { phaseCorrelate } from './phase-correlate.use-case'
+import { phaseCorrelate } from './phase-correlate.algorithm'
 
 /** A few smooth blobs, so the correlation surface has one unambiguous peak. */
 function blobs (width: number, height: number, offsetX: number, offsetY: number): GrayImage {

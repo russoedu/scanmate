@@ -1,4 +1,4 @@
-import { fft1d, fft2d, isPowerOfTwo, nextPowerOfTwo } from './fft.use-case'
+import { fft1d, fft2d, isPowerOfTwo, nextPowerOfTwo } from './fft.algorithm'
 
 /** Textbook O(n^2) DFT, used only to prove the fast one computes the same thing. */
 function naiveDft (re: Float64Array, im: Float64Array): { re: Float64Array, im: Float64Array } {

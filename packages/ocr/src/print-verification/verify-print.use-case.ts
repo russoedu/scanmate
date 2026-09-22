@@ -1,9 +1,9 @@
 import { resizeGray } from '@scanmate/ink'
 import type { GrayImage, TextRun } from '@scanmate/ink'
 
-import { placeGlyphs } from './glyph-cells.use-case'
-import { cut, templateKey } from './glyph-templates.use-case'
-import type { Templates } from './glyph-templates.use-case'
+import { placeGlyphs } from './glyph-cells.algorithm'
+import { cut, templateKey } from './glyph-templates.algorithm'
+import type { Templates } from './glyph-templates.algorithm'
 import { printPolarity } from './print-polarity.policy'
 
 /**

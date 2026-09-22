@@ -1,6 +1,6 @@
 import type { GrayImage, ScanmateOrientedRect, TextRun } from '@scanmate/ink'
 
-import { placeGlyphs } from './glyph-cells.use-case'
+import { placeGlyphs } from './glyph-cells.algorithm'
 import { printPolarity } from './print-polarity.policy'
 
 /**

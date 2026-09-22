@@ -1,7 +1,7 @@
 import type { Matrix3 } from '../plane-geometry'
 import type { GrayImage, Raster } from '../raster-codec'
 import { createGray } from '../raster-codec'
-import { boxBlurRaster } from './resize-gray.use-case'
+import { boxBlurRaster } from './resize-gray.algorithm'
 
 /**
  * Resampling one image onto another image's grid.

@@ -1,7 +1,7 @@
 import { createBinary } from '@scanmate/ink'
 import type { BinaryImage } from '@scanmate/ink'
 
-import { connectedComponents } from './connected-components.use-case'
+import { connectedComponents } from './connected-components.algorithm'
 
 /** A mask from rows of '#' (set) and '.' (clear). */
 function mask (...rows: string[]): BinaryImage {

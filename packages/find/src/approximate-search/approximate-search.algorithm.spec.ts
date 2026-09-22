@@ -1,4 +1,4 @@
-import { approximateSearch, bestMatch, wordSpan } from './approximate-search.use-case'
+import { approximateSearch, bestMatch, wordSpan } from './approximate-search.algorithm'
 
 describe('approximateSearch', () => {
   it('finds a phrase inside a longer text, with where it is and how far off', () => {

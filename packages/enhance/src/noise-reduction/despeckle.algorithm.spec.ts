@@ -1,6 +1,6 @@
 import { createRandom } from '@scanmate/ink'
 
-import { despeckle } from './despeckle.use-case'
+import { despeckle } from './despeckle.algorithm'
 
 /** The obvious median filter - window, sort, middle - to check the fast one against. */
 function reference (data: Uint8ClampedArray, width: number, height: number, r: number): Uint8ClampedArray {
