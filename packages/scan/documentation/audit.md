@@ -291,6 +291,31 @@ the false accept rate's bound, not the rate.
 the fewest false reviews - on the corpus it was chosen from. Confirm it on
 documents it was not chosen on before relying on it.
 
+## What a first calibration showed
+
+Twelve documents, from three real scans of one seven-page order form at 93, 120
+and 144 dpi: each page kept as it came (genuine) and again with one digit
+replaced by another cut from the same printed number (altered) - the document's
+own ink, which is the forgery this suite exists to catch. Audited once, 329
+seconds for the twelve; re-swept from the saved samples in under a millisecond.
+
+| Scan | Genuine | Altered |
+|---|---|---|
+| 144 dpi | both **pass** | both **review**, `text-changed` |
+| 120 dpi | both review: ink lost, 8.2 and 5.8 mm2, plus text the scan could not read | both review, `text-changed` as well |
+| 93 dpi | both review: 25 and 57 readings that could not be settled | both review, and **indistinguishable** from genuine |
+
+No combination of thresholds gave zero false reviews, and raising the lost-ink
+threshold to 32 mm2 changed nothing, because those pages also carry text the
+reading could not settle - which no area threshold touches. The lesson is not a
+threshold: **at 93 dpi the audit cannot tell an altered document from an honest
+one**, and the honest answer is to refuse the scan rather than to tune. That is
+what `minTextScore` is for; those pages scored 0.61-0.75.
+
+The false-accept rate was 0 of 6 altered documents, whose upper bound is 39% -
+which is what six documents are worth. A corpus that supports automatic
+acceptance needs tens of altered documents, not six.
+
 ## Constants
 
 | option | default | |

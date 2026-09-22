@@ -12,6 +12,16 @@ export interface CalibrationCase extends CalibrationLabel {
   scanned:   ScanmateDocument
   /** This document's own expected regions, when they differ from the options'. */
   expected?: readonly ExpectedChange[]
+  /**
+   * Settings for this document alone, over the run's: which pages to take, a
+   * resolution, a different tolerance. Each stage's bag is merged with the
+   * run's rather than replacing it, so naming one option keeps the rest.
+   *
+   * A corpus is rarely uniform - documents differ in length, in resolution, in
+   * which page carries the signature - and a case that could not say so would
+   * have to be audited in a run of its own, with its own engine.
+   */
+  options?:  Omit<ScanmateOptions, 'engine' | 'onProgress'>
 }
 
 export interface CalibrateOptions extends ScanmateOptions {

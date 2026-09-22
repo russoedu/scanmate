@@ -1,3 +1,5 @@
+import type { OcrEngine } from '@scanmate/ocr'
+
 import type { CalibrationSample } from '../audit-calibration'
 
 import type { ScanmateDocument } from '../document-input'
@@ -7,6 +9,20 @@ import { calibrateAudit, sampleAudit } from '../audit-calibration'
 import type { AuditingSession, CalibrateOptions, CalibrationCase, CorpusCalibration } from './corpus-calibration.contract'
 
 type OpenSession = (original: ScanmateDocument, scanned: ScanmateDocument, options: ScanmateOptions) => AuditingSession
+
+/** One case's settings: the run's, with the case's own over them, each stage's bag merged rather than replaced. */
+function forCase (session: ScanmateOptions, item: CalibrationCase, engine: OcrEngine): ScanmateOptions {
+  const own = item.options ?? {}
+  const bags = ['merge', 'extract', 'align', 'enhance', 'ocr', 'diff', 'find', 'audit'] as const
+  const merged: ScanmateOptions = { ...session, ...own, engine, expected: item.expected ?? own.expected ?? session.expected }
+  for (const bag of bags) {
+    const both = { ...session[bag], ...own[bag] }
+    if (Object.keys(both).length > 0) Object.assign(merged, { [bag]: both })
+  }
+
+  // Nothing here reads the evidence images, and they are most of an audit's bytes.
+  return { ...merged, audit: { ...merged.audit, output: 'none' } }
+}
 
 /**
  * Audit every document of a labelled corpus, then measure the thresholds on it.
@@ -31,12 +47,7 @@ export async function calibrateCorpus (
     for await (const item of corpus) {
       index++
       const { engine: leased } = await engine.lease()
-      const scan = open(item.original, item.scanned, {
-        ...session,
-        engine:   leased,
-        expected: item.expected ?? session.expected,
-        audit:    { ...session.audit, output: 'none' },
-      })
+      const scan = open(item.original, item.scanned, forCase(session, item, leased))
       try {
         const sample = sampleAudit(await scan.audit(), item, { diff: session.diff })
         samples.push(sample)

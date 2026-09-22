@@ -180,7 +180,7 @@ report.points                     // every combination, safest first
 - **Areas can only be raised.** A mark smaller than the audit ran with was never reported, so grid values below it are listed in `unreachable` rather than guessed at. Audit the corpus with low area thresholds to leave room to sweep.
 - **`best` is chosen on the corpus it is measured on**, so it flatters itself. Confirm it on documents it was not chosen on.
 
-`Scanmate.calibrate` in `@scanmate/scan` runs the whole corpus from file paths, one document at a time.
+`Scanmate.calibrate` in `@scanmate/scan` runs the whole corpus from file paths, one document at a time, each case carrying settings of its own where the corpus is not uniform. `audit.md` has the numbers from a first calibration on real scans.
 
 ## Options
 
