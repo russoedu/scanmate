@@ -74,6 +74,7 @@ boxes[1].changed     // whether the scan's state differs from the original's
 - **Three states.** `empty`; `ticked` for any mark of at least `minTickArea` (0.6 mm²) - a tick, a cross, a dot; `struck` once half the inside is inked, because a box blacked out or scribbled over gives no answer that can be read.
 - **Both sides.** A box ticked on the original and on the scan is not a change; one ticked on the original and empty on the scan is.
 - **`expect`** says what the returned document must show; `satisfied` says whether it does.
+- **Groups.** `checkGroups(readings, groups)` judges boxes answered together - `'exactly-one'`, `'at-least-one'` or `'at-most-one'` ticked. A box inked over is no answer, so a group holding one is not satisfied; a group whose boxes were not all read is left unjudged.
 
 Measured on synthetic scans at 150 dpi in 4.6 mm boxes: a 0.34 mm pen tick leaves 0.75-1.8 mm² inside the box, mid-grey to dark; an empty box under sensor noise far past a real scanner's, at most 0.23 mm², and none at all through ordinary noise or a 2-pixel misalignment. A very light stroke - soft pencil, about a third grey - can fall under the threshold.
 
