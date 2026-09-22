@@ -35,6 +35,7 @@ const KIND_NAMES: Readonly<Record<FindingKind, readonly [string, string]>> = {
   'checkbox-mismatch':   ['box not as required', 'boxes not as required'],
   'checkbox-struck':     ['box inked over', 'boxes inked over'],
   'checkbox-cleared':    ['box cleared', 'boxes cleared'],
+  'checkbox-group':      ['group of boxes not answered as asked', 'groups of boxes not answered as asked'],
 }
 
 /**

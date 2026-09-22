@@ -68,3 +68,27 @@ export interface CheckboxReading {
   /** Whether the scan shows what `expect` asks for; `null` when nothing was asked. */
   satisfied: boolean | null
 }
+
+/** Boxes answered together: "check only one of the following". */
+export interface CheckboxGroup {
+  /** Names the group in findings. */
+  id:     string
+  /** The ids of its boxes, each one of the `checkboxes` read. */
+  boxes:  readonly string[]
+  /** How many may be ticked. */
+  ticked: 'exactly-one' | 'at-least-one' | 'at-most-one'
+}
+
+/** How a group is answered on the scan. */
+export interface GroupReading {
+  id:        string
+  rule:      CheckboxGroup['ticked']
+  /** Its boxes ticked on the scan. */
+  ticked:    string[]
+  /** Its boxes inked over, whose answer cannot be read. */
+  struck:    string[]
+  /** Its boxes that were not read at all. */
+  missing:   string[]
+  /** Whether the scan answers it as the rule asks; `null` when not all its boxes were read. */
+  satisfied: boolean | null
+}

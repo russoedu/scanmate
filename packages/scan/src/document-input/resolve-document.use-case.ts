@@ -15,7 +15,8 @@ import { isPdfSource } from './pdf-sniff.policy'
  * |---|---|---|
  * | an array | merged into one PDF, then extracted | merge, then extract |
  * | a PDF | extracted | extract |
- * | an image | decoded, one page | ink only |
+ * | a PDF and an image | the PDF's page rendered at the image's resolution | extract |
+ * | two images | decoded, one page | ink only |
  *
  * The last row is the one worth having. Two images compared against each other
  * is the commonest small case, and it never opens a PDF library at all.
@@ -62,17 +63,46 @@ export async function resolveDocument (
     }
   }
 
-  // Not two PDFs. `dpi: 'match'` measures the scan against the original's own
-  // page, which needs both sides to be documents, so it cannot apply here.
-  const pages = await pairImages(one, two)
+  if (onePdf !== twoPdf) return { ...await pairWithImage(onePdf ? one : two, onePdf ? two : one, onePdf ? 'original' : 'scanned', options), merged }
+
+  // Two images: nothing to render, and nothing but the kernel loads.
+  return { pages: await pairImages(one, two), unpaired: { original: [], scanned: [] }, merged, warning: null }
+}
+
+/**
+ * A document on one side and an image on the other - a PDF original and a
+ * photographed page, say.
+ *
+ * The image is one page, so it pairs with one page of the document: the first
+ * that `extract.pages` selects, or page 1. That page is rendered at the image's
+ * own resolution - its pixels over the page's width in inches - so the two are
+ * compared at a matched scale, and it keeps its text layer, so the reading and
+ * the audit still know what the page prints.
+ */
+async function pairWithImage (
+  pdf: ScanmateSource,
+  image: ScanmateSource,
+  pdfSide: 'original' | 'scanned',
+  options: ResolveOptions,
+): Promise<Omit<ResolvedDocument, 'merged'>> {
+  const { decodeImage, readImageMetadata } = await loadInk()
+  const { extractPages, inspectDocument, selectPages } = await loadExtract()
+  const document = pdf as ScanmateBinarySource
+
+  const { pageCount } = await inspectDocument(document)
+  const [number] = selectPages(options.extract?.pages, pageCount)
+  const inspected = await inspectDocument(document, { pages: [number] })
+  const [geometry] = inspected.pages
+  const raster: Raster = await decodeImage(image)
+  const photo: PageImage = { raster, image: null, width: raster.width, height: raster.height, dpi: await resolution(image, readImageMetadata) }
+  const dpi = raster.width / (geometry.displayWidth / 72)
+  const [rendered] = await extractPages(document, { ...options.extract, pages: [number], dpi, output: 'none', onProgress: options.onProgress })
+  const sides = pdfSide === 'original' ? { original: rendered.image, scanned: photo } : { original: photo, scanned: rendered.image }
 
   return {
-    pages,
+    pages:    [{ page: number, ...sides, scannedPage: 1, metadata: { [pdfSide]: rendered.metadata } }],
     unpaired: { original: [], scanned: [] },
-    merged,
-    warning:  onePdf === twoPdf
-      ? null
-      : 'one side is a document and the other an image, so the two were not rendered at a matched resolution',
+    warning:  pageCount > 1 ? `the image was compared with page ${number} of a ${pageCount}-page document; choose another with extract.pages` : null,
   }
 }
 

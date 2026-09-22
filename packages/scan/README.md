@@ -250,7 +250,33 @@ boxes[0].scanned.state                  // 'empty' | 'ticked' | 'struck'
 const report = await scan.audit()       // the same boxes: a finding only where one is wrong
 ```
 
-`audit()` reports a box that does not show what its `expect` asks, one inked over so its answer cannot be told, and one ticked on the original that comes back empty - and never calls a tick unexpected ink. The boxes' coordinates can come from `Scanmate.locate`, placed from the label printed beside each. `@scanmate/diff` documents how a box is read and what was measured.
+`audit()` reports a box that does not show what its `expect` asks, one inked over so its answer cannot be told, and one ticked on the original that comes back empty - and never calls a tick unexpected ink. `@scanmate/diff` documents how a box is read and what was measured.
+
+**Placing boxes from their labels.** A form's boxes sit beside labels it prints, at the same offset each time - so `Scanmate.locate` places them as it places any field. On the W-9 every tax-classification box with a one-line label is 8.5 points square, 13.85 points left of its label's first letter and 0.33 above it, measured off the form:
+
+```ts
+const box = { dx: -13.85, dy: -0.33, width: 8.5, height: 8.5 }
+const labels = { individual: 'Individual/sole proprietor', 'c-corporation': 'C corporation', 's-corporation': 'S corporation', partnership: 'Partnership', trust: 'Trust/estate' }
+
+// `occurrence: 1`: "C corporation" and the others are printed again further down the page.
+const { regions, problems } = await Scanmate.locate('fw9.pdf',
+  Object.entries(labels).map(([id, anchor]) => ({ anchor, page: 1, occurrence: 1, fields: { [id]: box } })))
+```
+
+Those five resolve to exactly the boxes measured off the rendered form. With a pen tick drawn in the first and the page compared as an image, `scan.checkboxes()` read it as ticked (1.15 mm²) and the other four as empty.
+
+**Boxes answered together.** "Check only one of the following seven boxes" is a rule over several boxes, not one. Give it as a group, and the audit judges it once every page is read:
+
+```ts
+const report = await new Scanmate('fw9.pdf', 'returned.pdf', {
+  checkboxes: regions,
+  audit:      { checkboxGroups: [{ id: 'tax-classification', boxes: Object.keys(labels), ticked: 'exactly-one' }] },
+}).audit()
+
+report.groups   // [{ id: 'tax-classification', ticked: ['individual'], satisfied: true, ... }]
+```
+
+The rule is `'exactly-one'`, `'at-least-one'` or `'at-most-one'`. A group not answered as asked is a `checkbox-group` finding on the page of its first box, and that page's evidence is drawn with it. A box inked over counts as no answer, so a group holding one is not satisfied. A group whose boxes were not all read - as in a batch that did not include their pages - is left unjudged (`satisfied: null`) and says which boxes it is missing.
 
 ## Measuring the thresholds on your documents
 
@@ -303,7 +329,7 @@ new Scanmate('fw9-issued.pdf', ['page-1.jpg', 'page-2.jpg', 'page-3.jpg'])
 
 Whether a side is a PDF is decided by its first five bytes, not its file extension. Two images never open a PDF library at all.
 
-One caveat worth knowing: `dpi: 'match'` - rendering both sides at the scan's own measured resolution, which is what makes them directly comparable - needs both sides to be documents. Give it a PDF against a photograph and it renders at the original's resolution instead, and says so in `scan.warning`.
+**A document against a photograph** works too - a PDF original and a page photographed on its return, or the other way round. The photograph is one page, so it is compared with one page of the document: the first `extract.pages` selects, or page 1, and `scan.warning` says so when the document has more. That page is rendered at the photograph's own resolution - its pixels over the page's width - so the two are compared at a matched scale, and it keeps its text layer, so the reading and the audit still know what it prints. Before 0.17.0 this pairing failed outright: the PDF was handed to the image decoder.
 
 ## Two orderings worth knowing
 

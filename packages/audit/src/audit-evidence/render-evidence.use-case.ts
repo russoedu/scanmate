@@ -47,6 +47,7 @@ const COLOURS: Readonly<Record<FindingKind, Rgba>> = {
   'checkbox-mismatch':   NOT_IDENTIFIED,
   'checkbox-struck':     NOT_IDENTIFIED,
   'checkbox-cleared':    NOT_IDENTIFIED,
+  'checkbox-group':      NOT_IDENTIFIED,
 }
 
 /** The legend, in the order it reads. */
