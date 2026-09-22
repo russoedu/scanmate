@@ -70,7 +70,7 @@ flowchart LR
 The 20% rule (`PRINTED_SHARE`) is worth explaining. Printed words — a logo's
 letters — cover a third of their box or more; a form rule or checkbox edge
 crossing a handwritten word covers a tenth. Only the first explains a word away,
-and ink over something the original prints is `@scanmate/diff`'s business, not
+and ink over something the original prints is the pixel comparison's business, not
 the reading's.
 
 ## Judging a run
@@ -290,7 +290,7 @@ amount, an account number, a date.
 Letters are a second scope, and deliberately not page-wide — the rival set is
 six times larger and so is the work. It is used on **one run already in
 dispute**, where the reading disagrees with the original and the ink at that run
-says nothing moved. `@scanmate/audit` asks for it there.
+says nothing moved. The audit asks for it there.
 
 Its two answers are not worth the same, and this is measured rather than
 assumed. Swept over every run of four real documents — 327 runs, about 1700
@@ -349,11 +349,11 @@ hiding exactly the substitutions a forger would make.
 ## What it does not do
 
 - It does not read handwriting. A signature is ink, not text; whether a field
-  was filled in is `@scanmate/diff`'s question.
+  was filled in is the pixel comparison's question.
 - It does not verify letters glyph by glyph — only figures. Rival letters are a
   much larger set, and a changed word changes the ink, which the pixel
   comparison sees.
-- It does not check that required content is present. That is `@scanmate/find`.
+- It does not check that required content is present. That is the content search.
 - It does not check a figure on a page too sparse to judge it, or one printed
   too small to segment — 90 dpi is below the floor. It says so (`checked`
   counts what it looked at) rather than reporting a verdict it cannot support.

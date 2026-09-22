@@ -1,22 +1,22 @@
-![scanmate diff](./assets/scanmate-diff.svg)
+# The pixel comparison
 
-# `@scanmate/diff`
+*Part of [`@scanmate/scan`](../README.md). Before 0.18.0 this was the separate package the pixel comparison, now deprecated.*
 
 What changed between an original and its aligned scan: which expected regions were filled in, what ink was added where nothing was expected, what printed ink the scan lost — and a picture of all three.
 
-![the original and the returned scan side by side, the signer fields outlined](./assets/side-by-side.jpg)
+![the original and the returned scan side by side, the signer fields outlined](../assets/side-by-side.jpg)
 
 *Green: a field that was filled in. Orange: the band around it where ink still counts as that field's. Made from the [IRS Form W-9](https://www.irs.gov/pub/irs-pdf/fw9.pdf) (a work of the United States government, in the public domain): filled in as a generator would, printed, signed by hand and scanned crooked.*
 
 ## Install
 
 ```bash
-npm install @scanmate/diff @scanmate/extract @scanmate/align
+npm install @scanmate/scan @scanmate/extract @scanmate/align
 ```
 
 ```ts
 import { alignPages } from '@scanmate/align'
-import { diffPages } from '@scanmate/diff'
+import { diffPages } from '@scanmate/scan'
 import { extractPair } from '@scanmate/extract'
 
 const { pages } = await extractPair({ original: 'fw9-issued.pdf', scanned: 'fw9-returned.pdf' })
@@ -59,7 +59,7 @@ Each region reports its shape too — how many separate changes, the largest, th
 A form is full of boxes, and the question about each is plain: ticked or not. It is not the question an expected region answers - a region asks whether ink was *added*, so a box ticked before the form was issued reads as untouched, and an empty one, often the right answer, reads as a field someone forgot. `readCheckboxes` reads each side on its own:
 
 ```ts
-import { readCheckboxes } from '@scanmate/diff'
+import { readCheckboxes } from '@scanmate/scan'
 
 const boxes = await readCheckboxes(alignedPages, [
   { page: 1, id: 'consent',    x: 36, y: 612, width: 13, height: 13, expect: 'ticked' },
@@ -108,4 +108,4 @@ Measured on synthetic scans at 150 dpi in 4.6 mm boxes: a 0.34 mm pen tick leave
 
 ## How it decides
 
-[`documentation/algorithms.md`](./documentation/algorithms.md) has the algorithms in full: what each step measures, the decision flows, every constant with the measurement behind it, and what the package deliberately does not do.
+[`pixel-comparison.md`](./pixel-comparison.md) has the algorithms in full: what each step measures, the decision flows, every constant with the measurement behind it, and what the package deliberately does not do.

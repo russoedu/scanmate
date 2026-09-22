@@ -37,7 +37,7 @@ report.pages[0].aligned.raster   // the page itself comes back too
 ## How it reads
 
 - **The original's side** comes from its PDF text layer whenever it has one. The layer is exact, so every error counted belongs to the scan. The scan's own text layer is never used, because hidden or stale text must not vouch for what the paper shows.
-- **The scan** is read with tesseract, at 300 dpi (it is enlarged first if lower), or from its `enhanced` image when `@scanmate/enhance` ran first.
+- **The scan** is read with tesseract, at 300 dpi (it is enlarged first if lower), or from its `enhanced` image when enhancement ran first.
 - **Matching by place, not order.** Alignment puts the scan on the original's canvas, so each word read is claimed by the run of the original printed where it was read. A two-column page read column by column is therefore not a page of errors, and every difference has a position.
 - **Figures must keep their digits.** A run whose digits read back differently has changed, however similar the rest is: "Total 1,250.00" read as "Total 7,250.00" is 93% similar. A figure whose separators alone differ ("5.768.700 00") is the same figure. Words keep OCR's tolerance (`matchThreshold`, 0.8).
 - **Figures are matched, not only read.** Every printed figure is checked glyph by glyph against the original's own ink and against the other digits the page prints, at the scan's own sharpness. That settles what no reading of a coarse scan can: whether this is still the digit that was printed. On real returned scans it verified 35 of 40 printed figures at 125 dpi with no false calls, and read a digit replaced by another of the same run for what it is.

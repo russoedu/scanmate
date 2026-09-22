@@ -1,23 +1,23 @@
-![scanmate audit](./assets/scanmate-audit.svg)
+# The audit
 
-# `@scanmate/audit`
+*Part of [`@scanmate/scan`](../README.md). Before 0.18.0 this was the separate package the audit, now deprecated.*
 
 The final audit of a returned document. Every page is read in full and compared pixel by pixel. The two results are merged into one list of findings and a verdict, with a side-by-side image as evidence.
 
-![the evidence page: the original, the returned scan and the overlay side by side, findings drawn on each](./assets/evidence.jpg)
+![the evidence page: the original, the returned scan and the overlay side by side, findings drawn on each](../assets/evidence.jpg)
 
 *The evidence page: the original, the returned scan and the overlay of the two, with the same places boxed on each. The original asks the questions in blue; the scan answers each in the colour of its verdict - green filled in, red changed, pink the room a signature is given to stray, olive a disagreement nothing could settle; the overlay shows violet where the ink differs and grey where it agrees, so a red box can be checked rather than taken on trust. One red box: the account number, one printed digit replaced by another. Made from the [IRS Form W-9](https://www.irs.gov/pub/irs-pdf/fw9.pdf) (a work of the United States government, in the public domain): filled in as a generator would, printed, signed by hand and scanned crooked.*
 
 ## Install
 
 ```bash
-npm install @scanmate/audit @scanmate/extract @scanmate/align
+npm install @scanmate/scan @scanmate/extract @scanmate/align
 ```
 
 ```ts
 import { extractPair } from '@scanmate/extract'
 import { alignPages } from '@scanmate/align'
-import { auditPages } from '@scanmate/audit'
+import { auditPages } from '@scanmate/scan'
 
 const { pages } = await extractPair({ original: 'fw9-issued.pdf', scanned: 'fw9-returned.pdf' })
 const audit = await auditPages(await alignPages(pages), {
@@ -36,14 +36,14 @@ audit.pages[0].audit.settled   // how each disagreement was settled, and what ea
 audit.pages[0].aligned.raster  // the page itself is still there
 audit.pages[0].evidenceImage   // original, scan and overlay side by side, findings drawn on each
 audit.pages[0].text            // the full OCR comparison (@scanmate/ocr)
-audit.pages[0].pixels          // the full pixel comparison (@scanmate/diff)
+audit.pages[0].pixels          // the full pixel comparison
 ```
 
 ## Why both
 
 Each comparison is blind where the other sees:
 
-| Change | Reading (`@scanmate/ocr`) | Pixels (`@scanmate/diff`) |
+| Change | Reading (`@scanmate/ocr`) | Pixels (the pixel comparison) |
 |---|---|---|
 | A digit altered: 1,250.00 → 7,250.00 | ✓ figures must match exactly | ✗ the new glyph stays within the tolerance band |
 | A signature, a stamp, a tick | ✗ not writing | ✓ ink where none was |
@@ -95,13 +95,13 @@ Corroborated findings are drawn twice as thick, and a legend runs along the foot
 `writeEvidencePdf` puts the whole audit in one file for whoever reviews it: a cover with the verdict and, page by page, why; then a sheet for each page with its evidence image and what to look at in words - real text, searchable and copyable, running on to further sheets when there is a lot.
 
 ```ts
-import { writeEvidencePdf } from '@scanmate/audit'
+import { writeEvidencePdf } from '@scanmate/scan'
 
 const pdf = await writeEvidencePdf(audit, { title: 'Order 118, returned' })
 await writeFile('order-118-evidence.pdf', pdf)
 ```
 
-![a sheet of the evidence PDF: page 1 of the returned W-9 marked REVIEW, its original, scan and overlay side by side, and below them the four things to look at, in words](./assets/evidence-pdf.jpg)
+![a sheet of the evidence PDF: page 1 of the returned W-9 marked REVIEW, its original, scan and overlay side by side, and below them the four things to look at, in words](../assets/evidence-pdf.jpg)
 
 *A sheet of the evidence PDF for the forged [IRS Form W-9](https://www.irs.gov/pub/irs-pdf/fw9.pdf) (a work of the United States government, in the public domain) used throughout these READMEs. The altered account number is the last line; above it, the sideways label, a footnote and a URL were read differently where the ink is identical, and re-reading could not settle them - so they are reported, not dropped.*
 
@@ -147,10 +147,10 @@ audit.pages[0].settled[0]   // { verdict: 'misread', because: 'both-sides-alike'
 
 ## Required content is asked separately
 
-`auditPages` compares a returned copy with the one that was issued. Whether the issued copy says what it was *supposed* to say is a different question, and no comparison of two copies can answer it - issue a different form, return a faithful scan of it, and every check here passes. Ask `@scanmate/find` directly, of the reading this returns:
+`auditPages` compares a returned copy with the one that was issued. Whether the issued copy says what it was *supposed* to say is a different question, and no comparison of two copies can answer it - issue a different form, return a faithful scan of it, and every check here passes. Ask the content search directly, of the reading this returns:
 
 ```ts
-import { findContent } from '@scanmate/find'
+import { findContent } from '@scanmate/scan'
 
 const found = findContent(audit.pages, [{ page: 1, content: ['Account 4412-9087-3355'] }])
 ```
@@ -160,7 +160,7 @@ const found = findContent(audit.pages, [{ page: 1, content: ['Account 4412-9087-
 Automatic acceptance is only as safe as the thresholds behind it, and "0.85 looks right" is not something anyone can sign off. `calibrateAudit` measures them on documents someone has checked by hand: for every combination of thresholds, which altered documents would have passed, and which genuine ones would have been held up.
 
 ```ts
-import { auditPages, calibrateAudit, sampleAudit } from '@scanmate/audit'
+import { auditPages, calibrateAudit, sampleAudit } from '@scanmate/scan'
 
 // Once per labelled document - the slow part, hours for a real corpus:
 const sample = sampleAudit(await auditPages(pages, options), { id: 'order-118', genuine: true }, options)
@@ -190,7 +190,7 @@ report.points                     // every combination, safest first
 | `checkboxes` | none | Boxes to read as ticked or not, each with an optional `expect`. `checkbox` sets how they are read. |
 | `checkboxGroups` | none | Boxes answered together, each `{ id, boxes, ticked: 'exactly-one' \| 'at-least-one' \| 'at-most-one' }`, judged across the document. The report's `groups` says how each was answered. |
 | `ocr` | `@scanmate/ocr` defaults | Engine, languages and cache, the recheck, thresholds. Pass `ocr.engine` to share one engine across audits. |
-| `diff` | `@scanmate/diff` defaults | Tolerances, minimum areas, form-line handling. Rectangles are always in points. |
+| `diff` | the pixel comparison defaults | Tolerances, minimum areas, form-line handling. Rectangles are always in points. |
 | `settle` | `quorum: 2`, three passes | How a disagreement between the reading and the pixels is settled. |
 | `minTextScore` | `0.85` | Below this, a page's text is too unreliable for it to pass. |
 | `output` | `'png'` | Encoding of the evidence image and the pixel overlay; `'none'` keeps only rasters. |
@@ -198,4 +198,4 @@ report.points                     // every combination, safest first
 
 ## How it decides
 
-[`documentation/algorithms.md`](./documentation/algorithms.md) has the algorithms in full: what each step measures, the decision flows, every constant with the measurement behind it, and what the package deliberately does not do.
+[`audit.md`](./audit.md) has the algorithms in full: what each step measures, the decision flows, every constant with the measurement behind it, and what the package deliberately does not do.

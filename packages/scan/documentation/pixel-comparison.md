@@ -1,4 +1,4 @@
-# How `@scanmate/diff` decides
+# How the pixel comparison decides
 
 Two questions, both about ink:
 
@@ -144,7 +144,7 @@ millimetres.
 
 It exists for one job: settling whether a reading that disagrees is a change or
 a misreading. OCR mangles small, faint and sideways print, and a reader's
-disagreement is not evidence that the paper differs. `@scanmate/audit` puts
+disagreement is not evidence that the paper differs. The audit puts
 every text difference the pixels did not already account for through here, as
 the first step of settling it.
 
@@ -193,7 +193,7 @@ original's half is drawn in blue alone: a verdict belongs to the copy that came
 back, not to the document that asked the question.
 
 `composePanels` is the same machinery with the count left open, which is how
-`@scanmate/audit` adds the overlay itself as a third panel.
+the audit adds the overlay itself as a third panel.
 
 ## Reading a checkbox
 
@@ -249,4 +249,4 @@ sees a hairline the normal one misses, but it also turns heavy sensor noise into
 - It does not align. Both images must already be on one canvas; it refuses
   mismatched sizes rather than guessing.
 - It does not judge a document. It reports what changed and where;
-  `@scanmate/audit` merges that with the reading and reaches a verdict.
+  the audit merges that with the reading and reaches a verdict.

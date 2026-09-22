@@ -1,4 +1,4 @@
-# How `@scanmate/find` decides
+# How the content search decides
 
 One question: **is the content that must be on this page actually on it?** -
 the company name, the order number, the total.
@@ -98,6 +98,6 @@ here will use it.
 
 - It does not read the scan. It works from `@scanmate/ocr`'s report.
 - It does not look at ink. Whether a field was *filled in* is
-  `@scanmate/diff`'s question.
+  the pixel comparison's question.
 - It does not invent a location for content it cannot find in the original: if
   the document does not print it, there is no "place" for it to be.

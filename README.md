@@ -9,7 +9,7 @@ on the same coordinates and answer three questions: **was it signed where it
 should be, is everything that must be there still there, and did anything
 change?**
 
-![the evidence page: the original and the returned scan side by side, every finding drawn on both](./packages/audit/assets/evidence.jpg)
+![the evidence page: the original and the returned scan side by side, every finding drawn on both](./packages/scan/assets/evidence.jpg)
 
 *The audit's evidence page. Green: a field that was filled in. Orange: the room
 a signature is given to stray past its box. Red: text that reads differently —
@@ -34,23 +34,20 @@ flowchart LR
   I --> J[verdict + evidence]
 ```
 
-Every stage stands on its own: install the one you need, or the lot.
+Six packages. `@scanmate/scan` holds the whole pipeline; the other five stand on their own for anyone who needs one of them without the rest - and without the rest's dependencies on disk.
 
 ## Packages
 
 | package | what it answers |
 |---|---|
-| [`@scanmate/scan`](packages/scan) | **All of it, in one object.** `new Scanmate(issued, returned)` with a method per comparison, each running what it needs, remembering what it did, and loading a stage only when that stage is used. |
-| [`@scanmate/audit`](packages/audit) | **Is this return acceptable?** Runs the reading and the pixel comparison together, merges what both saw by place, settles what they disagree about, and gives a verdict with a three-panel evidence page. |
+| [`@scanmate/scan`](packages/scan) | **All of it.** `new Scanmate(issued, returned)` with a method per comparison, each running what it needs, remembering what it did, and loading a stage package only when it is used. It also holds the stages that only make sense inside the pipeline: the [pixel comparison](packages/scan/documentation/pixel-comparison-overview.md) (what changed, which boxes are ticked), [enhancement](packages/scan/documentation/enhancement-overview.md), the [content search](packages/scan/documentation/content-search-overview.md) and the [audit](packages/scan/documentation/audit-overview.md) - one verdict with its evidence, its evidence PDF and its calibration. |
 | [`@scanmate/ocr`](packages/ocr) | **Does the scan still say what the original said?** Read run by run against the original's text layer, with printed figures matched glyph by glyph against the original's own ink. |
-| [`@scanmate/diff`](packages/diff) | **What changed?** Expected regions filled in, unexpected marks, printed ink lost — measured in square millimetres of real ink. |
-| [`@scanmate/find`](packages/find) | **Is the required content there, where it should be?** And where is a field, resolved from the words the form prints. |
 | [`@scanmate/align`](packages/align) | **Where does this scan sit on the original?** Deskewed, rescaled and registered, with a confidence you can act on. |
-| [`@scanmate/extract`](packages/extract) | **What is in this PDF?** Pages as rasters at the scan's own resolution, page kind, real resolution, and the text layer with its geometry. |
-| [`@scanmate/enhance`](packages/enhance) | **What does this page look like without the scanner?** Even lighting, white paper, darker ink, enlarged for reading. |
-| [`@scanmate/merge`](packages/merge) | **How do these photos become one document?** Without re-encoding what is already good, and keeping each page's real resolution. |
-| [`@scanmate/ink`](packages/ink) | The kernel: ink separation, warps, matrices, correlation, and the contracts the stages pass along. |
-| [`@scanmate/image-fix`](packages/image-fix) | Deprecated. The first version of all of this; its README maps every export to its new home. |
+| [`@scanmate/extract`](packages/extract) | **What is in this PDF, and where are its fields?** Pages as rasters at the scan's own resolution, page kind, real resolution, the text layer with its geometry - and fields placed from the labels it prints. |
+| [`@scanmate/merge`](packages/merge) | **How do these photos become one document?** Without re-encoding what is already good, keeping each page's real resolution - and regions drawn onto a PDF to check them. |
+| [`@scanmate/ink`](packages/ink) | The kernel: ink separation, warps, matrices, correlation, text normalisation, and the contracts the stages pass along. |
+
+`@scanmate/diff`, `@scanmate/find`, `@scanmate/enhance` and `@scanmate/audit` were separate packages until 0.17.0; everything they exported is exported by `@scanmate/scan` from 0.18.0, under the same names. `@scanmate/image-fix`, the first version of all this, is gone. All five are deprecated on npm.
 
 Every stage takes pages and hands the same pages back, carrying what it found:
 `align` adds `aligned`, `enhance` adds `enhanced`, `ocr` adds `text`, `diff` adds
@@ -63,11 +60,11 @@ document.
 ## Getting started
 
 ```sh
-npm install @scanmate/audit @scanmate/extract @scanmate/align
+npm install @scanmate/scan @scanmate/extract @scanmate/align
 ```
 
 ```ts
-import { auditPages } from '@scanmate/audit'
+import { auditPages } from '@scanmate/scan'
 import { alignPages } from '@scanmate/align'
 import { extractPair } from '@scanmate/extract'
 
@@ -93,13 +90,13 @@ Each package documents its own algorithms — what every step measures, the
 decision flows, and every constant with the measurement behind it:
 
 - [scan](packages/scan/documentation/algorithms.md) — what runs when, what is remembered, and what loads
-- [audit](packages/audit/documentation/algorithms.md) — correlating two comparisons, and the verdict
+- [audit](packages/scan/documentation/audit.md) — correlating two comparisons, and the verdict
 - [ocr](packages/ocr/documentation/algorithms.md) — matching by place, the recheck, and verifying figures against the print
-- [diff](packages/diff/documentation/algorithms.md) — ink, tolerance, and deciding a region
-- [find](packages/find/documentation/algorithms.md) — approximate search that will not approximate a figure
+- [pixel comparison](packages/scan/documentation/pixel-comparison.md) — ink, tolerance, and deciding a region
+- [content search](packages/scan/documentation/content-search.md) — approximate search that will not approximate a figure
 - [align](packages/align/documentation/algorithms.md) — the coarse guess, features, RANSAC, and choosing a model
 - [extract](packages/extract/documentation/algorithms.md) — page kind, real resolution, and the text layer
-- [enhance](packages/enhance/documentation/algorithms.md) — dividing by the paper
+- [enhancement](packages/scan/documentation/enhancement.md) — dividing by the paper
 - [merge](packages/merge/documentation/algorithms.md) — never encoding twice
 - [ink](packages/ink/documentation/algorithms.md) — the primitives, and why the codec boundary is where it is
 

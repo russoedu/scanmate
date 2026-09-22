@@ -1,4 +1,4 @@
-# How `@scanmate/enhance` decides
+# How enhancement decides
 
 A scan comes back with the lamp's shadow across one corner, paper that is grey
 or yellow rather than white, and text that has lost half its contrast. None of

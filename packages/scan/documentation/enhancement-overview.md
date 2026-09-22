@@ -1,21 +1,21 @@
-![scanmate enhance](./assets/scanmate-enhance.svg)
+# Enhancement
 
-# `@scanmate/enhance`
+*Part of [`@scanmate/scan`](../README.md). Before 0.18.0 this was the separate package enhancement, now deprecated.*
 
 Scans cleaned for reading: even lighting, lighter paper, darker ink, and speckle removed where a page is measurably noisy. Pages below 300 dpi are enlarged to 300 first, since that is the resolution OCR reads best at.
 
-![the same lines off the scan, and off the enhanced copy](./assets/enhanced.jpg)
+![the same lines off the scan, and off the enhanced copy](../assets/enhanced.jpg)
 
 *The same lines read off the scan, and off the enhanced copy: even lighting, white paper, darker ink. Made from the [IRS Form W-9](https://www.irs.gov/pub/irs-pdf/fw9.pdf) (a work of the United States government, in the public domain): filled in as a generator would, printed, signed by hand and scanned crooked.*
 
 ## Install
 
 ```bash
-npm install @scanmate/enhance @scanmate/align
+npm install @scanmate/scan @scanmate/align
 ```
 
 ```ts
-import { enhancePages, enhanceScan } from '@scanmate/enhance'
+import { enhancePages, enhanceScan } from '@scanmate/scan'
 
 // A pipeline stage: aligned pages in, each with a cleaned copy alongside.
 const pages = await enhancePages(alignedPages)
@@ -65,4 +65,4 @@ A cleaned page keeps its canvas: enlarged by `scale`, a region in PDF points sti
 
 ## How it decides
 
-[`documentation/algorithms.md`](./documentation/algorithms.md) has the algorithms in full: what each step measures, the decision flows, every constant with the measurement behind it, and what the package deliberately does not do.
+[`enhancement.md`](./enhancement.md) has the algorithms in full: what each step measures, the decision flows, every constant with the measurement behind it, and what the package deliberately does not do.

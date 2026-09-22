@@ -1,4 +1,4 @@
-# How `@scanmate/audit` decides
+# How the audit decides
 
 Two comparisons, each blind where the other sees, and one verdict.
 
@@ -27,7 +27,7 @@ this package.
 Required content is not here. Whether the *original* says what it was supposed
 to say is a question no comparison of two copies can answer — issue a different
 form, return a faithful scan of it, and every check on this page passes. That
-is `@scanmate/find`'s question, asked separately, of the reading this returns.
+is the content search's question, asked separately, of the reading this returns.
 
 ## The shape of it
 
@@ -37,7 +37,7 @@ worker while the masks are built here, so the pair costs about what one did.
 ```mermaid
 flowchart TD
   A[one aligned page] --> B[read it<br/>@scanmate/ocr]
-  A --> C[compare it<br/>@scanmate/diff, masks kept]
+  A --> C[compare it<br/>the pixel comparison, masks kept]
   B --> D[correlate by place]
   C --> D
   D --> E[both saw it: one finding, corroborated]
@@ -313,7 +313,7 @@ documents it was not chosen on before relying on it.
 - It does not rank findings by severity. A stray tick and a changed total are
   both reported; which matters is the caller's judgement.
 - It does not look at anything but the two documents it was given, and it does
-  not check that the original says what it should. That is `@scanmate/find`.
+  not check that the original says what it should. That is the content search.
 - It does not treat a reading as evidence on its own, and it does not treat a
   disagreement between the two comparisons as evidence either. What it cannot
   settle it reports as unsettled rather than deciding.

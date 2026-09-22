@@ -1,18 +1,18 @@
-![scanmate find](./assets/scanmate-find.svg)
+# The content search
 
-# `@scanmate/find`
+*Part of [`@scanmate/scan`](../README.md). Before 0.18.0 this was the separate package the content search, now deprecated.*
 
 Checks whether the content that must be on each page is there, and whether it's where the original puts it.
 
 ## Install
 
 ```bash
-npm install @scanmate/find @scanmate/ocr
+npm install @scanmate/scan @scanmate/ocr
 ```
 
 ```ts
 import { ocrPages } from '@scanmate/ocr'
-import { findContent } from '@scanmate/find'
+import { findContent } from '@scanmate/scan'
 
 const report = await ocrPages(alignedPages)
 // The reading hands its pages back, and the search takes them straight.
@@ -46,4 +46,4 @@ Placing field boxes from the labels a document prints used to live here, as `res
 
 ## How it decides
 
-[`documentation/algorithms.md`](./documentation/algorithms.md) has the algorithms in full: what each step measures, the decision flows, every constant with the measurement behind it, and what the package deliberately does not do.
+[`content-search.md`](./content-search.md) has the algorithms in full: what each step measures, the decision flows, every constant with the measurement behind it, and what the package deliberately does not do.

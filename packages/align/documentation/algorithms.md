@@ -188,6 +188,6 @@ much to trust it; it is never left with nothing.
 - It does not correct a page that is **bent**: a projective transform is flat.
   A photo of a curled page aligns in the middle and drifts at the edges.
 - It does not read anything. What the page *says* is `@scanmate/ocr`; what
-  changed is `@scanmate/diff`.
+  changed is the pixel comparison.
 - It does not decide whether an alignment is good enough for a given purpose.
   It reports confidence; the caller sets the bar.
