@@ -1,3 +1,4 @@
+import { createBinary, dilate } from '@scanmate/ink'
 import type { AlignedPage, BinaryImage } from '@scanmate/ink'
 
 import { connectedComponents } from '../change-detection'
@@ -39,14 +40,18 @@ export async function readCheckboxes (pages: readonly AlignedPage[], boxes: read
  * builds anyway, so an audit reads its boxes for nothing.
  */
 export function checkboxesFromMasks (masks: Masks, boxes: readonly Checkbox[], options: CheckboxOptions & { dpi: number }): CheckboxReading[] {
-  const { inset = 0.2, minTickArea = 0.6, struckFill = 0.5, dpi } = options
+  const { inset = 0.2, minTickArea = 0.6, struckFill = 0.5, struckErosion = 0.4, dpi } = options
   const toPixels = dpi / 72
   const mm2PerPixel = (25.4 / dpi) ** 2
-  const judge = (ink: number, inside: number): CheckboxSide => {
+  // What a stroke cannot survive: a mark is thin, a box inked over is not.
+  const radius = Math.max(1, Math.round(struckErosion / 25.4 * dpi))
+  const judge = (mask: BinaryImage, window: Window, inside: number): CheckboxSide => {
+    const ink = inkIn(mask, window)
     const area = ink * mm2PerPixel
     const fill = inside === 0 ? 0 : ink / inside
+    const solid = inside === 0 ? 0 : solidIn(mask, window, radius) / inside
 
-    return { state: stateOf(area, fill, minTickArea, struckFill), ink: area, fill }
+    return { state: stateOf(area, fill, solid, minTickArea, struckFill), ink: area, fill, solid }
   }
 
   return boxes.map((box) => {
@@ -57,8 +62,9 @@ export function checkboxesFromMasks (masks: Masks, boxes: readonly Checkbox[], o
     const bottom = Math.min(masks.height, Math.round((box.y + box.height - margin) * toPixels))
     const inside = Math.max(0, right - left) * Math.max(0, bottom - top)
 
-    const original = judge(inkIn(masks.original, left, top, right, bottom), inside)
-    const scanned = judge(inkIn(masks.scan, left, top, right, bottom), inside)
+    const window = { left, top, right, bottom }
+    const original = judge(masks.original, window, inside)
+    const scanned = judge(masks.scan, window, inside)
     const expect = box.expect ?? null
 
     return {
@@ -74,22 +80,47 @@ export function checkboxesFromMasks (masks: Masks, boxes: readonly Checkbox[], o
   })
 }
 
-function stateOf (area: number, fill: number, minTickArea: number, struckFill: number): CheckboxState {
-  if (fill >= struckFill) return 'struck'
+function stateOf (area: number, fill: number, solid: number, minTickArea: number, struckFill: number): CheckboxState {
+  if (solid >= struckFill) return 'struck'
 
   return area >= minTickArea ? 'ticked' : 'empty'
 }
 
-/** Ink pixels inside a window of a mask, less the grain. */
-function inkIn (mask: BinaryImage, left: number, top: number, right: number, bottom: number): number {
+/** A window of a mask, in pixels. */
+interface Window { left: number, top: number, right: number, bottom: number }
+
+/** The window's ink as its own image. */
+function crop (mask: BinaryImage, { left, top, right, bottom }: Window): BinaryImage {
   const width = Math.max(0, right - left)
   const height = Math.max(0, bottom - top)
-  if (width === 0 || height === 0) return 0
+  const out = createBinary(width, height)
+  for (let y = 0; y < height; y++) out.data.set(mask.data.subarray((top + y) * mask.width + left, (top + y) * mask.width + left + width), y * width)
 
-  const data = new Uint8Array(width * height)
-  for (let y = 0; y < height; y++) data.set(mask.data.subarray((top + y) * mask.width + left, (top + y) * mask.width + left + width), y * width)
+  return out
+}
 
-  return connectedComponents({ width, height, data })
+/**
+ * Ink that survives an erosion of `radius`: what is left of a mark when every
+ * edge is eaten away. A stroke disappears; a box inked over does not.
+ *
+ * Erosion is a dilation of the background, inverted - `dilate` is the kernel
+ * this package has, and the two are the same operation seen from either side.
+ */
+function solidIn (mask: BinaryImage, window: Window, radius: number): number {
+  const inside = crop(mask, window)
+  const background = createBinary(inside.width, inside.height)
+  for (const [i, value] of inside.data.entries()) background.data[i] = value === 1 ? 0 : 1
+  const grown = dilate(background, radius)
+
+  return grown.data.reduce((sum, value) => sum + (value === 1 ? 0 : 1), 0)
+}
+
+/** Ink pixels inside a window of a mask, less the grain. */
+function inkIn (mask: BinaryImage, window: Window): number {
+  const inside = crop(mask, window)
+  if (inside.width === 0 || inside.height === 0) return 0
+
+  return connectedComponents(inside)
     .filter(component => component.pixels >= GRAIN)
     .reduce((sum, component) => sum + component.pixels, 0)
 }

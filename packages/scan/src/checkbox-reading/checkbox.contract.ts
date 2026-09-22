@@ -25,7 +25,7 @@ export interface CheckboxOptions {
    * the box's shorter side. Default `0.2`: the frame, and a pixel or two of
    * misalignment, never counts as a mark. A tick crosses the middle of its box.
    */
-  inset?:       number
+  inset?:         number
   /**
    * Least ink inside the box that is a mark, in square millimetres. Default
    * `0.6`. Measured on synthetic scans at 150 dpi, in 4.6 mm boxes: a 0.34 mm
@@ -34,14 +34,27 @@ export interface CheckboxOptions {
    * A very light stroke - pencil pressed softly - can fall under it: at 37%
    * grey the same tick measured 0-0.75.
    */
-  minTickArea?: number
-  /** Share of the box's inside that, once inked, makes it struck rather than ticked. Default `0.5`. */
-  struckFill?:  number
+  minTickArea?:   number
+  /**
+   * Share of the box's inside that, once **solidly** inked, makes it struck
+   * rather than ticked. Default `0.5`.
+   *
+   * Solid, not merely covered: two 0.5 mm strokes fill half of a 3 mm box - the
+   * W-9's size - so a plain tick would otherwise be read as a box inked over.
+   * What is measured is the ink left after eroding every edge by
+   * `struckErosion`, which a stroke does not survive and a filled box does.
+   * Measured on a real 200-dpi scan of a 3 mm box: a tick leaves 0.01 of the
+   * inside, a cross 0.06, a 1 mm marker tick 0.45; blacked out and scribbled
+   * over both leave 1.00.
+   */
+  struckFill?:    number
+  /** How far each edge of the ink is eaten away before it counts as solid, in millimetres. Default `0.4`: wider than a pen, narrower than a filled box. */
+  struckErosion?: number
   /** Pixels the original's ink is fattened by, for the comparison's masks. Default `2`. */
-  tolerance?:   number
+  tolerance?:     number
   /** Resolution assumed for a page that does not say what it was rendered at. Default `150`. */
-  assumeDpi?:   number
-  ink?:         InkOptions
+  assumeDpi?:     number
+  ink?:           InkOptions
 }
 
 /** How one side of the pair has a box marked. */
@@ -51,6 +64,8 @@ export interface CheckboxSide {
   ink:   number
   /** That ink as a share of the box's inside. */
   fill:  number
+  /** The share that is solid ink - what survives eroding every edge by `struckErosion`. A mark leaves almost none. */
+  solid: number
 }
 
 export interface CheckboxReading {

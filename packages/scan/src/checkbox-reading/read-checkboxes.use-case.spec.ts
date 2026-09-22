@@ -91,6 +91,31 @@ describe('readCheckboxes', () => {
     }
   }, 60_000)
 
+  it('reads a tick in a box as small as the W-9 prints, and still knows one inked over', async () => {
+    // 3 mm - 8.5 points - is the W-9's tax-classification box, and two 0.5 mm
+    // strokes fill half of it, so a tick used to be read as a box inked over.
+    // What separates them is solid ink: a stroke does not survive erosion.
+    const small = { x: 40, y: 40, width: 3 / 25.4 * 150, height: 3 / 25.4 * 150 }
+    const pen = Math.max(1, Math.round(0.5 / 25.4 * 150))
+    const ticked = withInk((r) => {
+      drawLine(r, small.x + small.width * 0.2, small.y + small.height * 0.55, small.x + small.width * 0.42, small.y + small.height * 0.8, pen, 30)
+      drawLine(r, small.x + small.width * 0.42, small.y + small.height * 0.8, small.x + small.width * 0.85, small.y + small.height * 0.15, pen, 30)
+    })
+    const blacked = withInk(r => fillRect(r, small, 20))
+    const read = async (scanned: Raster) => {
+      const [reading] = await readCheckboxes([page(FORM.raster, scanned)], [box('classification', small)])
+
+      return reading
+    }
+
+    const marked = await read(ticked)
+    expect(marked.scanned.state).toBe('ticked')
+    expect(marked.scanned.fill).toBeGreaterThan(0.4)
+    expect(marked.scanned.solid).toBeLessThan(0.2)
+    const inkedOver = await read(blacked)
+    expect(inkedOver.scanned).toMatchObject({ state: 'struck' })
+  }, 60_000)
+
   it('reads each side on its own: a box ticked before issue is not a change, one cleared is', async () => {
     const issued = withInk(r => drawTick(r, FIRST))
     const kept = withInk(r => drawTick(r, FIRST))

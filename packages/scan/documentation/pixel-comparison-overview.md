@@ -71,12 +71,14 @@ boxes[1].changed     // whether the scan's state differs from the original's
 ```
 
 - **Past the frame.** A fifth of the box's side is set aside all round (`inset`), so the printed square - and a pixel or two of misalignment - is never a mark.
-- **Three states.** `empty`; `ticked` for any mark of at least `minTickArea` (0.6 mm²) - a tick, a cross, a dot; `struck` once half the inside is inked, because a box blacked out or scribbled over gives no answer that can be read.
+- **Three states.** `empty`; `ticked` for any mark of at least `minTickArea` (0.6 mm²) - a tick, a cross, a dot; `struck` when half the inside is **solid** ink, because a box blacked out or scribbled over gives no answer that can be read.
 - **Both sides.** A box ticked on the original and on the scan is not a change; one ticked on the original and empty on the scan is.
 - **`expect`** says what the returned document must show; `satisfied` says whether it does.
 - **Groups.** `checkGroups(readings, groups)` judges boxes answered together - `'exactly-one'`, `'at-least-one'` or `'at-most-one'` ticked. A box inked over is no answer, so a group holding one is not satisfied; a group whose boxes were not all read is left unjudged.
 
-Measured on synthetic scans at 150 dpi in 4.6 mm boxes: a 0.34 mm pen tick leaves 0.75-1.8 mm² inside the box, mid-grey to dark; an empty box under sensor noise far past a real scanner's, at most 0.23 mm², and none at all through ordinary noise or a 2-pixel misalignment. A very light stroke - soft pencil, about a third grey - can fall under the threshold.
+**Solid, not merely covered.** Two 0.5 mm strokes fill half of a 3 mm box - the W-9's size - so judging by coverage alone read a plain tick as a box inked over. What is measured instead is the ink left after eroding every edge by `struckErosion` (0.4 mm), which a stroke does not survive and a filled box does. On a real 200-dpi scan of a 3 mm box: a tick leaves 0.01 of the inside and a cross 0.06, while blacked out and scribbled over leave 1.00. A thick marker tick leaves 0.45, and is read as ticked.
+
+Measured on synthetic scans at 150 dpi in 4.6 mm boxes: a 0.34 mm pen tick leaves 0.75-1.8 mm² inside the box, mid-grey to dark; an empty box under sensor noise far past a real scanner's, at most 0.23 mm², and none at all through ordinary noise or a 2-pixel misalignment. On the real scanned W-9 - crooked, 200 dpi, its own paper - all five tax-classification boxes read empty with 0.00 mm² of ink, and a drawn ballpoint or fine-pen tick in one read ticked at 1.3-1.6 mm² while the other four stayed empty. **A light pencil tick is not seen**: at about 40% grey it left nothing at all on that scan, on paper or synthetic.
 
 ## Options
 

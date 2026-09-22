@@ -23,7 +23,7 @@ function region (id: string, at: ReturnType<typeof box>, identified: boolean, ov
 const NONE = { expected: [], unexpected: [], missing: [] }
 
 function checkbox (id: string, original: CheckboxState, scanned: CheckboxState, expect: 'ticked' | 'empty' | null = null): CheckboxReading {
-  const side = (state: CheckboxState) => ({ state, ink: state === 'empty' ? 0 : 2, fill: state === 'struck' ? 0.8 : 0.2 })
+  const side = (state: CheckboxState) => ({ state, ink: state === 'empty' ? 0 : 2, fill: state === 'struck' ? 1 : 0.2, solid: state === 'struck' ? 1 : 0 })
 
   return {
     id,
