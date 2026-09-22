@@ -299,7 +299,11 @@ report.best                  // thresholds with no false accept and the fewest f
 report.best?.falseAcceptUpper  // how far this corpus can vouch for that "no"
 ```
 
+A first run on twelve real documents - three scans of one order form at 93, 120 and 144 dpi, each page as it came and again with one digit replaced by another cut from the same printed number - caught every altered document and passed both genuine pages of the 144-dpi scan. At 120 dpi the genuine pages went to review over ink the scan lost, and at 93 dpi altered and genuine were indistinguishable. [The audit's documentation](./documentation/audit.md) has the table; the short of it is that scan quality decides this before any threshold does.
+
 **One document at a time.** Each case gets its own session, disposed before the next opens, so a corpus of any size costs the memory of its largest document. One OCR engine serves them all, and no evidence images are made. The corpus can be an async iterable, read as it goes.
+
+**Each case may carry `options` of its own** - which pages to take, a resolution, a tolerance - merged over the run's, since a corpus is rarely uniform.
 
 **Save the samples.** Each is a few numbers per page. `onCase` hands them over as they are done, so a run that stops at document 40 is not lost, and `calibrateAudit` from the audit sweeps them again with other thresholds without reading a page. The audit documents what is swept, how, and why `best` has to be confirmed on documents it was not chosen on.
 
