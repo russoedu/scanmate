@@ -50,6 +50,12 @@ By its bytes, with no PDF library. That is not a shortcut: `/Contents` holds a s
 
 The cryptography is [`pkijs`](https://pkijs.org) over Node's own WebCrypto. The tests sign for real: a key, a self-signed certificate and a PDF signed over its `/ByteRange`, made in the test rather than committed as a fixture, because a fixture cannot prove a verifier works.
 
+## What it has been tried on
+
+Signatures this package makes itself, in its tests: RSA with SHA-256, one signer, a detached CMS in `adbe.pkcs7.detached`, with the certificate carried in the signature. Those cover the paths that matter - digest, signature, coverage, dates - and each failure is provoked rather than imagined: a byte changed, bytes appended, a certificate out of date, a wrecked cross-reference table.
+
+**It has not yet been run against a signature from Adobe Acrobat, Adobe Sign, DocuSign or a qualified European provider.** Those use the same standards, and `pkijs` implements them - ECDSA and RSA-PSS keys, `ETSI.CAdES.detached`, full certificate chains, signature timestamps - so they are expected to verify. Expected is not measured: until a real signed document has been through it, treat that as a reasonable belief about a library rather than a result. A file of yours is the way to settle it.
+
 ## Alongside the rest
 
 ```ts
