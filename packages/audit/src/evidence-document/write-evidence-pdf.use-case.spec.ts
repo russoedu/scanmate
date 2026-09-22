@@ -4,7 +4,9 @@ import { createRaster } from '@scanmate/ink'
 import type { Raster, ReadablePage } from '@scanmate/ink'
 
 import type { AuditReport, PageAudit } from '../page-audit'
-import { writeEvidencePdf } from './write-evidence-pdf.use-case'
+import type { SummarisedPage } from './evidence-summary.contract'
+import { combineSummaries, summariseAudit } from './evidence-summary.mapper'
+import { writeEvidenceCover, writeEvidencePdf } from './write-evidence-pdf.use-case'
 
 function evidence (): Raster {
   const raster = createRaster(1200, 520)
@@ -24,7 +26,7 @@ function audited (page: number, reasons: string[], extra: Partial<PageAudit> = {
       explained:      [],
       checkboxes:     [],
       settled:        [],
-      text:           { score: 0.97 },
+      text:           { score: 0.97, metrics: { characters: 100 } },
       pixels:         {},
       evidenceRaster: evidence(),
       evidenceImage:  null,
@@ -96,4 +98,45 @@ describe('writeEvidencePdf', () => {
     expect(sheet).toContain('consent: ticked, empty on the original, must be ticked')
     expect(sheet).toContain('Printed "????" reads "Ivan"')
   }, 60_000)
+
+  it('writes the sheets alone, to follow a cover written for the whole document', async () => {
+    const pdf = await writeEvidencePdf(report([audited(3, []), audited(4, [REASON])]), { cover: false })
+    const sheets = await words(pdf)
+
+    expect(sheets).toHaveLength(2)
+    expect(sheets[0]).toContain('Page 3 - pass')
+    expect(sheets.join(' ')).not.toContain('Verdict:')
+  }, 60_000)
+
+  it('writes one cover for batches audited apart', async () => {
+    const first = summariseAudit(report([audited(1, []), audited(2, [])]))
+    const second = summariseAudit(report([audited(3, [REASON])]))
+    const pdf = await writeEvidenceCover(combineSummaries([second, first]), { title: 'A long agreement' })
+    const [cover, ...rest] = await words(pdf)
+
+    expect(rest).toHaveLength(0)
+    expect(cover).toContain('Verdict: REVIEW - 1 of 3 pages need a look')
+    expect(cover.indexOf('Page 1')).toBeLessThan(cover.indexOf('Page 3'))
+  }, 60_000)
+})
+
+/** One page as a summary lists it. */
+function page (number: number, verdict: 'pass' | 'review', textScore: number, characters: number): SummarisedPage {
+  return { page: number, verdict, reasons: verdict === 'pass' ? [] : ['x'], textScore, characters }
+}
+
+describe('combineSummaries', () => {
+  it('passes only when every page does, counts every finding, and weights the score by text', () => {
+    const combined = combineSummaries([
+      { verdict: 'review', textScore: 0.5, findings: { 'text-changed': 1 }, corroborated: 1, pages: [page(3, 'review', 0.5, 100)] },
+      { verdict: 'pass', textScore: 1, findings: { 'text-changed': 2, 'missing-ink': 1 }, corroborated: 0, pages: [page(1, 'pass', 1, 300), page(2, 'pass', 1, 0)] },
+    ])
+
+    expect(combined.verdict).toBe('review')
+    expect(combined.pages.map(p => p.page)).toStrictEqual([1, 2, 3])
+    expect(combined.findings).toStrictEqual({ 'text-changed': 3, 'missing-ink': 1 })
+    expect(combined.corroborated).toBe(1)
+    // (1 x 300 + 1 x 0 + 0.5 x 100) / 400: a page with no text does not vote.
+    expect(combined.textScore).toBeCloseTo(0.875, 9)
+  })
 })

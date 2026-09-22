@@ -1,6 +1,11 @@
 export interface EvidencePdfOptions {
   /** On the cover and in the PDF's metadata: the document or case the audit was of. Default `'Audit evidence'`. */
   title?:     string
+  /**
+   * Begin with the cover. Default `true`. `false` writes the sheets alone, to
+   * follow a cover written for a whole document with `writeEvidenceCover`.
+   */
+  cover?:     boolean
   /** Which pages get a page of their own: every audited page, or only those needing review. Default `'all'`. */
   pages?:     'all' | 'review'
   /** How each evidence image is embedded. Default `'jpeg'`: half the size of `'png'` on a W-9, and the sheet is read, not measured. */

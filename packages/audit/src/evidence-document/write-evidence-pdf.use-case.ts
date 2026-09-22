@@ -5,6 +5,8 @@ import type { PDFFont, PDFPage } from '@cantoo/pdf-lib'
 import type { FindingKind } from '../finding-correlation'
 import type { AuditReport, PageAudit } from '../page-audit'
 import type { EvidencePdfOptions } from './evidence-document.contract'
+import type { EvidenceSummary } from './evidence-summary.contract'
+import { summariseAudit } from './evidence-summary.mapper'
 import { drawable, wrap } from './text-layout.algorithm'
 import type { Measure } from './text-layout.algorithm'
 
@@ -45,11 +47,30 @@ const KIND_NAMES: Readonly<Record<FindingKind, readonly [string, string]>> = {
  * one file to store beside the returned document, instead of a folder of
  * images and a report that has to be read in code.
  *
+ * `cover: false` writes the sheets alone: a long document audited a batch at a
+ * time gets one cover for all of it from `writeEvidenceCover`, and the batches'
+ * sheets after it.
+ *
  * The PDF library is loaded when this is called, and not before: auditing on
  * its own never loads it.
  */
 export async function writeEvidencePdf (report: AuditReport<ReadablePage>, options: EvidencePdfOptions = {}): Promise<Uint8Array> {
-  const { title = 'Audit evidence', pages = 'all', format = 'jpeg', quality = 85, dpi = 200, createdAt = new Date() } = options
+  const audited = report.pages.map(page => page.audit)
+  const sheets = options.pages === 'review' ? audited.filter(page => page.verdict === 'review') : audited
+
+  return await render(summariseAudit(report), sheets, options, options.cover ?? true)
+}
+
+/**
+ * The cover alone, for a summary of the whole document - usually the batches'
+ * summaries joined with `combineSummaries`.
+ */
+export async function writeEvidenceCover (summary: EvidenceSummary, options: Omit<EvidencePdfOptions, 'cover'> = {}): Promise<Uint8Array> {
+  return await render(summary, [], options, true)
+}
+
+async function render (summary: EvidenceSummary, sheets: readonly PageAudit[], options: EvidencePdfOptions, cover: boolean): Promise<Uint8Array> {
+  const { title = 'Audit evidence', format = 'jpeg', quality = 85, dpi = 200, createdAt = new Date() } = options
   const { PDFDocument, StandardFonts, rgb } = await import('@cantoo/pdf-lib')
   const document = await PDFDocument.create()
   const regular = await document.embedFont(StandardFonts.Helvetica)
@@ -57,19 +78,22 @@ export async function writeEvidencePdf (report: AuditReport<ReadablePage>, optio
   const drawn = new Set(regular.getCharacterSet())
 
   document.setTitle(drawable(title, measure(regular, BODY, drawn)))
-  document.setSubject(`Verdict: ${report.verdict}`)
+  document.setSubject(`Verdict: ${summary.verdict}`)
   document.setProducer('@scanmate/audit')
   document.setCreationDate(createdAt)
   document.setModificationDate(createdAt)
 
   /** A sheet being written, top to bottom; a new one is started when this one is full. */
-  let sheet: PDFPage = document.addPage([SHEET.width, SHEET.height])
+  let sheet: PDFPage | undefined
   let y = SHEET.height - MARGIN
   let continuing = ''
-  const newSheet = (): void => {
-    sheet = document.addPage([SHEET.width, SHEET.height])
+  const newSheet = (): PDFPage => {
+    const added = document.addPage([SHEET.width, SHEET.height])
+    sheet = added
     y = SHEET.height - MARGIN
     if (continuing !== '') write(`${continuing} (continued)`, { font: bold, size: 12 })
+
+    return added
   }
   function write (text: string, style: { font?: PDFFont, size?: number, color?: typeof INK, indent?: number } = {}): void {
     const { font = regular, size = BODY, color = INK, indent = 0 } = style
@@ -77,9 +101,9 @@ export async function writeEvidencePdf (report: AuditReport<ReadablePage>, optio
     const leading = size * (LEADING / BODY)
     const lines = wrap(drawable(text, metric), SHEET.width - 2 * MARGIN - indent, metric)
     for (const line of lines) {
-      if (y - leading < MARGIN) newSheet()
+      const on = sheet === undefined || y - leading < MARGIN ? newSheet() : sheet
       y -= leading
-      sheet.drawText(line, { x: MARGIN + indent, y, size, font, color: rgb(color.r, color.g, color.b) })
+      on.drawText(line, { x: MARGIN + indent, y, size, font, color: rgb(color.r, color.g, color.b) })
     }
   }
   const gap = (points: number): void => {
@@ -87,29 +111,31 @@ export async function writeEvidencePdf (report: AuditReport<ReadablePage>, optio
   }
 
   // --- the cover ---
-  const audited = report.pages.map(page => page.audit)
-  const reviewed = audited.filter(page => page.verdict === 'review')
-  write(title, { font: bold, size: 20 })
-  gap(6)
-  write(
-    report.verdict === 'pass' ? 'Verdict: PASS - nothing for anyone to look at' : `Verdict: REVIEW - ${reviewed.length} of ${audited.length} ${audited.length === 1 ? 'page needs' : 'pages need'} a look`,
-    { font: bold, size: 14, color: report.verdict === 'pass' ? PASS : REVIEW },
-  )
-  write(`Text score ${report.textScore.toFixed(2)} - audited ${createdAt.toISOString().replace('T', ' ').slice(0, 16)} UTC`, { color: QUIET })
-  gap(8)
-  write(tally(report.summary.findings), { font: bold })
-  if (report.summary.corroborated > 0) write(`${report.summary.corroborated} seen by both the reading and the pixel comparison.`, { color: QUIET })
-  gap(10)
-  for (const page of audited) {
-    const first = page.reasons[0]
-    const more = page.reasons.length > 1 ? ` (and ${page.reasons.length - 1} more)` : ''
-    write(`Page ${page.page}   ${page.verdict === 'pass' ? 'pass' : 'REVIEW'}${first === undefined ? '' : `   ${first}${more}`}`, {
-      color: page.verdict === 'pass' ? INK : REVIEW,
-    })
+  if (cover) {
+    const reviewed = summary.pages.filter(page => page.verdict === 'review')
+    const count = summary.pages.length
+    newSheet()
+    write(title, { font: bold, size: 20 })
+    gap(6)
+    write(
+      summary.verdict === 'pass' ? 'Verdict: PASS - nothing for anyone to look at' : `Verdict: REVIEW - ${reviewed.length} of ${count} ${count === 1 ? 'page needs' : 'pages need'} a look`,
+      { font: bold, size: 14, color: summary.verdict === 'pass' ? PASS : REVIEW },
+    )
+    write(`Text score ${summary.textScore.toFixed(2)} - audited ${createdAt.toISOString().replace('T', ' ').slice(0, 16)} UTC`, { color: QUIET })
+    gap(8)
+    write(tally(summary.findings), { font: bold })
+    if (summary.corroborated > 0) write(`${summary.corroborated} seen by both the reading and the pixel comparison.`, { color: QUIET })
+    gap(10)
+    for (const page of summary.pages) {
+      const first = page.reasons[0]
+      const more = page.reasons.length > 1 ? ` (and ${page.reasons.length - 1} more)` : ''
+      write(`Page ${page.page}   ${page.verdict === 'pass' ? 'pass' : 'REVIEW'}${first === undefined ? '' : `   ${first}${more}`}`, {
+        color: page.verdict === 'pass' ? INK : REVIEW,
+      })
+    }
   }
 
   // --- a sheet per page ---
-  const sheets = pages === 'review' ? reviewed : audited
   for (const page of sheets) {
     continuing = ''
     newSheet()
@@ -141,7 +167,8 @@ export async function writeEvidencePdf (report: AuditReport<ReadablePage>, optio
     const bytes = await encodeImage(shown, { format, quality })
     const image = format === 'png' ? await document.embedPng(bytes) : await document.embedJpg(bytes)
     y -= height
-    sheet.drawImage(image, { x: MARGIN + (room.width - width) / 2, y, width, height })
+    const on = sheet ?? newSheet()
+    on.drawImage(image, { x: MARGIN + (room.width - width) / 2, y, width, height })
   }
 
   /** What to look at on a page, in words. */
