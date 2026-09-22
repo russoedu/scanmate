@@ -305,6 +305,17 @@ A first run on twelve real documents - three scans of one order form at 93, 120 
 
 **Each case may carry `options` of its own** - which pages to take, a resolution, a tolerance - merged over the run's, since a corpus is rarely uniform.
 
+**Measured, on 75 documents.** Three real scans of one seven-page form at 93,
+120 and 144 dpi, each page kept as it came and altered three ways - a digit
+replaced by another cut from the same number, a word painted out, a stroke added
+in the margin. No threshold anywhere on the grid let an altered document pass.
+What the thresholds could not fix was the scan: at 144 dpi every genuine page
+passed with no findings and every altered one was caught by the finding that
+names what was done, while at 93 dpi genuine and altered were indistinguishable,
+both buried under readings that could not be settled. **Scan quality decides
+this, not tuning.** The [audit's own documentation](./documentation/audit.md#what-calibration-showed)
+has the table, the bounds, and what a corpus of one form does not prove.
+
 **Save the samples.** Each is a few numbers per page. `onCase` hands them over as they are done, so a run that stops at document 40 is not lost, and `calibrateAudit` from the audit sweeps them again with other thresholds without reading a page. The audit documents what is swept, how, and why `best` has to be confirmed on documents it was not chosen on.
 
 ## Every type, from one package

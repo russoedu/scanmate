@@ -291,30 +291,55 @@ the false accept rate's bound, not the rate.
 the fewest false reviews - on the corpus it was chosen from. Confirm it on
 documents it was not chosen on before relying on it.
 
-## What a first calibration showed
+## What calibration showed
 
-Twelve documents, from three real scans of one seven-page order form at 93, 120
-and 144 dpi: each page kept as it came (genuine) and again with one digit
-replaced by another cut from the same printed number (altered) - the document's
-own ink, which is the forgery this suite exists to catch. Audited once, 329
-seconds for the twelve; re-swept from the saved samples in under a millisecond.
+Seventy-five documents, from three real scans of one seven-page order form at
+93, 120 and 144 dpi. Each page was kept as it came - the control - and altered
+three ways, each alteration made on the aligned scan itself so that the paper,
+the grain and the scanner are identical on both sides and only the alteration
+differs:
+
+| alteration | what it is |
+|---|---|
+| `digit` | One digit in a printed number replaced by another digit cut from the same number. The document's own ink, at the document's own resolution: the forgery this suite exists to catch. |
+| `erased` | A word painted out in the paper's own colour, as correction fluid does. |
+| `mark` | A pen stroke added in the margin, where the original prints nothing. |
+
+Twenty-one genuine, fifty-four altered - `digit` needs a number with two
+different digits in it, which four of the seven pages have. Audited once in 39
+minutes; re-swept from the saved samples in under a millisecond.
+
+**No threshold made a false accept, anywhere on the grid.** Not one altered
+document passed, at any of the values swept. The best point is
+`minTextScore: 0.75`, `minChangeArea: 1 mm2`, `minMissingArea: 4 mm2`: 0 false
+accepts of 54 (upper bound 7%) and 13 false reviews of 21 (upper bound 79%).
+
+And the thirteen are the whole story, because of which they are:
 
 | Scan | Genuine | Altered |
 |---|---|---|
-| 144 dpi | both **pass** | both **review**, `text-changed` |
-| 120 dpi | both review: ink lost, 8.2 and 5.8 mm2, plus text the scan could not read | both review, `text-changed` as well |
-| 93 dpi | both review: 25 and 57 readings that could not be settled | both review, and **indistinguishable** from genuine |
+| **144 dpi** | all 7 **pass**, text score 0.99-1.00, no findings at all | all 18 **review**, one finding each and exactly the right one: `text-changed` for every digit, `missing-ink` for every erasure, `unexpected-mark` for every stroke |
+| 120 dpi | 6 of 7 review - ink the scan lost, and text it could not read | all 18 review |
+| 93 dpi | all 7 review, text score 0.61-0.93 | all 18 review, under 122-164 unsettled readings a page: **indistinguishable from genuine** |
 
-No combination of thresholds gave zero false reviews, and raising the lost-ink
-threshold to 32 mm2 changed nothing, because those pages also carry text the
-reading could not settle - which no area threshold touches. The lesson is not a
-threshold: **at 93 dpi the audit cannot tell an altered document from an honest
-one**, and the honest answer is to refuse the scan rather than to tune. That is
-what `minTextScore` is for; those pages scored 0.61-0.75.
+Every false review is a 93 or 120 dpi page. At 144 dpi the separation is
+perfect and clean - nothing to tune, because nothing overlaps - and the three
+alterations were each caught by the finding that names what was done, which is
+what makes the report worth reading rather than merely correct.
 
-The false-accept rate was 0 of 6 altered documents, whose upper bound is 39% -
-which is what six documents are worth. A corpus that supports automatic
-acceptance needs tens of altered documents, not six.
+**So the decisive variable is the scan, not the threshold.** Sweeping cannot
+fix 93 dpi: those pages review whatever the thresholds say, because the reading
+cannot settle what the words are, and no area threshold touches an unsettled
+reading. The honest response to a bad scan is to refuse it and ask for another,
+which is what `minTextScore` is for, and 0.75 is where these scans put the line.
+Scan at 144 dpi or better and the audit answers; scan at 93 and it can only
+tell you it could not see.
+
+One caveat the numbers do not carry: three scans of one form is not three
+documents. The alterations are varied and the scan qualities are real, but a
+single form's layout, typeface and paper are held constant throughout, so the
+false accept bound of 7% is a claim about this form. Another form is the next
+measurement.
 
 ## Constants
 
