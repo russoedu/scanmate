@@ -24,6 +24,7 @@ export type { AlignedScanmatePage, EnhancedScanmatePage, ReadableScanmatePage, S
 export type { ScanmateDocument, ScanmatePage } from './document-input'
 export type { CalibrateOptions, CalibrationCase, CorpusCalibration } from './corpus-calibration'
 export type { BatchInfo, BatchOptions } from './batch-running'
+export type { BatchEvidence, BatchEvidenceOptions } from './batch-evidence'
 
 // --- Every type the stages speak ---
 //
@@ -86,8 +87,8 @@ export type {
 export type {
   AuditedPage, AuditFinding, AuditOptions, AuditReport, CalibrationGrid, CalibrationLabel, CalibrationPoint,
   CalibrationReport, CalibrationSample, CalibrationThresholds, Correlation, CorrelationInput,
-  EvidencePdfOptions, ExplainedDifference, FindingKind, PageAudit, SampledFinding, SampledPage, Settlement,
-  SettlementInput, Verdict,
+  EvidencePdfOptions, EvidenceSummary, ExplainedDifference, FindingKind, PageAudit, SampledFinding,
+  SampledPage, Settlement, SettlementInput, SummarisedPage, Verdict,
 } from '@scanmate/audit'
 
 // --- Building blocks ---
