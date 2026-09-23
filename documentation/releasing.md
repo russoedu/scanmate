@@ -22,6 +22,28 @@ gh variable delete RELEASE_SPECIFIER
 set pins the next release to a version that has already been published, and that
 run fails at the publish.
 
+**But delete it only once the release step has read it**, which is later than it
+feels. `vars.RELEASE_SPECIFIER` is resolved when the step runs, not when the run
+is queued, and the release step sits behind a full verify - a minute or two
+after the merge. Delete it in between and the release falls back to conventional
+commits, which is the under-bump this variable exists to prevent: one package
+moves, the rest do not, and the one that moved asks for versions of its siblings
+that were never published.
+
+The trap is finding the right run to wait for. `gh run list --branch main
+--limit 1` immediately after a merge returns the **previous** run, because the
+new one has not registered yet - and watching it returns at once, because it
+finished long ago. Match the run to the merge commit instead:
+
+```bash
+gh run list --branch main --limit 5 --json databaseId,headSha -q "[.[] | select(.headSha == \"$(git rev-parse origin/main)\")][0].databaseId"
+```
+
+Watch that id, confirm the log says `Releasing every package with specifier
+X.Y.Z, not from conventional commits`, and only then delete the variable. If it
+instead reports `No changes were detected using git history and the conventional
+commits standard`, the variable was gone too early.
+
 ## Why an exact version, never a keyword
 
 `RELEASE_SPECIFIER` accepts `major`, `minor` and `patch`, and they are the wrong
