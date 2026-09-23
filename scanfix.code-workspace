@@ -200,6 +200,20 @@
         "script": "seal:build",
         "problemMatcher": [],
         "group": "build"
+      },
+      {
+        "label": "scanmate-ink: qa",
+        "type": "npm",
+        "script": "scanmate-ink:qa",
+        "problemMatcher": [],
+        "group": "qa"
+      },
+      {
+        "label": "scanmate-ink: build",
+        "type": "npm",
+        "script": "scanmate-ink:build",
+        "problemMatcher": [],
+        "group": "build"
       }
     ]
   },

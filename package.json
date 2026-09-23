@@ -4,6 +4,8 @@
   "license": "MIT",
   "scripts": {
     "build": "nx run-many -t build",
+    "parity:goldens": "node tools/parity/write-goldens.mts",
+    "parity:check": "node tools/parity/check-fresh.mts",
     "lint": "nx run-many -t lint",
     "test": "nx run-many -t test",
     "typecheck": "nx run-many -t typecheck",
@@ -29,13 +31,16 @@
     "scan:qa": "nx run scan:lint && nx run scan:test",
     "scan:build": "nx run scan:build",
     "seal:qa": "nx run seal:lint && nx run seal:test",
-    "seal:build": "nx run seal:build"
+    "seal:build": "nx run seal:build",
+    "scanmate-ink:qa": "nx run scanmate-ink:lint && nx run scanmate-ink:test",
+    "scanmate-ink:build": "nx run scanmate-ink:build"
   },
   "private": true,
   "devDependencies": {
     "@commitlint/cli": "^21.2.2",
     "@commitlint/config-conventional": "^21.2.2",
     "@mnci/eslint-config": "^0.3.11",
+    "@mnci/nx-python-pip": "^0.2.8",
     "@nx/esbuild": "23.2.0",
     "@nx/eslint": "23.2.0",
     "@nx/eslint-plugin": "23.2.0",

@@ -45,6 +45,16 @@ jobs:
       - run: git config user.name "github-actions[bot]" && git config user.email "github-actions[bot]@users.noreply.github.com"
         name: Set the git identity used for release tags
 
+      # Pinned, not inherited. Every Python guard below shells out to `python3`,
+      # and the runner image's default moves without notice - so the version the
+      # wheels are built and tested against would drift with the image rather
+      # than with this file. 3.12 is what the packages declare support for;
+      # `requires-python` is >=3.11, so this is the lowest supported minor plus
+      # one, which is where a version-specific break would show up first.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - uses: actions/setup-node@v7
         with:
           node-version: 24
