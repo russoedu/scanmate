@@ -16,6 +16,9 @@
  * repository**, and neither does the corpus this writes - see the README.
  */
 
+/* eslint-disable unicorn/no-process-exit -- this is a CLI: a usage error
+   deserves one line and a non-zero exit, not a stack trace through Node. */
+
 import { mkdirSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { parseArgs } from 'node:util'
@@ -24,12 +27,14 @@ import { cloneRaster, drawLine, encodeImage, fillRect, toGrayscale } from '@scan
 import { placeGlyphs, printPolarity } from '@scanmate/ocr'
 import { Scanmate } from '@scanmate/scan'
 
-const { values } = parseArgs({ options: {
-  documents: { type: 'string' },
-  original:  { type: 'string', default: 'OCF.pdf' },
-  scans:     { type: 'string' },
-  out:       { type: 'string', default: 'corpus' },
-} })
+const { values } = parseArgs({
+  options: {
+    documents: { type: 'string' },
+    original:  { type: 'string', default: 'OCF.pdf' },
+    scans:     { type: 'string' },
+    out:       { type: 'string', default: 'corpus' },
+  },
+})
 
 if (values.documents === undefined) {
   console.error('--documents <dir> is required: the folder holding the original and its scans, kept outside this repository.')
@@ -37,8 +42,10 @@ if (values.documents === undefined) {
 }
 
 const original = join(values.documents, values.original)
-const scans = values.scans?.split(',')
-  ?? readdirSync(values.documents).filter(name => name.toLowerCase().endsWith('.pdf') && name !== values.original).sort()
+const scans = values.scans?.split(',') ??
+  readdirSync(values.documents)
+    .filter(name => name.toLowerCase().endsWith('.pdf') && name !== values.original)
+    .sort((one, other) => one.localeCompare(other))
 
 if (scans.length === 0) {
   console.error(`no scans found in ${values.documents} beside ${values.original}`)
@@ -49,6 +56,48 @@ mkdirSync(values.out, { recursive: true })
 const cases = []
 /** A text run's box in pixels, from the points the text layer speaks in. */
 const pt = (box, k) => ({ x: box.x * k, y: box.y * k, width: box.width * k, height: box.height * k })
+
+/**
+ * A digit replaced by another cut from the same printed number.
+ *
+ * The document's own ink, at the document's own resolution: the forgery this
+ * suite exists to catch, and the hardest one to see. `null` when the page
+ * prints no number holding two different digits - which is why not every page
+ * yields one.
+ */
+function swapDigit (source, items, grey, dpi, k) {
+  const numbers = items.filter(item => /\d[\d,]{4,}/.test(item.text))
+
+  for (const run of numbers) {
+    const lightOnDark = printPolarity(grey, dpi, run) === 'light-on-dark'
+    const cells = placeGlyphs(grey, dpi, run, run.text, { lightOnDark })
+    if (cells === null) continue
+
+    const digits = [...run.text]
+      .map((character, at) => ({ character, at }))
+      .filter(digit => /\d/.test(digit.character) && cells[digit.at] !== null)
+    const pair = digits.flatMap(one => digits.filter(other => other.character !== one.character).map(other => [one, other])).find(Boolean)
+    if (pair === undefined) continue
+
+    const raster = cloneRaster(source)
+    copyCell(raster, pt(cells[pair[1].at], k), pt(cells[pair[0].at], k))
+
+    return { raster, how: `"${run.text}": ${pair[0].character} replaced by its own ${pair[1].character}` }
+  }
+
+  return null
+}
+
+/** One glyph's pixels written over another's, as far as both boxes overlap. */
+function copyCell (raster, from, onto) {
+  for (let y = 0; y < Math.min(from.height, onto.height); y++) {
+    for (let x = 0; x < Math.min(from.width, onto.width); x++) {
+      const source = ((Math.round(from.y) + y) * raster.width + Math.round(from.x) + x) * 4
+      const target = ((Math.round(onto.y) + y) * raster.width + Math.round(onto.x) + x) * 4
+      raster.data.copyWithin(target, source, source + 4)
+    }
+  }
+}
 
 for (const [index, scan] of scans.entries()) {
   const label = `s${String(index + 1).padStart(2, '0')}`
@@ -69,34 +118,11 @@ for (const [index, scan] of scans.entries()) {
 
     await save(`${tag}-genuine`, page.aligned.raster, true, 'as scanned')
 
-    // 1. A digit replaced by another cut from the same printed number: the
-    //    document's own ink, at the document's own resolution, which is the
-    //    forgery this suite exists to catch and the hardest one to see.
-    for (const run of items.filter(item => /\d[\d,]{4,}/.test(item.text))) {
-      const lightOnDark = printPolarity(grey, dpi, run) === 'light-on-dark'
-      const cells = placeGlyphs(grey, dpi, run, run.text, { lightOnDark })
-      if (cells === null) continue
-
-      const digits = [...run.text].map((character, at) => ({ character, at })).filter(digit => /\d/.test(digit.character) && cells[digit.at] !== null)
-      const pair = digits.flatMap(one => digits.filter(other => other.character !== one.character).map(other => [one, other])).find(Boolean)
-      if (pair === undefined) continue
-
-      const raster = cloneRaster(page.aligned.raster)
-      const from = pt(cells[pair[1].at], k)
-      const onto = pt(cells[pair[0].at], k)
-      for (let y = 0; y < Math.min(from.height, onto.height); y++) {
-        for (let x = 0; x < Math.min(from.width, onto.width); x++) {
-          const source = ((Math.round(from.y) + y) * raster.width + Math.round(from.x) + x) * 4
-          const target = ((Math.round(onto.y) + y) * raster.width + Math.round(onto.x) + x) * 4
-          raster.data.copyWithin(target, source, source + 4)
-        }
-      }
-      await save(`${tag}-digit`, raster, false, `"${run.text}": ${pair[0].character} replaced by its own ${pair[1].character}`)
-      break
-    }
+    const swapped = swapDigit(page.aligned.raster, items, grey, dpi, k)
+    if (swapped !== null) await save(`${tag}-digit`, swapped.raster, false, swapped.how)
 
     // 2. A word erased: paper painted over it, as correction fluid does.
-    const word = items.filter(item => item.text.trim().length > 6 && item.width > 30).at(-1)
+    const word = items.findLast(item => item.text.trim().length > 6 && item.width > 30)
     if (word !== undefined) {
       const raster = cloneRaster(page.aligned.raster)
       fillRect(raster, pt(word, k), 252)

@@ -25,12 +25,12 @@ const started = Date.now()
 
 const { report, samples } = await Scanmate.calibrate(
   cases.map(one => ({
-    id:       one.id,
-    genuine:  one.genuine,
+    id:      one.id,
+    genuine: one.genuine,
     original,
-    scanned:  readFileSync(one.file),
+    scanned: readFileSync(one.file),
     // One page of the original against the one page this case was cut from.
-    options:  { extract: { pages: [one.page] } },
+    options: { extract: { pages: [one.page] } },
   })),
   {
     diff:   { minChangeArea: 0.5, minMissingArea: 2 },
