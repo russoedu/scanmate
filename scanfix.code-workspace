@@ -83,20 +83,6 @@
     "version": "2.0.0",
     "tasks": [
       {
-        "label": "image-fix: build",
-        "type": "npm",
-        "script": "image-fix:build",
-        "problemMatcher": [],
-        "group": "build"
-      },
-      {
-        "label": "image-fix: qa",
-        "type": "npm",
-        "script": "image-fix:qa",
-        "problemMatcher": [],
-        "group": "qa"
-      },
-      {
         "label": "playground: qa",
         "type": "npm",
         "script": "playground:qa",
@@ -146,20 +132,6 @@
         "group": "build"
       },
       {
-        "label": "diff: qa",
-        "type": "npm",
-        "script": "diff:qa",
-        "problemMatcher": [],
-        "group": "qa"
-      },
-      {
-        "label": "diff: build",
-        "type": "npm",
-        "script": "diff:build",
-        "problemMatcher": [],
-        "group": "build"
-      },
-      {
         "label": "extract: qa",
         "type": "npm",
         "script": "extract:qa",
@@ -170,20 +142,6 @@
         "label": "extract: build",
         "type": "npm",
         "script": "extract:build",
-        "problemMatcher": [],
-        "group": "build"
-      },
-      {
-        "label": "enhance: qa",
-        "type": "npm",
-        "script": "enhance:qa",
-        "problemMatcher": [],
-        "group": "qa"
-      },
-      {
-        "label": "enhance: build",
-        "type": "npm",
-        "script": "enhance:build",
         "problemMatcher": [],
         "group": "build"
       },
@@ -212,34 +170,6 @@
         "label": "ocr: build",
         "type": "npm",
         "script": "ocr:build",
-        "problemMatcher": [],
-        "group": "build"
-      },
-      {
-        "label": "find: qa",
-        "type": "npm",
-        "script": "find:qa",
-        "problemMatcher": [],
-        "group": "qa"
-      },
-      {
-        "label": "find: build",
-        "type": "npm",
-        "script": "find:build",
-        "problemMatcher": [],
-        "group": "build"
-      },
-      {
-        "label": "audit: qa",
-        "type": "npm",
-        "script": "audit:qa",
-        "problemMatcher": [],
-        "group": "qa"
-      },
-      {
-        "label": "audit: build",
-        "type": "npm",
-        "script": "audit:build",
         "problemMatcher": [],
         "group": "build"
       },
