@@ -3,6 +3,7 @@ import type * as ExtractModule from '@scanmate/extract'
 import type * as InkModule from '@scanmate/ink'
 import type * as MergeModule from '@scanmate/merge'
 import type * as OcrModule from '@scanmate/ocr'
+import type * as SealModule from '@scanmate/seal'
 
 import { MissingStageError } from './missing-stage.error'
 import type { LoadedStage } from './missing-stage.error'
@@ -90,4 +91,16 @@ export function loadOcr (): Promise<typeof OcrModule> {
   ocr ??= stage('ocr', import('@scanmate/ocr'))
 
   return ocr
+}
+
+let seal: Promise<typeof SealModule> | undefined
+/**
+ * The signature check, which is why it is worth loading lazily: `pkijs` and
+ * `asn1js` are only ever needed by a document that carries a signature, and
+ * most do not.
+ */
+export function loadSeal (): Promise<typeof SealModule> {
+  seal ??= stage('seal', import('@scanmate/seal'))
+
+  return seal
 }

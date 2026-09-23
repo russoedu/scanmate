@@ -10,6 +10,7 @@ import type { ExpectedContent, FindOptions, FindReport } from '../content-search
 import type { MarkOptions, MarkResult, MergeOptions, MergeResult, PageMark } from '@scanmate/merge'
 import type { ScanmateBinarySource, ScanmateSource } from '@scanmate/ink'
 import type { OcrOptions, OcrReport, ReadPage } from '@scanmate/ocr'
+import type { SealReport } from '@scanmate/seal'
 
 import { pixelsFromAudit, readingFromAudit } from '../audit-reuse'
 import { writeBatchEvidence } from '../batch-evidence'
@@ -28,6 +29,7 @@ import { writeEvidencePdf } from '../evidence-document'
 import { auditPages } from '../page-audit'
 import { diffPages } from '../change-detection'
 import { readCheckboxes } from '../checkbox-reading'
+import { checkSignatures } from '../signature-checking'
 import { findContent } from '../content-search'
 import { enhancePages } from '../scan-enhancement'
 import { loadAlign, loadExtract, loadMerge, loadOcr, loadedStages } from '../stage-loading'
@@ -98,6 +100,26 @@ export class Scanmate {
     const { extractPages } = await loadExtract()
 
     return await extractPages(pdf, options)
+  }
+
+  /**
+   * Is this PDF still the document that was signed?
+   *
+   * The one question in this suite a document answers by itself. A born-digital
+   * return carries a signature over its own bytes, so whether it changed after
+   * signing is arithmetic, not comparison: no original needed, no pixels read,
+   * milliseconds rather than minutes.
+   *
+   * It does not say the signature is *trusted* - no trust list, no revocation -
+   * and an intact signature does not mean the document says what was agreed,
+   * because a counterparty can alter a document and then sign what they
+   * altered. That is still the audit's question. See `@scanmate/seal`.
+   *
+   * Static, like `merge` and `extract`: one file, nothing compared or
+   * remembered, and only `@scanmate/seal` loads.
+   */
+  static async seal (pdf: ScanmateBinarySource): Promise<SealReport> {
+    return await checkSignatures(pdf)
   }
 
   /**
@@ -230,6 +252,7 @@ export class Scanmate {
   #merged:            { original: Uint8Array | null, scanned: Uint8Array | null } = { original: null, scanned: null }
   #unpaired:          { original: number[], scanned: number[] } | undefined
   #warning:           string | null = null
+  #seal:              { original?: Promise<SealReport>, scanned?: Promise<SealReport> } = {}
 
   constructor (original: ScanmateDocument, scanned: ScanmateDocument, options: ScanmateOptions = {}) {
     this.#original = original
@@ -450,6 +473,33 @@ export class Scanmate {
    * PDF is the audit's own evidence, not a second opinion - and loads the PDF
    * library only now.
    */
+  /**
+   * The signatures of one side of this session, checked - the scan by default.
+   *
+   * Worth asking first of a born-digital return: `unbroken` settles whether the
+   * file changed after it was signed before a page is rendered, and a return
+   * that fails it needs no further comparison to be rejected. A return that
+   * passes it still needs the audit, which asks the other question.
+   *
+   * The document is read as it was handed in. A side given as images is
+   * assembled here into a PDF nobody signed, and reports `signed: false`.
+   *
+   * Remembered per side, and outside the stage cache: nothing downstream
+   * consumes it, so nothing is invalidated when it runs.
+   */
+  async seal (side: 'original' | 'scanned' = 'scanned'): Promise<SealReport> {
+    const running = this.#seal[side] ?? checkSignatures(side === 'original' ? this.#original : this.#scanned)
+    this.#seal[side] = running
+
+    try {
+      return await running
+    } catch (error) {
+      this.#seal[side] = undefined
+
+      throw error
+    }
+  }
+
   async evidence (options?: EvidencePdfOptions): Promise<Uint8Array> {
     const report = await this.audit()
 

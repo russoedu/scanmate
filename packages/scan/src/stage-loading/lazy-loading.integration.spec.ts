@@ -43,7 +43,7 @@ describe('what a session loads', () => {
     expect(resolved).toContain('@scanmate/ink')
 
     // Named one by one so a failure says which package crept back in.
-    const loaded = ['@scanmate/ocr', '@scanmate/extract', '@scanmate/merge', 'tesseract.js', 'pdfjs-dist', '@cantoo/pdf-lib', '@napi-rs/canvas']
+    const loaded = ['@scanmate/ocr', '@scanmate/extract', '@scanmate/merge', '@scanmate/seal', 'tesseract.js', 'pdfjs-dist', '@cantoo/pdf-lib', '@napi-rs/canvas', 'pkijs']
       .filter(name => resolved.includes(name))
 
     expect(loaded).toEqual([])
@@ -56,7 +56,23 @@ describe('what a session loads', () => {
 
     expect(resolved).toContain('DONE')
 
-    const loaded = ['@scanmate/ocr', 'tesseract.js', 'pdfjs-dist', '@cantoo/pdf-lib', '@napi-rs/canvas']
+    const loaded = ['@scanmate/ocr', '@scanmate/seal', 'tesseract.js', 'pdfjs-dist', '@cantoo/pdf-lib', '@napi-rs/canvas', 'pkijs']
+      .filter(name => resolved.includes(name))
+
+    expect(loaded).toEqual([])
+  }, 180_000)
+
+  it('checks a signature without loading a single stage of the pipeline', async () => {
+    // The point of the check: a born-digital return is settled by arithmetic on
+    // its own bytes, so nothing that renders, aligns or reads a page has any
+    // business loading. `@scanmate/ink` and its codec are still the floor -
+    // this package imports them as values - but nothing above that.
+    const resolved = await resolvedBy('seal-only.mjs')
+
+    expect(resolved).toContain('DONE')
+    expect(resolved).toContain('@scanmate/seal')
+
+    const loaded = ['@scanmate/ocr', '@scanmate/align', '@scanmate/extract', '@scanmate/merge', 'tesseract.js', 'pdfjs-dist', '@cantoo/pdf-lib', '@napi-rs/canvas']
       .filter(name => resolved.includes(name))
 
     expect(loaded).toEqual([])
@@ -68,7 +84,7 @@ describe('what a session loads', () => {
     expect(resolved).toContain('DONE')
     expect(resolved).toContain('@scanmate/extract')
 
-    const loaded = ['@scanmate/ocr', '@scanmate/align', '@scanmate/merge', 'tesseract.js', '@cantoo/pdf-lib']
+    const loaded = ['@scanmate/ocr', '@scanmate/align', '@scanmate/merge', '@scanmate/seal', 'tesseract.js', '@cantoo/pdf-lib', 'pkijs']
       .filter(name => resolved.includes(name))
 
     expect(loaded).toEqual([])

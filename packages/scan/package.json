@@ -48,6 +48,7 @@
     "@scanmate/extract": "^0.0.1",
     "@scanmate/ink": "^0.0.1",
     "@scanmate/merge": "^0.0.1",
-    "@scanmate/ocr": "^0.0.1"
+    "@scanmate/ocr": "^0.0.1",
+    "@scanmate/seal": "^0.0.1"
   }
 }
