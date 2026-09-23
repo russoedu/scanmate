@@ -328,7 +328,7 @@ Every option bag and result a session speaks is a stage's own type, and all of t
 import type { AuditReport, FieldSpec, PageDiff, PageRegion, ScanmateRect } from '@scanmate/scan'
 ```
 
-They are type-only exports, erased before anything runs, so naming a type never loads its stage. Five names mean different things in two stages, and are renamed here so that both can be reached:
+Those are type-only exports, erased before anything runs, so naming a type never loads its stage - and the runtime that builds them is exported too, for which see the next section. Five names mean different things in two stages, and are renamed here so that both can be reached:
 
 | here | is | from |
 |---|---|---|
@@ -337,6 +337,28 @@ They are type-only exports, erased before anything runs, so naming a type never 
 | `FeatureMatchOptions` | `MatchOptions` | `@scanmate/align` - matching keypoints |
 | `WordMatchOptions` | `MatchOptions` | `@scanmate/ocr` - matching read words to printed ones |
 | `WordVerdict` | `Verdict` | `@scanmate/ocr` - one word's verdict; `Verdict` here is the audit's |
+
+## And the kernel's runtime, so a type can be made
+
+Types alone made this a window rather than a door: you could *name* a `Raster`, a `SyntheticDocument` or a `Matrix3` here and then had to add `@scanmate/ink` to your own manifest to build one. The rule now is the one the type list already implied - **if this package re-exports a type, it re-exports the runtime that makes and uses it**:
+
+```ts
+import { createSyntheticDocument, drawSignature, simulateScan } from '@scanmate/scan'
+
+// A fixture for your own end-to-end tests: a page, a signature written into
+// its signature box, and a scan of it skewed and scaled as a scanner would.
+const page = createSyntheticDocument()
+drawSignature(page.raster, page.regions.signature)
+const { raster } = simulateScan(page.raster, { rotationDeg: 1.2, scale: 1.5, noise: 3 })
+```
+
+Images and the codec, ink separation, resampling and warps, plane geometry, measurement, bleed, text normalisation, and the synthesis helpers ink calls fixtures - a fixture is exactly what a consumer's own tests need.
+
+**It costs nothing.** `@scanmate/ink` is not a lazily loaded stage; it is the floor, and this package imports it as a value in thirty-odd files, so anything importing `@scanmate/scan` had already loaded ink and `sharp`. These names were reachable all along and simply were not spelled out.
+
+What is deliberately left out is the numerical plumbing ink documents as *consumed by `@scanmate/align`* - the eigen solvers, the FFT, the seeded PRNG. Those belong to a stage, not to a caller; depend on `@scanmate/ink` and say so if you want them. A test asserts both halves: every name above is exported, and none of those is.
+
+The exemption is ink's alone. A value re-export of `@scanmate/ocr`, `extract`, `merge`, `align` or `seal` would be evaluated the moment anyone imported this package, dragging in `tesseract.js`, `pdfjs-dist`, `@cantoo/pdf-lib` or `pkijs` with it - the whole cost the lazy loading exists to avoid, paid by everyone. That is enforced, not merely intended.
 
 ## Inputs
 

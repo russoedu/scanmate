@@ -50,8 +50,22 @@ describe('the types this package passes on', () => {
     expect(exported.filter((name, i) => exported.indexOf(name) !== i)).toEqual([])
   })
 
-  it('takes nothing but types from a stage', () => {
-    expect(barrel).not.toMatch(/^export \{[^}]*\} from '@scanmate\//m)
+  it('takes nothing but types from a lazily loaded stage', () => {
+    // A value re-export of a stage would be evaluated the moment anyone
+    // imports this package, and with it `tesseract.js`, `pdfjs-dist`,
+    // `@cantoo/pdf-lib` or `pkijs` - the entire cost the lazy loading exists to
+    // avoid, paid by every caller whether they use that stage or not.
+    //
+    // `@scanmate/ink` is not a stage and is not lazily loaded: it is the floor,
+    // imported as a value by this package's own code in thirty-odd files, so
+    // re-exporting its runtime loads nothing that was not already loaded. That
+    // is why a caller can now *make* the shapes whose types this barrel hands
+    // out, and it is the only exemption.
+    const reExported = [...barrel.matchAll(/^export \{[^}]*\} from '(@scanmate\/[^']+)'/gm)].map(([, specifier]) => specifier)
+
+    expect(reExported.filter(specifier => specifier !== '@scanmate/ink')).toStrictEqual([])
+    // A star export stays forbidden even for ink: it would quietly pull in the
+    // numerics ink keeps for `@scanmate/align`, which this package leaves alone.
     expect(barrel).not.toMatch(/^export \* from '@scanmate\//m)
   })
 })

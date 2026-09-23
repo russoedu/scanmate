@@ -119,6 +119,54 @@ export type {
 } from '@scanmate/merge'
 export type { SealReport, SignatureCheck, SignatureProblem, Signer } from '@scanmate/seal'
 
+// --- The kernel's runtime, so a type this package hands out can also be made ---
+
+/**
+ * Everything above re-exports `@scanmate/ink`'s *types*, and for a long time
+ * only its types: a caller could name a `SyntheticDocument`, a `Raster` or a
+ * `Matrix3` through this front door and then had to add `@scanmate/ink` to
+ * their own manifest to build one. That is not a door, it is a window.
+ *
+ * It costs nothing to fix. `ink` is not a lazily loaded stage - this package
+ * imports it as a value in thirty-odd files, so anything that imports
+ * `@scanmate/scan` has already loaded ink and `sharp`. These names were
+ * reachable at runtime all along; they were simply not spelled out.
+ *
+ * The rule is the one already implied by the type list: **if this package
+ * re-exports a type, it re-exports the runtime that makes and uses it.** What
+ * is deliberately left out is the numerical plumbing ink documents as
+ * "consumed by `@scanmate/align`" - the eigen solvers, the FFT, the seeded
+ * PRNG. Those belong to a stage, not to a caller, and a caller who genuinely
+ * wants them should depend on ink and say so.
+ */
+
+/** Images: the shapes, their constructors, and the codec. */
+export { blurRaster, cloneRaster, countPages, createBinary, createGray, createRaster, decodeImage, encodeImage, isRaster, readImageMetadata, resampleRaster } from '@scanmate/ink'
+
+/** Ink: greyscale to ink, ink to mask. */
+export { binarize, boxBlur, coverage, dilate, grayToRaster, inkMap, integralImage, otsuThreshold, toGrayscale } from '@scanmate/ink'
+
+/** Resampling and the warp the alignment applies. */
+export { boxBlurRaster, downscaleGray, resizeGray, sampleGrayBilinear, warpGray, warpRaster } from '@scanmate/ink'
+
+/** Geometry: the transform, and the shapes it moves. */
+export {
+  applyPoint, conjugateScale, decompose, determinant, IDENTITY, invert, isPlausible, mapRectCorners,
+  multiply, normalize, rebase, reprojectionError, scaling, similarity, translation,
+} from '@scanmate/ink'
+
+/** Measurement, bleed and text normalisation. */
+export { contentExtent, correlation, DEFAULT_BLEED, DEFAULT_NORMALISE, diacriticsMap, estimateSkew, foldConfusables, foldDiacritics, growBy, hasBleed, intersectionOverUnion, mean, normaliseText, profileSharpness, resolveBleed, tokenise } from '@scanmate/ink'
+
+/**
+ * Synthesis: a document, a scan of it, and the strokes to mark either.
+ *
+ * Ink calls these test fixtures, and they are - but a fixture is exactly what
+ * a consumer's own end-to-end tests need, and building a forged digit or a
+ * signature written into a field is the same job whichever repository asks.
+ */
+export { createSyntheticDocument, drawLabel, drawLine, drawSignature, drawTick, fillRect, labelSize, simulateScan, strokeRect } from '@scanmate/ink'
+
 // --- Building blocks ---
 
 export { MissingStageError, loadedStages } from './stage-loading'
