@@ -56,3 +56,6 @@ Thumbs.db
 .nx/self-healing
 .nx/migrate-runs
 vitest.config.*.timestamp*
+# A corpus built from real documents never enters the repository.
+corpus/
+tools/calibration/corpus*/
