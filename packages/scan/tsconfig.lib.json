@@ -17,6 +17,9 @@
   ],
   "references": [
     {
+      "path": "../seal/tsconfig.lib.json"
+    },
+    {
       "path": "../ocr/tsconfig.lib.json"
     },
     {

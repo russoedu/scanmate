@@ -1,5 +1,5 @@
 /** The stages that live in packages of their own, loaded the first time they are used. */
-export type LoadedStage = 'merge' | 'extract' | 'align' | 'ocr'
+export type LoadedStage = 'merge' | 'extract' | 'align' | 'ocr' | 'seal'
 
 /** The package each of those stages lives in. */
 export const STAGE_PACKAGES: Readonly<Record<LoadedStage, string>> = {
@@ -7,6 +7,7 @@ export const STAGE_PACKAGES: Readonly<Record<LoadedStage, string>> = {
   extract: '@scanmate/extract',
   align:   '@scanmate/align',
   ocr:     '@scanmate/ocr',
+  seal:    '@scanmate/seal',
 }
 
 /**

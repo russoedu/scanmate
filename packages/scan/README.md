@@ -107,10 +107,11 @@ That is measured, not asserted: a test spawns a child process with a module hook
 | `find(content?, options?)` | whether required content is there | `ocr` |
 | `audit(options?)` | the verdict, with its evidence | prepared pages, or `enhance` if you ran it |
 | `evidence(options?)` | the audit as one PDF, for the reviewer | `audit` |
+| `seal(side?)` | whether a signed PDF still is what was signed | nothing - the bytes as handed in |
 | `report()` | everything known, joined by page | whatever has run |
 | `dispose()` | — | — |
 
-And seven that need no session of your own:
+And eight that need no session of your own:
 
 | method | returns | loads |
 |---|---|---|
@@ -118,6 +119,7 @@ And seven that need no session of your own:
 | `Scanmate.extract(pdf, options?)` | `ExtractedPage[]` — each with `page`, `image`, `metadata` | `@scanmate/extract` only |
 | `Scanmate.mark(pdf, marks, options?)` | `MarkResult` — `pdf`, `drawn`, `warnings` | `@scanmate/merge` only |
 | `Scanmate.locate(pdf, specs, options?)` | `LocatedFields` — `regions`, `anchors`, `problems` | `@scanmate/extract` only |
+| `Scanmate.seal(pdf)` | `SealReport` — `signed`, `unbroken`, `signatures` | `@scanmate/seal` only |
 | `Scanmate.calibrate(corpus, options?)` | `CorpusCalibration` — `samples`, `report` | everything an audit loads |
 | `Scanmate.inBatches(original, scanned, work, options?)` | what `work` returned, per batch | what `work` uses |
 | `Scanmate.evidenceInBatches(original, scanned, options?)` | one evidence PDF for the whole document, and its summary | everything an audit loads, and merge |
@@ -406,7 +408,25 @@ There is deliberately **no `keep` option**. One was typed, exported and document
 
 ## A signed return asks a different question
 
-A document that comes back **born-digital and signed** carries its own evidence: [`@scanmate/seal`](../seal) checks each signature against the bytes it covers, which says whether the file changed after it was signed. Nothing in this package can answer that, and a signature cannot answer what this package does - whether the document says what was agreed. A signed return deserves both.
+A document that comes back **born-digital and signed** carries its own evidence, and answering that needs no original, no alignment and no reading of pixels:
+
+```ts
+const report = await new Scanmate(issued, returned).seal()   // the returned side, by default
+
+report.unbroken                        // nothing changed after it was signed
+report.signatures[0].signer?.subject   // CN=A Person, O=A Company
+report.signatures[0].problems          // 'digest-mismatch', 'not-covered' with its byte count, ...
+```
+
+Or with no session at all - `Scanmate.seal(pdf)` - because one file is all it takes. Either way only [`@scanmate/seal`](../seal) loads: `pkijs` and `asn1js`, no renderer, no reader, milliseconds rather than minutes. It is worth asking **first** of a born-digital return, because a file that fails it needs no further comparison to be rejected.
+
+Three things it does not say, and the third is the one that matters here:
+
+- It does not say the signer is **trusted**. No trust list, no revocation: a self-signed certificate made five minutes ago verifies exactly as a qualified one does, and `signer.selfSigned` is how you tell.
+- It does not vouch for `signedAt`. That is a clock the signer controls, and no timestamp authority is consulted.
+- **An intact signature does not mean the document says what was agreed.** A counterparty can alter a document and then sign what they altered; the signature verifies perfectly over their version. Only comparing against the original you issued answers that - which is the audit, and it does not go away. A signed return deserves both.
+
+A side handed in as images is assembled here into a PDF nobody signed, so it reports `signed: false` - the truth, rather than a verdict on this package's own bytes.
 
 ## The stages inside this package
 

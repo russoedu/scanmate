@@ -117,6 +117,7 @@ export type {
   Affine, Embedding, MarkOptions, MarkResult, MergedPage, MergeOptions, MergeResult, OpenPdfOptions,
   PageGeometry, PageMark, PageSize, Placement, ResolvedSource, SourceKind,
 } from '@scanmate/merge'
+export type { SealReport, SignatureCheck, SignatureProblem, Signer } from '@scanmate/seal'
 
 // --- Building blocks ---
 

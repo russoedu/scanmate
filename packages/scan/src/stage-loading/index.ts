@@ -2,4 +2,4 @@
 
 export { MissingStageError, STAGE_PACKAGES } from './missing-stage.error'
 export type { LoadedStage } from './missing-stage.error'
-export { loadAlign, loadExtract, loadInk, loadMerge, loadOcr, loadedStages } from './stage-modules.client'
+export { loadAlign, loadExtract, loadInk, loadMerge, loadOcr, loadSeal, loadedStages } from './stage-modules.client'
