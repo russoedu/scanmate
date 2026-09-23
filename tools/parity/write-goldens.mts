@@ -20,7 +20,14 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { createRandom, gaussian } from '../../packages/ink/dist/index.esm.js'
+import {
+  createRandom,
+  createRaster,
+  decodeImage,
+  encodeImage,
+  gaussian,
+  readImageMetadata,
+} from '../../packages/ink/dist/index.esm.js'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const goldenDir = join(here, 'goldens')
@@ -59,3 +66,48 @@ writeFileSync(
   `${JSON.stringify({ createRandom: prng, gaussian: boxMuller }, undefined, 2)}\n`,
 )
 process.stdout.write(`wrote ${join(goldenDir, 'prng.json')}\n`)
+
+/*
+ * The raster goldens. The page is BUILT from the PRNG rather than read from a
+ * fixture, because no binary fixtures exist in this repository - so the input
+ * is reproducible from a seed, and the Python port can rebuild the identical
+ * page with the generator it has already been proved to match.
+ *
+ * Only what survives the crossing is pinned. PNG is lossless and libvips and
+ * Pillow agree on it byte for byte - measured, on this very page. Resize and
+ * blur do NOT agree: Pillow's LANCZOS differs from libvips' lanczos3 on 78.8%
+ * of pixels, and libvips' blur is an integer APPROXIMATION of a Gaussian
+ * rather than a Gaussian, differing on 100%. They are deliberately absent
+ * rather than pinned to numbers a port could only meet by accident.
+ */
+const RASTER_WIDTH = 64
+const RASTER_HEIGHT = 48
+const RASTER_SEED = 20_260_923
+
+const page = createRaster(RASTER_WIDTH, RASTER_HEIGHT)
+const pixelRandom = createRandom(RASTER_SEED)
+for (let offset = 0; offset < page.data.length; offset += 4) {
+  page.data[offset] = Math.floor(pixelRandom() * 256)
+  page.data[offset + 1] = Math.floor(pixelRandom() * 256)
+  page.data[offset + 2] = Math.floor(pixelRandom() * 256)
+  page.data[offset + 3] = 255
+}
+
+const png = await encodeImage(page, { format: 'png' })
+const decoded = await decodeImage(png)
+if (Buffer.compare(Buffer.from(page.data), Buffer.from(decoded.data)) !== 0) {
+  throw new Error('PNG did not round-trip in the TypeScript - the goldens would be meaningless')
+}
+
+writeFileSync(
+  join(goldenDir, 'raster.json'),
+  JSON.stringify({
+    seed:      RASTER_SEED,
+    width:     RASTER_WIDTH,
+    height:    RASTER_HEIGHT,
+    pixels:    [...page.data],
+    pngBase64: Buffer.from(png).toString('base64'),
+    metadata:  await readImageMetadata(png),
+  }, undefined, 2) + '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'raster.json') + '\n')

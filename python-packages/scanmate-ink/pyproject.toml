@@ -3,7 +3,16 @@ name = "scanmate-ink"
 version = "0.0.1"
 description = ""
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+  "numpy>=2.1",
+  "pillow>=11",
+]
+
+[project.optional-dependencies]
+# HEIF is what a phone camera emits, and a photograph taken off-axis is exactly
+# what the homography model is for - but the decoder is a separate wheel, so it
+# is opt-in rather than a hard dependency of the numeric core.
+heif = ["pillow-heif>=0.18"]
 
 [build-system]
 requires = ["hatchling"]
