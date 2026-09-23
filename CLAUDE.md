@@ -21,3 +21,12 @@
 - The `nx-generate` skill handles generator discovery internally - don't call nx_docs just to look up generator syntax
 
 <!-- nx configuration end-->
+
+# Working in this repository
+
+Read [`AGENTS.md`](./AGENTS.md) before changing anything. It says where the
+reasoning lives - the package READMEs, the `documentation/` folders, the code
+comments and the commit messages - and it carries the two standing rules: real
+documents never enter the repository, and nothing is claimed to work that a
+`lint,typecheck,test,build` run has not just proved.
+
