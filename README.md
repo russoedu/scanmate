@@ -46,7 +46,7 @@ Seven packages. `@scanmate/scan` holds the whole pipeline; the other six stand o
 | [`@scanmate/extract`](packages/extract) | **What is in this PDF, and where are its fields?** Pages as rasters at the scan's own resolution, page kind, real resolution, the text layer with its geometry - and fields placed from the labels it prints. |
 | [`@scanmate/seal`](packages/seal) | **Is a signed PDF still the document that was signed?** Each signature checked against the bytes it covers: the digest, the signature, what it leaves uncovered, and who the certificate says signed. Not whether that signer is *trusted* - that is a trust list, not a file. |
 | [`@scanmate/merge`](packages/merge) | **How do these photos become one document?** Without re-encoding what is already good, keeping each page's real resolution - and regions drawn onto a PDF to check them. |
-| [`@scanmate/ink`](packages/ink) | The kernel: ink separation, warps, matrices, correlation, text normalisation, and the contracts the stages pass along. |
+| [`@scanmate/ink`](packages/ink) | The kernel: ink separation, warps, matrices, correlation, text normalisation, the synthesis helpers your own tests want, and the contracts the stages pass along. Every bit of it is re-exported by `@scanmate/scan`, so installing the facade is enough - depend on ink directly when it is the only thing you need. |
 
 `@scanmate/diff`, `@scanmate/find`, `@scanmate/enhance` and `@scanmate/audit` were separate packages until 0.17.0; everything they exported is exported by `@scanmate/scan` from 0.18.0, under the same names. `@scanmate/image-fix`, the first version of all this, is gone. All five are deprecated on npm.
 
