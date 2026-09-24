@@ -6,6 +6,7 @@ TypeScript build - see ``tools/parity``.
 """
 
 from .deterministic_sampling import create_random, gaussian
+from .frequency_analysis import fft1d, fft2d, is_power_of_two, next_power_of_two
 from .geometric_transform import (
     Downscaled,
     Interpolation,
@@ -82,6 +83,8 @@ __all__ = [
     "decode_image",
     "dilate",
     "downscale_gray",
+    "fft1d",
+    "fft2d",
     "encode_image",
     "Matrix3",
     "Point",
@@ -96,8 +99,10 @@ __all__ = [
     "integral_image",
     "invert",
     "is_plausible",
+    "is_power_of_two",
     "is_raster",
     "multiply",
+    "next_power_of_two",
     "normalize",
     "otsu_threshold",
     "similarity",

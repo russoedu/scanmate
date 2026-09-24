@@ -27,12 +27,16 @@ import {
   decompose,
   downscaleGray,
   encodeImage,
+  fft1d,
+  fft2d,
   gaussian,
   invert,
   isPlausible,
+  isPowerOfTwo,
   jacobiEigen,
   mapRectCorners,
   multiply,
+  nextPowerOfTwo,
   normalize,
   readImageMetadata,
   rebase,
@@ -403,3 +407,84 @@ writeFileSync(
   }, undefined, 2) + '\n',
 )
 process.stdout.write('wrote ' + join(goldenDir, 'geometric-transform.json') + '\n')
+
+/*
+ * The frequency-analysis goldens - the ONLY ones in this file that a port
+ * cannot match exactly, and the reason is worth recording rather than
+ * tolerating.
+ *
+ * The FFT is additions, multiplications and divisions except for its twiddle
+ * bases, which are `Math.cos` and `Math.sin` of `+/- 2 * PI / len`. That is 24
+ * distinct values for every size up to 4096, and 23 of them agree with Python
+ * to the last bit. The exception is `sin(+/- PI / 4)`: V8 returns
+ * -0.7071067811865475 where the correctly rounded double is
+ * -0.7071067811865476, so V8 is the one that is 1 ULP wrong and the port is
+ * the one that is right. Every transform of 8 or more points runs a `len = 8`
+ * stage, whose twiddle RECURRENCE then multiplies that error forward into
+ * every later stage.
+ *
+ * So these goldens are compared to a measured bound rather than with `==`, and
+ * the Python test states the bound it measured. `angles` is carried so the
+ * test can check the twiddle bases themselves rather than inferring the
+ * disagreement from a whole transform.
+ */
+const FFT_SIZES = [1, 2, 4, 8, 16, 64]
+const fftRandom = createRandom(31_337)
+const fftInput = (n: number): { re: number[], im: number[] } => ({
+  re: Array.from({ length: n }, () => fftRandom() * 2 - 1),
+  im: Array.from({ length: n }, () => fftRandom() * 2 - 1),
+})
+
+const transforms: Record<string, unknown> = {}
+for (const n of FFT_SIZES) {
+  const input = fftInput(n)
+  const re = Float64Array.from(input.re)
+  const im = Float64Array.from(input.im)
+  fft1d(re, im)
+
+  const backRe = Float64Array.from(re)
+  const backIm = Float64Array.from(im)
+  fft1d(backRe, backIm, true)
+
+  transforms[String(n)] = {
+    input,
+    forward:   { re: [...re], im: [...im] },
+    roundTrip: { re: [...backRe], im: [...backIm] },
+  }
+}
+
+/* Non-square, and deliberately not square-transposed either, so a port that swapped width and height fails. */
+const FFT_WIDTH = 8
+const FFT_HEIGHT = 16
+const planar = fftInput(FFT_WIDTH * FFT_HEIGHT)
+const planeRe = Float64Array.from(planar.re)
+const planeIm = Float64Array.from(planar.im)
+fft2d(planeRe, planeIm, FFT_WIDTH, FFT_HEIGHT)
+const planeBackRe = Float64Array.from(planeRe)
+const planeBackIm = Float64Array.from(planeIm)
+fft2d(planeBackRe, planeBackIm, FFT_WIDTH, FFT_HEIGHT, true)
+
+const twiddleAngles: Array<[number, number, number, number, number]> = []
+for (let len = 2; len <= 4096; len <<= 1)
+  for (const sign of [-1, 1]) {
+    const angle = (sign * 2 * Math.PI) / len
+    twiddleAngles.push([len, sign, angle, Math.cos(angle), Math.sin(angle)])
+  }
+
+writeFileSync(
+  join(goldenDir, 'frequency-analysis.json'),
+  JSON.stringify({
+    nextPowerOfTwo: [0, 1, 2, 3, 5, 9, 17, 100, 1000, 4096, 4097].map(n => [n, nextPowerOfTwo(n)]),
+    isPowerOfTwo:   [-4, -1, 0, 1, 2, 3, 4, 6, 8, 1024, 1025].map(n => [n, isPowerOfTwo(n)]),
+    twiddleAngles,
+    fft1d:          transforms,
+    fft2d:          {
+      width:     FFT_WIDTH,
+      height:    FFT_HEIGHT,
+      input:     planar,
+      forward:   { re: [...planeRe], im: [...planeIm] },
+      roundTrip: { re: [...planeBackRe], im: [...planeBackIm] },
+    },
+  }, undefined, 2) + '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'frequency-analysis.json') + '\n')
