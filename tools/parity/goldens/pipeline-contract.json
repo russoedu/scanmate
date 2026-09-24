@@ -1,0 +1,158 @@
+{
+  "interfaces": {
+    "PageRegion": {
+      "extends": [
+        "ScanmateRect",
+        "Bleed"
+      ],
+      "members": [
+        [
+          "page",
+          false
+        ],
+        [
+          "id",
+          false
+        ]
+      ]
+    },
+    "PageImage": {
+      "extends": [],
+      "members": [
+        [
+          "raster",
+          false
+        ],
+        [
+          "image",
+          false
+        ],
+        [
+          "width",
+          false
+        ],
+        [
+          "height",
+          false
+        ],
+        [
+          "dpi",
+          false
+        ]
+      ]
+    },
+    "ScanPage": {
+      "extends": [],
+      "members": [
+        [
+          "page",
+          false
+        ],
+        [
+          "original",
+          false
+        ],
+        [
+          "scanned",
+          false
+        ]
+      ]
+    },
+    "AlignedImage": {
+      "extends": [
+        "PageImage"
+      ],
+      "members": [
+        [
+          "matrix",
+          false
+        ],
+        [
+          "inverse",
+          false
+        ],
+        [
+          "confidence",
+          false
+        ]
+      ]
+    },
+    "AlignedPage": {
+      "extends": [
+        "ScanPage"
+      ],
+      "members": [
+        [
+          "aligned",
+          false
+        ]
+      ]
+    },
+    "StageEvent": {
+      "extends": [],
+      "members": [
+        [
+          "stage",
+          false
+        ],
+        [
+          "phase",
+          false
+        ],
+        [
+          "page",
+          false
+        ],
+        [
+          "index",
+          false
+        ],
+        [
+          "total",
+          false
+        ],
+        [
+          "durationMs",
+          true
+        ],
+        [
+          "detail",
+          true
+        ]
+      ]
+    },
+    "TextRun": {
+      "extends": [
+        "ScanmateOrientedRect"
+      ],
+      "members": [
+        [
+          "text",
+          false
+        ],
+        [
+          "baseline",
+          true
+        ],
+        [
+          "fontSize",
+          true
+        ],
+        [
+          "fontName",
+          true
+        ],
+        [
+          "endsLine",
+          true
+        ]
+      ]
+    }
+  },
+  "aliases": {
+    "ReadablePage": "AlignedPage & { enhanced?: PageImage; metadata?: { original?: { textItems?: readonly TextRun[] | null; }; }; }",
+    "PipelineStage": "'merge' | 'extract' | 'align' | 'enhance' | 'ocr' | 'diff' | 'find' | 'audit'",
+    "ProgressCallback": "(event: StageEvent) => void",
+    "PdfTextRun": "Required<TextRun>"
+  }
+}

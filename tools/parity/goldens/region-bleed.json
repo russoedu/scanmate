@@ -1,0 +1,242 @@
+{
+  "defaultBleed": 6,
+  "base": {
+    "top": 5,
+    "right": 5,
+    "bottom": 11,
+    "left": 5
+  },
+  "resolveBleed": {
+    "empty": {
+      "bleed": {},
+      "resolved": {
+        "top": 6,
+        "right": 6,
+        "bottom": 6,
+        "left": 6
+      }
+    },
+    "fallbackOnly": {
+      "bleed": {},
+      "fallback": 10,
+      "resolved": {
+        "top": 10,
+        "right": 10,
+        "bottom": 10,
+        "left": 10
+      }
+    },
+    "allZero": {
+      "bleed": {
+        "bleed": 0
+      },
+      "resolved": {
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      }
+    },
+    "allZeroOverFallback": {
+      "bleed": {
+        "bleed": 0
+      },
+      "fallback": 10,
+      "resolved": {
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      }
+    },
+    "sidedOverAll": {
+      "bleed": {
+        "bleed": 4,
+        "bleedBottom": 14
+      },
+      "resolved": {
+        "top": 4,
+        "right": 4,
+        "bottom": 14,
+        "left": 4
+      }
+    },
+    "zeroTopOverFallback": {
+      "bleed": {
+        "bleedTop": 0
+      },
+      "fallback": 5,
+      "resolved": {
+        "top": 0,
+        "right": 5,
+        "bottom": 5,
+        "left": 5
+      }
+    },
+    "zeroSideOverAll": {
+      "bleed": {
+        "bleed": 7,
+        "bleedRight": 0
+      },
+      "resolved": {
+        "top": 7,
+        "right": 0,
+        "bottom": 7,
+        "left": 7
+      }
+    },
+    "allBeatsFallback": {
+      "bleed": {
+        "bleed": 3
+      },
+      "fallback": 99,
+      "resolved": {
+        "top": 3,
+        "right": 3,
+        "bottom": 3,
+        "left": 3
+      }
+    },
+    "everySideNamed": {
+      "bleed": {
+        "bleedTop": 1,
+        "bleedRight": 2,
+        "bleedBottom": 3,
+        "bleedLeft": 4
+      },
+      "fallback": 99,
+      "resolved": {
+        "top": 1,
+        "right": 2,
+        "bottom": 3,
+        "left": 4
+      }
+    },
+    "fallbackZero": {
+      "bleed": {},
+      "fallback": 0,
+      "resolved": {
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      }
+    }
+  },
+  "resolveRegionBleed": {
+    "emptyRegion": {
+      "region": {},
+      "resolved": {
+        "top": 5,
+        "right": 5,
+        "bottom": 11,
+        "left": 5
+      }
+    },
+    "regionAllZero": {
+      "region": {
+        "bleed": 0
+      },
+      "resolved": {
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      }
+    },
+    "regionZeroLeft": {
+      "region": {
+        "bleedLeft": 0
+      },
+      "resolved": {
+        "top": 5,
+        "right": 5,
+        "bottom": 11,
+        "left": 0
+      }
+    },
+    "regionSidedOverAll": {
+      "region": {
+        "bleed": 2,
+        "bleedTop": 9
+      },
+      "resolved": {
+        "top": 9,
+        "right": 2,
+        "bottom": 2,
+        "left": 2
+      }
+    },
+    "regionAllOnly": {
+      "region": {
+        "bleed": 8
+      },
+      "resolved": {
+        "top": 8,
+        "right": 8,
+        "bottom": 8,
+        "left": 8
+      }
+    },
+    "regionEverySide": {
+      "region": {
+        "bleedTop": 0,
+        "bleedRight": 0,
+        "bleedBottom": 0,
+        "bleedLeft": 0
+      },
+      "resolved": {
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      }
+    }
+  },
+  "rejects": {
+    "negativeAll": "bleed top must be a finite, non-negative number of points, and is -1",
+    "negativeSide": "bleed bottom must be a finite, non-negative number of points, and is -0.5",
+    "notFinite": "bleed top must be a finite, non-negative number of points, and is Infinity",
+    "notANumber": "bleed left must be a finite, non-negative number of points, and is NaN",
+    "negativeRegion": "bleed right must be a finite, non-negative number of points, and is -2",
+    "twoBadSides": "bleed right must be a finite, non-negative number of points, and is -1"
+  },
+  "growBy": {
+    "rect": {
+      "x": 12,
+      "y": 30,
+      "width": 100,
+      "height": 40
+    },
+    "uniform": {
+      "x": 6,
+      "y": 24,
+      "width": 112,
+      "height": 52
+    },
+    "sided": {
+      "x": 7,
+      "y": 25,
+      "width": 110,
+      "height": 56
+    },
+    "zero": {
+      "x": 12,
+      "y": 30,
+      "width": 100,
+      "height": 40
+    },
+    "asymmetric": {
+      "x": 9,
+      "y": 29,
+      "width": 120,
+      "height": 50
+    }
+  },
+  "hasBleed": {
+    "uniform": true,
+    "zero": false,
+    "oneSide": true,
+    "lastSide": true
+  }
+}

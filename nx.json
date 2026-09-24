@@ -53,7 +53,8 @@
         "ciTargetName": "test-ci",
         "testMode": "watch"
       }
-    }
+    },
+    "@mnci/nx-python-pip/graph"
   ],
   "analytics": false,
   "defaultBase": "main",

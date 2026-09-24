@@ -59,3 +59,12 @@ vitest.config.*.timestamp*
 # A corpus built from real documents never enters the repository.
 corpus/
 tools/calibration/corpus*/
+
+# Python. `mnci add python-lib` does not add these, and the first pytest run
+# writes bytecode and four tool caches straight into the source tree.
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/

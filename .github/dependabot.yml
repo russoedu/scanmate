@@ -17,3 +17,11 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
+
+  - package-ecosystem: pip
+    directories:
+      - "/apps/*"
+      - "/python-packages/*"
+      - "/libs/*"
+    schedule:
+      interval: weekly
