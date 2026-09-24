@@ -22,6 +22,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
+  IDENTITY,
   createRandom,
   createBinary,
   createGray,
@@ -1315,3 +1316,87 @@ writeFileSync(
   JSON.stringify({ exports: [...exported].sort((a, b) => a.localeCompare(b)) }, undefined, 2) + '\n',
 )
 process.stdout.write('wrote ' + join(goldenDir, 'package-surface.json') + '\n')
+
+/* ===========================================================================
+ * Math.hypot
+ *
+ * Its own golden, because it is its own hazard. `Math.hypot` and CPython's
+ * `math.hypot` are different algorithms answering the same question, and they
+ * disagree in the last bit on 16% of inputs — CPython is written to be
+ * correctly rounded, V8 computes a scaled square root. `numpy.hypot` is a
+ * third algorithm again and disagrees on 17%.
+ *
+ * "More accurate" is still different, and the difference is not cosmetic:
+ * `decompose` reports a scale through it, and `isPlausible` GATES on it, so a
+ * 1-ULP move can flip an accept into a reject and change which RANSAC
+ * candidates survive.
+ *
+ * This golden exists because the ink goldens had this hole and did not know
+ * it: every plane-geometry value agreed, 1,227 Python tests passed, and the
+ * divergence only surfaced from `@scanmate/align`'s RANSAC goldens, where a
+ * mean over 40 reprojection errors came out one ULP low. The lesson is in the
+ * pairs below — they are drawn across the magnitudes a page pipeline actually
+ * produces, not the tidy ones a hand-written test reaches for.
+ * ========================================================================= */
+
+/** `Infinity` and `NaN` as strings, since JSON has no literal for either. */
+function encodeNonFinite (value: number): number | string {
+  return Number.isFinite(value) ? value : String(value)
+}
+
+/** Magnitudes a page pipeline really sees, plus both ends of the range. */
+const HYPOT_SCALES = [1e-8, 1e-3, 1, 10, 1e3, 1e6, 1e12, 1e150, 1e-150]
+
+const hypotRandom = createRandom(20_260_924)
+const hypotPairs: [number, number][] = []
+for (let i = 0; i < 2000; i++) {
+  const sa = HYPOT_SCALES[Math.floor(hypotRandom() * HYPOT_SCALES.length)]
+  const sb = HYPOT_SCALES[Math.floor(hypotRandom() * HYPOT_SCALES.length)]
+  hypotPairs.push([(hypotRandom() * 2 - 1) * sa, (hypotRandom() * 2 - 1) * sb])
+}
+
+/*
+ * The edges, named rather than left to the sweep to find: zero (which
+ * short-circuits before the scaling divides by it), a single zero component,
+ * a negative (the result is a magnitude), equal components (where the scaled
+ * sum is exactly 2), and an infinity, which must come back as Infinity rather
+ * than the NaN the scaling would otherwise produce.
+ */
+const HYPOT_EDGES: [number, number][] = [
+  [0, 0], [0, 5], [5, 0], [-3, -4], [3, 4], [1, 1],
+  [Number.MIN_VALUE, Number.MIN_VALUE],
+  [Number.MAX_VALUE, Number.MAX_VALUE],
+  [Infinity, 1], [1, Infinity], [Infinity, Infinity],
+]
+
+writeFileSync(
+  join(goldenDir, 'js-hypot.json'),
+  JSON.stringify(
+    {
+      pairs:  hypotPairs,
+      values: hypotPairs.map(([a, b]) => Math.hypot(a, b)),
+      /*
+       * Encoded, because `JSON.stringify(Infinity)` is `null` and a golden
+       * that says `null` where it means Infinity is a golden a port passes by
+       * returning the wrong thing. The overflow case is the whole reason the
+       * scaling exists, so it is not one to drop.
+       */
+      edges: HYPOT_EDGES.map(([a, b]) => ({
+        a:     encodeNonFinite(a),
+        b:     encodeNonFinite(b),
+        hypot: encodeNonFinite(Math.hypot(a, b)),
+      })),
+      // Three arguments, so a port cannot get away with the two-argument
+      // simplification alone: with three summands the Kahan compensation is no
+      // longer zero, and `sqrt(x^2 + y^2 + z^2)` parts company with the answer.
+      three: [
+        { values: [3, 4, 12], hypot: Math.hypot(3, 4, 12) },
+        { values: [1e-8, 1e8, 1], hypot: Math.hypot(1e-8, 1e8, 1) },
+        { values: [0.1, 0.2, 0.3], hypot: Math.hypot(0.1, 0.2, 0.3) },
+      ],
+    },
+    undefined,
+    2,
+  ) + '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'js-hypot.json') + '\n')

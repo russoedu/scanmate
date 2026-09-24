@@ -42,7 +42,7 @@ import numpy.typing as npt
 
 from ..deterministic_sampling import create_random, random_stream
 from ..geometric_transform import WarpOptions, box_blur_raster, warp_raster
-from ..js_semantics import js_round
+from ..js_semantics import hypot, hypot2, js_round
 from ..plane_geometry import Matrix3, ScanmateRect, invert, multiply, scaling, translation
 from ..raster_codec import Raster
 
@@ -164,7 +164,7 @@ def draw_line(
     :param thickness: Square size.
     :param value: The grey level.
     """
-    steps = math.ceil(math.hypot(x1 - x0, y1 - y0)) + 1
+    steps = math.ceil(hypot(x1 - x0, y1 - y0)) + 1
     half = thickness / 2
 
     for i in range(steps + 1):
@@ -381,7 +381,7 @@ def _apply_illumination(raster: Raster, strength: float) -> None:
     v = (np.arange(height, dtype=np.float64) / height)[:, None]
 
     ramp = 1 - strength * (0.35 * u + 0.65 * v)
-    corner = 1 - strength * 0.8 * np.maximum(0, 1 - np.hypot(u, v) * 1.3)
+    corner = 1 - strength * 0.8 * np.maximum(0, 1 - hypot2(u, v) * 1.3)
     factor = (ramp * corner)[:, :, None]
 
     colours = raster.pixels[:, :, _RGB].astype(np.float64) * factor
