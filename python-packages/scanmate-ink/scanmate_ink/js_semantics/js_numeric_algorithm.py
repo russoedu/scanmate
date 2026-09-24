@@ -1,4 +1,4 @@
-"""JavaScript's integer semantics, in Python.
+"""JavaScript's numeric semantics, in Python.
 
 This module exists because the port has to be bit-exact, not merely
 statistically similar. Python integers are arbitrary precision and its ``>>``
@@ -11,7 +11,14 @@ subtly wrong produces a generator that still looks random - the sequence is
 plausible, passes any smell test, and simply disagrees with the TypeScript. The
 only way to catch that is to compare against goldens produced by the real
 build, which is what ``tools/parity`` does.
+
+This lives in its own subfeature rather than inside ``deterministic_sampling``
+because a second slice needs it: ``ink_separation`` rounds a blur radius and a
+histogram bin, and JavaScript's rounding is not Python's. JS numeric semantics
+is its own concept, owned by neither caller.
 """
+
+import math
 
 _MASK32 = 0xFFFF_FFFF
 _SIGN_BIT = 0x8000_0000
@@ -62,3 +69,27 @@ def ushr(value: int, bits: int) -> int:
     :returns: The shifted value, in ``[0, 2**32)``.
     """
     return to_uint32(value) >> bits
+
+
+def js_round(value: float) -> int:
+    """Round half AWAY FROM ZERO-ish, the way JavaScript's ``Math.round`` does.
+
+    Python's built-in ``round`` is banker's rounding - it rounds half to even -
+    and JavaScript rounds half towards positive infinity. They disagree on
+    every half-way case::
+
+        value    JS   Python
+        0.5       1        0
+        2.5       3        2
+       -0.5      -0        0
+       -1.5      -1       -2
+
+    That is not a curiosity here. ``otsu_threshold`` rounds a float32 value
+    onto a 256-bin histogram, so a value landing exactly on a bin boundary
+    picks a different bin in each language - and the threshold that comes out
+    then splits the page differently.
+
+    :param value: The value to round.
+    :returns: The rounded value, matching ``Math.round``.
+    """
+    return int(math.floor(value + 0.5))

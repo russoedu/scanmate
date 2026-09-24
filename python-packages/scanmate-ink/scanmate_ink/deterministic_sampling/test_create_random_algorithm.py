@@ -13,8 +13,8 @@ from pathlib import Path
 
 import pytest
 
+from ..js_semantics import imul, to_int32, to_uint32, ushr
 from .create_random_algorithm import create_random, gaussian
-from .js_numeric_algorithm import imul, to_int32, to_uint32, ushr
 
 _Goldens = dict[str, dict[str, list[float]]]
 

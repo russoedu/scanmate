@@ -39,6 +39,15 @@ import {
   similarity,
   smallestEigenvector,
   solve,
+  binarize,
+  boxBlur,
+  coverage,
+  dilate,
+  grayToRaster,
+  inkMap,
+  integralImage,
+  otsuThreshold,
+  toGrayscale,
 } from '../../packages/ink/dist/index.esm.js'
 import type { Matrix3 } from '../../packages/ink/dist/src/index.d.ts'
 
@@ -206,3 +215,55 @@ writeFileSync(
   }, undefined, 2) + '\n',
 )
 process.stdout.write('wrote ' + join(goldenDir, 'plane-geometry.json') + '\n')
+
+/*
+ * The ink-separation goldens.
+ *
+ * `GrayImage` is a Float32Array, and that is the whole difficulty: every stage
+ * computes in float64 and ROUNDS TO FLOAT32 on store. A port that keeps
+ * everything in float64, or that lets numpy carry float32 through the
+ * arithmetic instead of only at the store, diverges immediately - so the
+ * goldens carry the stored float32 values, and the Python compares with `==`.
+ *
+ * The page is the same PRNG-built one the raster goldens use, so nothing here
+ * needs a fixture either.
+ */
+const inkPage = createRaster(RASTER_WIDTH, RASTER_HEIGHT)
+const inkRandom = createRandom(RASTER_SEED)
+for (let offset = 0; offset < inkPage.data.length; offset += 4) {
+  inkPage.data[offset] = Math.floor(inkRandom() * 256)
+  inkPage.data[offset + 1] = Math.floor(inkRandom() * 256)
+  inkPage.data[offset + 2] = Math.floor(inkRandom() * 256)
+  // Vary alpha too, so the compositing over white is actually exercised.
+  inkPage.data[offset + 3] = offset % 37 === 0 ? 128 : 255
+}
+
+const gray = toGrayscale(inkPage)
+const integral = integralImage(gray)
+const blurred = boxBlur(gray, 3)
+const ink = inkMap(gray)
+const threshold = otsuThreshold(ink)
+const mask = binarize(ink)
+const dilated = dilate(mask, 2)
+
+writeFileSync(
+  join(goldenDir, 'ink-separation.json'),
+  JSON.stringify({
+    width:          RASTER_WIDTH,
+    height:         RASTER_HEIGHT,
+    seed:           RASTER_SEED,
+    alphaEvery:     37,
+    gray:           [...gray.data],
+    integral:       [...integral],
+    boxBlurRadius3: [...blurred.data],
+    boxBlurRadius0: [...boxBlur(gray, 0).data],
+    inkMap:         [...ink.data],
+    grayToRaster:   [...grayToRaster(gray).data],
+    otsuThreshold:  threshold,
+    binarize:       [...mask.data],
+    dilateRadius2:  [...dilated.data],
+    coverageAll:    coverage(mask),
+    coverageWindow: coverage(mask, 5.4, 6.7, 40.2, 30.9),
+  }, undefined, 2) + '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'ink-separation.json') + '\n')

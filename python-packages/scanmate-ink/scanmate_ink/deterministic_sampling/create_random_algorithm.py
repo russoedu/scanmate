@@ -16,7 +16,7 @@ it is compared against goldens from the real TypeScript build.
 import math
 from collections.abc import Callable
 
-from .js_numeric_algorithm import imul, to_int32, to_uint32, ushr
+from ..js_semantics import imul, to_int32, to_uint32, ushr
 
 _INCREMENT = 0x6D2B_79F5
 _TWO_32 = 4_294_967_296
