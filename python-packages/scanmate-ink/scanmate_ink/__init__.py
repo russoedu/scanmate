@@ -6,6 +6,18 @@ TypeScript build - see ``tools/parity``.
 """
 
 from .deterministic_sampling import create_random, gaussian
+from .ink_separation import (
+    InkOptions,
+    binarize,
+    box_blur,
+    coverage,
+    dilate,
+    gray_to_raster,
+    ink_map,
+    integral_image,
+    otsu_threshold,
+    to_grayscale,
+)
 from .plane_geometry import (
     IDENTITY,
     Matrix3,
@@ -40,15 +52,20 @@ from .raster_codec import (
 __all__ = [
     "IDENTITY",
     "BinaryImage",
+    "InkOptions",
     "GrayImage",
     "Raster",
+    "binarize",
+    "box_blur",
     "clone_raster",
     "count_pages",
+    "coverage",
     "create_binary",
     "create_gray",
     "create_raster",
     "create_random",
     "decode_image",
+    "dilate",
     "encode_image",
     "Matrix3",
     "Point",
@@ -58,12 +75,17 @@ __all__ = [
     "apply_point",
     "decompose",
     "gaussian",
+    "gray_to_raster",
+    "ink_map",
+    "integral_image",
     "invert",
     "is_plausible",
     "is_raster",
     "multiply",
     "normalize",
+    "otsu_threshold",
     "similarity",
-    "solve",
     "read_image_metadata",
+    "solve",
+    "to_grayscale",
 ]

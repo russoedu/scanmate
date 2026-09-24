@@ -84,10 +84,16 @@ def js_round(value: float) -> int:
        -0.5      -0        0
        -1.5      -1       -2
 
-    That is not a curiosity here. ``otsu_threshold`` rounds a float32 value
-    onto a 256-bin histogram, so a value landing exactly on a bin boundary
-    picks a different bin in each language - and the threshold that comes out
-    then splits the page differently.
+    ``box_blur`` and ``dilate`` both round a RADIUS with this, and a radius is
+    an arbitrary float: 0.5 blurs by one pixel in JavaScript and not at all
+    under the built-in rounding.
+
+    ``otsu_threshold`` also uses it, to bin a value onto a 256-bin histogram,
+    and there the choice turns out to be unobservable - swept over every
+    float32 in ``[0, 1]``, the only product ``value * 255`` that lands exactly
+    on a half-integer is 127.5, whose floor is odd, so round-half-to-even
+    agrees with ``Math.round`` on it. It stays a faithful transcription anyway:
+    ``GrayImage`` does not clamp, and the next caller may not be a histogram.
 
     :param value: The value to round.
     :returns: The rounded value, matching ``Math.round``.
