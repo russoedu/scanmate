@@ -1277,8 +1277,16 @@ process.stdout.write('wrote ' + join(goldenDir, 'synthetic-document.json') + '\n
  * disagrees with it on 78.8% of pixels - and that absence is a decision worth
  * failing over if it is ever made silently.
  */
+/*
+ * `dist/index.d.ts` is a one-line re-export stub - `export * from './src/index.js'`
+ * - so reading IT finds no named exports at all and this golden collapses to an
+ * empty list, which then "passes" against a Python package exporting anything
+ * whatsoever. That is what the first version of this did, and `parity:check`
+ * caught it on its first real run against a clean build. The declarations are
+ * one level down.
+ */
 const indexSource = withoutComments(
-  readFileSync(join(here, '..', '..', 'packages', 'ink', 'dist', 'index.d.ts'), 'utf8'),
+  readFileSync(join(here, '..', '..', 'packages', 'ink', 'dist', 'src', 'index.d.ts'), 'utf8'),
 )
 const exported = new Set<string>()
 for (const match of indexSource.matchAll(/export\s+(?:type\s+)?\{([^}]*)\}/gu)) {

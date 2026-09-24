@@ -69,15 +69,42 @@ a number fails there rather than surfacing later as a Python test that
 mysteriously disagrees. A stale golden is worse than no golden: the Python
 tests keep passing while the two implementations have silently diverged.
 
-### Why the JS numeric helpers exist
+**It runs in CI from `.github/workflows/parity.yml`, which is a separate file
+on purpose.** `ci.yml` is mnci-owned — `mnci upgrade` rewrites it wholesale —
+so a step added there would survive until the next upgrade and then vanish
+without a word. It builds `@scanmate/ink` explicitly rather than relying on
+`ci.yml`'s verify step, which is `nx affected` on a pull request: a PR touching
+only Python would never build ink, and the check would then fail on a missing
+import rather than on a stale golden.
 
-`scanmate_ink/deterministic_sampling/js_numeric_algorithm.py` restates
-JavaScript's integer semantics — `ToUint32`, `ToInt32`, `Math.imul` and `>>>`.
-Python's integers are arbitrary precision and its `>>` is arithmetic on a
-signed value, so a direct transcription of the PRNG produces a sequence that is
-perfectly random-looking and simply disagrees with the TypeScript. Getting one
-of those coercions wrong is invisible without the goldens, which is the reason
-they are asserted directly as well as through the generator.
+That workflow earned its keep on its first run. `package-surface.json` is
+extracted from the build's own `index.d.ts`, and `dist/index.d.ts` turns out to
+be a one-line re-export stub — so the extractor found no named exports at all
+and the golden had collapsed to an empty list, which would have "passed"
+against a Python package exporting anything whatsoever. The declarations are in
+`dist/src/index.d.ts`.
+
+### Why the JS semantics slice exists
+
+`scanmate_ink/js_semantics/` restates the parts of JavaScript's arithmetic that
+Python does differently. It is its own subfeature rather than a helper inside
+one caller, because it has three:
+
+- `js_numeric_algorithm.py` — `ToUint32`, `ToInt32`, `Math.imul`, `>>>` and
+  `Math.round`. Python's integers are arbitrary precision and its `>>` is
+  arithmetic on a signed value, so a direct transcription of the PRNG produces
+  a sequence that is perfectly random-looking and simply disagrees with the
+  TypeScript. `js_round` is separate again: Python's built-in `round` is
+  banker's rounding and JavaScript's rounds half towards positive infinity, so
+  they differ on every half-way case — which decides a blur radius in
+  `ink_separation` and `geometric_transform`, and a glyph scale in
+  `synthetic_document`.
+- `float_accumulation_algorithm.py` — `sequential_sum`, because `total += x` in
+  a loop is not `np.sum`. numpy reduces PAIRWISE, which is more accurate and a
+  different number; across a 3072-pixel correlation the two disagree routinely.
+
+Getting any of these wrong is invisible without the goldens, which is the
+reason they are asserted directly as well as through their callers.
 
 ## Publishing
 
