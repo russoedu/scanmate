@@ -140,6 +140,17 @@ def test_the_port_adds_nothing_the_typescript_does_not_have_without_saying_so() 
         # Python-only: the original gets these from the language.
         "random_stream",
         "with_options",
+        # `Math.hypot` is a built-in in JavaScript, so it is not an export
+        # there and there is nothing to port it FROM. It has to exist here
+        # because CPython's `math.hypot` is a different algorithm - correctly
+        # rounded where V8's is a scaled square root - and they disagree in the
+        # last bit on 16% of inputs, `numpy.hypot` on 17%.
+        #
+        # Exported rather than kept private because `@scanmate/align` calls
+        # `Math.hypot` too, and a second copy of this in another package is a
+        # second thing to keep in step.
+        "hypot",
+        "hypot2",
         # Python-only: named because a dataclass cannot express an anonymous
         # nested optional object, and a tuple return needs a name to be read.
         "OriginalMetadata",

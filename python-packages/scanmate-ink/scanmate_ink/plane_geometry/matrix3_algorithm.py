@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import math
 
+from ..js_semantics import hypot
 from .geometry_model import Matrix3, Point, ScanmateRect, TransformModel, TransformSummary
 
 IDENTITY: Matrix3 = (1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)
@@ -235,7 +236,7 @@ def decompose(m: Matrix3, model: TransformModel) -> TransformSummary:
     :returns: The summary.
     """
     a, b, _, d, e = m[0], m[1], m[2], m[3], m[4]
-    scale_x = math.hypot(a, d)
+    scale_x = hypot(a, d)
     det = a * e - b * d
     scale_y = 0.0 if scale_x == 0 else det / scale_x
     shear = 0.0 if scale_x == 0 else (a * b + d * e) / scale_x
@@ -261,4 +262,4 @@ def reprojection_error(m: Matrix3, source: Point, target: Point) -> float:
     """
     p = apply_point(m, source.x, source.y)
 
-    return math.hypot(p.x - target.x, p.y - target.y)
+    return hypot(p.x - target.x, p.y - target.y)

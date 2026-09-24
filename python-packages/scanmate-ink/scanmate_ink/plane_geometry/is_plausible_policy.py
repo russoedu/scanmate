@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 
+from ..js_semantics import hypot
 from .geometry_model import Matrix3
 
 _SINGULAR_DETERMINANT = 1e-9
@@ -33,10 +34,10 @@ def is_plausible(m: Matrix3, max_scale_ratio: float = _DEFAULT_MAX_SCALE_RATIO) 
     if det < 0:
         return False
 
-    sx = math.hypot(a, d)
+    sx = hypot(a, d)
     if sx < 1 / max_scale_ratio or sx > max_scale_ratio:
         return False
 
-    sy = math.hypot(b, e)
+    sy = hypot(b, e)
 
     return not (sy < 1 / max_scale_ratio or sy > max_scale_ratio)
