@@ -25,6 +25,7 @@ import {
   createRaster,
   decodeImage,
   decompose,
+  downscaleGray,
   encodeImage,
   gaussian,
   invert,
@@ -41,13 +42,18 @@ import {
   solve,
   binarize,
   boxBlur,
+  boxBlurRaster,
   coverage,
   dilate,
   grayToRaster,
   inkMap,
   integralImage,
   otsuThreshold,
+  resizeGray,
+  sampleGrayBilinear,
   toGrayscale,
+  warpGray,
+  warpRaster,
 } from '../../packages/ink/dist/index.esm.js'
 import type { Matrix3 } from '../../packages/ink/dist/src/index.d.ts'
 
@@ -267,3 +273,133 @@ writeFileSync(
   }, undefined, 2) + '\n',
 )
 process.stdout.write('wrote ' + join(goldenDir, 'ink-separation.json') + '\n')
+
+/*
+ * The geometric-transform goldens.
+ *
+ * Unlike the codec's resize, THIS resampler is scanmate's own - plain
+ * arithmetic on typed arrays, not libvips - so it can be, and is, matched bit
+ * for bit. That distinction is the reason `resample_raster` is deliberately
+ * absent from the Python raster codec while `resize_gray` is fully ported.
+ *
+ * Both resize branches are pinned in one file: `ratio > 1` takes the
+ * area-average path and `ratio <= 1` the bilinear one, and `resizeGray` picks
+ * per axis, so the mixed case below exercises both inside a single call.
+ *
+ * The warps pin all three interpolations, the prefilter on both sides of its
+ * `sqrt(|det|) > 1.25` threshold, and the background fill that a destination
+ * pixel falling outside the source gets.
+ */
+const MINIFYING: Matrix3 = [2.1, 0.1, 3, -0.15, 2.05, 5, 0.0004, -0.0002, 1]
+const MAGNIFYING: Matrix3 = [0.4, 0.02, 1, -0.03, 0.42, 2, 0, 0, 1]
+/*
+ * Shifted left far enough that roughly the left half of the destination reaches
+ * outside the source. Without it the background and fill goldens pin NOTHING -
+ * measured, by counting how many pixels of the first attempt actually carried
+ * the fill: zero of 1200, for both the raster background and the gray fill.
+ */
+const PARTLY_OUTSIDE: Matrix3 = [0.4, 0.02, -8, -0.03, 0.42, 2, 0, 0, 1]
+/* Every `w` is zero, so every destination pixel takes the early background branch. */
+const DEGENERATE: Matrix3 = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+const WARP_WIDTH = 40
+const WARP_HEIGHT = 30
+
+const shrunk = resizeGray(gray, 21, 17)
+const grown = resizeGray(gray, 100, 60)
+const mixed = resizeGray(gray, 20, 90)
+const identity = resizeGray(gray, RASTER_WIDTH, RASTER_HEIGHT)
+const downscaled = downscaleGray(gray, 20)
+const untouched = downscaleGray(gray, 1000)
+
+const warpedGray = warpGray(gray, MINIFYING, WARP_WIDTH, WARP_HEIGHT)
+const warpedGrayFilled = warpGray(gray, PARTLY_OUTSIDE, WARP_WIDTH, WARP_HEIGHT, 0.25)
+const warpedGrayDegenerate = warpGray(gray, DEGENERATE, WARP_WIDTH, WARP_HEIGHT, 0.75)
+
+/*
+ * Sample positions chosen for their EDGES rather than their interiors: one
+ * dead centre, one on a pixel centre, one in each corner's clamped half-pixel,
+ * and four outside - because `sampleGrayBilinear` returns `fill` on `<= -1`
+ * and `>= width`, and an off-by-one in either bound is invisible anywhere else.
+ */
+const SAMPLES: Array<[number, number]> = [
+  [0, 0], [-0.5, -0.5], [-1, -1], [-0.999, 3.5], [31.5, 23.5],
+  [63, 47], [63.5, 47.5], [64, 48], [12.25, 9.75], [0.5, 47.999],
+  /*
+   * Three positions found by SEARCH, not by taste: at each of them
+   * `p * (1 - fx) * (1 - fy)` and `p * ((1 - fx) * (1 - fy))` - the same
+   * algebra, bracketed the two ways this file's two bilinear readers bracket
+   * it - give different doubles. Without them a port that unified the two
+   * readers into one helper matched every golden above.
+   */
+  [31.786540314351058, 26.014375547501146],
+  [38.589995069200938, 2.0652743741850181],
+  [2.2478575627365567, 24.199774552754402],
+]
+
+/*
+ * A strong downscale on ONE axis, because this is the only shape tried where
+ * the area average's ACCUMULATION ORDER survives to the output. Summing the
+ * overlap terms pairwise instead of left to right agrees exactly at the four
+ * and five terms the other goldens produce; at the eight that 64 -> 9 produces
+ * it disagrees on 91 of 432 samples in float64, and on 1 of them after the
+ * narrowing to float32. The height is deliberately left at 48: a second area
+ * pass down the columns averages that one sample away again, which is why
+ * 9x9 - the obvious choice - pins nothing.
+ */
+const STRONG_SHRINK_WIDTH = 9
+const STRONG_SHRINK_HEIGHT = 48
+
+/* Rounds to 13 rather than 12.5, and to a realised scale of 0.325 rather than the requested 0.3125. */
+const ROUNDING_SENSITIVE = resizeGray(gray, 40, 64)
+
+/* u lands on exactly `x + 0.5` at every pixel, where Math.round and round-half-to-even part company. */
+const HALFWAY: Matrix3 = [1, 0, 0.5, 0, 1, 0.5, 0, 0, 1]
+/* sqrt(|det|) is exactly 4, so the prefilter radius is round(1.5) = 2 rather than round(3) = 3. */
+const STRONGLY_MINIFYING: Matrix3 = [4, 0, 1, 0, 4, 1, 0, 0, 1]
+const SMALL_WIDTH = 16
+const SMALL_HEIGHT = 12
+
+const roundingSensitive = downscaleGray(ROUNDING_SENSITIVE, 20)
+const strongShrink = resizeGray(gray, STRONG_SHRINK_WIDTH, STRONG_SHRINK_HEIGHT)
+
+writeFileSync(
+  join(goldenDir, 'geometric-transform.json'),
+  JSON.stringify({
+    matrices:   { minifying: MINIFYING, magnifying: MAGNIFYING, partlyOutside: PARTLY_OUTSIDE, degenerate: DEGENERATE, halfway: HALFWAY, stronglyMinifying: STRONGLY_MINIFYING },
+    warpWidth:  WARP_WIDTH,
+    warpHeight: WARP_HEIGHT,
+    resizeGray: {
+      shrink:   { width: 21, height: 17, data: [...shrunk.data] },
+      grow:     { width: 100, height: 60, data: [...grown.data] },
+      mixed:    { width: 20, height: 90, data: [...mixed.data] },
+      identity: [...identity.data],
+      strong:   { width: STRONG_SHRINK_WIDTH, height: STRONG_SHRINK_HEIGHT, data: [...strongShrink.data] },
+    },
+    downscaleGray: {
+      to20:              { width: downscaled.image.width, height: downscaled.image.height, scale: downscaled.scale, data: [...downscaled.image.data] },
+      untouched:         { width: untouched.image.width, height: untouched.image.height, scale: untouched.scale },
+      roundingSensitive: { sourceWidth: 40, sourceHeight: 64, width: roundingSensitive.image.width, height: roundingSensitive.image.height, scale: roundingSensitive.scale, data: [...roundingSensitive.image.data] },
+    },
+    boxBlurRaster: {
+      radius2: [...boxBlurRaster(inkPage, 2).data],
+      radius0: [...boxBlurRaster(inkPage, 0).data],
+    },
+    sampleGrayBilinear: SAMPLES.map(([u, v]) => [u, v, sampleGrayBilinear(gray, u, v), sampleGrayBilinear(gray, u, v, -7)]),
+    warpGray:           {
+      minifying:             [...warpedGray.data],
+      partlyOutsideWithFill: [...warpedGrayFilled.data],
+      degenerateWithFill:    [...warpedGrayDegenerate.data],
+    },
+    warpRaster: {
+      bilinear:            [...warpRaster(inkPage, MINIFYING, WARP_WIDTH, WARP_HEIGHT).data],
+      bilinearNoPrefilter: [...warpRaster(inkPage, MINIFYING, WARP_WIDTH, WARP_HEIGHT, { prefilter: false }).data],
+      nearest:             [...warpRaster(inkPage, MAGNIFYING, WARP_WIDTH, WARP_HEIGHT, { interpolation: 'nearest' }).data],
+      bicubic:             [...warpRaster(inkPage, MAGNIFYING, WARP_WIDTH, WARP_HEIGHT, { interpolation: 'bicubic' }).data],
+      background:          [...warpRaster(inkPage, PARTLY_OUTSIDE, WARP_WIDTH, WARP_HEIGHT, { background: [7, 11, 13, 17] }).data],
+      degenerate:          [...warpRaster(inkPage, DEGENERATE, WARP_WIDTH, WARP_HEIGHT, { background: [7, 11, 13, 17] }).data],
+      nearestHalfway:      [...warpRaster(inkPage, HALFWAY, WARP_WIDTH, WARP_HEIGHT, { interpolation: 'nearest' }).data],
+      stronglyMinifying:   { width: SMALL_WIDTH, height: SMALL_HEIGHT, data: [...warpRaster(inkPage, STRONGLY_MINIFYING, SMALL_WIDTH, SMALL_HEIGHT).data] },
+    },
+  }, undefined, 2) + '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'geometric-transform.json') + '\n')
