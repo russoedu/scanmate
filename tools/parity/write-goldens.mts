@@ -1391,7 +1391,7 @@ writeFileSync(
        * returning the wrong thing. The overflow case is the whole reason the
        * scaling exists, so it is not one to drop.
        */
-      edges: HYPOT_EDGES.map(([a, b]) => ({
+      edges:  HYPOT_EDGES.map(([a, b]) => ({
         a:     encodeNonFinite(a),
         b:     encodeNonFinite(b),
         hypot: encodeNonFinite(Math.hypot(a, b)),
@@ -1476,13 +1476,13 @@ const alignFits: Record<string, unknown> = {
     homography: minimumSamples('homography'),
   },
   // Each fitter against the transform it can represent exactly...
-  similarityExact: fitSimilarity(correspondences(SIMILARITY_TRUTH)),
-  affineExact:     fitAffine(correspondences(AFFINE_TRUTH)),
-  homographyExact: fitHomography(correspondences(HOMOGRAPHY_TRUTH)),
+  similarityExact:       fitSimilarity(correspondences(SIMILARITY_TRUTH)),
+  affineExact:           fitAffine(correspondences(AFFINE_TRUTH)),
+  homographyExact:       fitHomography(correspondences(HOMOGRAPHY_TRUTH)),
   // ...and against one it cannot, where the least-squares compromise is itself
   // a number the port has to reproduce.
-  similarityOnAffine: fitSimilarity(correspondences(AFFINE_TRUTH)),
-  affineOnHomography: fitAffine(correspondences(HOMOGRAPHY_TRUTH)),
+  similarityOnAffine:    fitSimilarity(correspondences(AFFINE_TRUTH)),
+  affineOnHomography:    fitAffine(correspondences(HOMOGRAPHY_TRUTH)),
   // `indices` selects a subset, which is the path RANSAC actually uses. Given
   // out of order, because the fitters must honour the order they are handed.
   similarityFromIndices: fitSimilarity(correspondences(SIMILARITY_TRUTH), [7, 2]),
@@ -1494,15 +1494,15 @@ const alignFits: Record<string, unknown> = {
   viaFitModelHomography: fitModel('homography', correspondences(HOMOGRAPHY_TRUTH)),
   // Refusals. Each returns null for a DIFFERENT reason, and a port that
   // collapses them into one guard passes every happy path above and fails here.
-  tooFewForSimilarity: fitSimilarity(correspondences(SIMILARITY_TRUTH, 1)),
-  tooFewForAffine:     fitAffine(correspondences(AFFINE_TRUTH, 2)),
-  tooFewForHomography: fitHomography(correspondences(HOMOGRAPHY_TRUTH, 3)),
+  tooFewForSimilarity:   fitSimilarity(correspondences(SIMILARITY_TRUTH, 1)),
+  tooFewForAffine:       fitAffine(correspondences(AFFINE_TRUTH, 2)),
+  tooFewForHomography:   fitHomography(correspondences(HOMOGRAPHY_TRUTH, 3)),
   // Every source point identical: zero spread, so similarity's `norm`
   // underflows and homography's Hartley normaliser refuses.
-  degenerateSimilarity: fitSimilarity(repeated(4)),
-  degenerateHomography: fitHomography(repeated(4)),
+  degenerateSimilarity:  fitSimilarity(repeated(4)),
+  degenerateHomography:  fitHomography(repeated(4)),
   // Collinear sources: the affine normal matrix is singular, so `solve` fails.
-  collinearAffine: fitAffine(
+  collinearAffine:       fitAffine(
     [0, 1, 2, 3].map(i => ({ source: { x: i * 10, y: i * 10 }, target: { x: i * 11, y: i * 9 } })),
   ),
 }
@@ -1544,32 +1544,32 @@ const dirtySet = withOutliers(SIMILARITY_TRUTH, 40, 14)
 const hopelessSet = withOutliers(SIMILARITY_TRUTH, 40, 39)
 
 const alignRansac: Record<string, unknown> = {
-  clean: ransac(cleanSet, { model: 'similarity', threshold: 2 }),
-  dirty: ransac(dirtySet, { model: 'similarity', threshold: 2 }),
+  clean:            ransac(cleanSet, { model: 'similarity', threshold: 2 }),
+  dirty:            ransac(dirtySet, { model: 'similarity', threshold: 2 }),
   // Almost nothing is real, so this must REFUSE rather than return a confident
   // fit to whichever handful of outliers happen to agree.
-  hopeless: ransac(hopelessSet, { model: 'similarity', threshold: 2 }),
+  hopeless:         ransac(hopelessSet, { model: 'similarity', threshold: 2 }),
   // A different seed walks a different search, and must still land on the
   // right answer from the same input.
-  dirtyOtherSeed: ransac(dirtySet, { model: 'similarity', threshold: 2, seed: 99 }),
+  dirtyOtherSeed:   ransac(dirtySet, { model: 'similarity', threshold: 2, seed: 99 }),
   // A tight budget cuts the search short, which pins that the port spends its
   // iterations at the same rate rather than merely reaching the same place.
   // 4, not 12: the unbudgeted search above finishes at 11, so a budget of 12
   // never binds and the golden would be a duplicate of `dirty` that proves
   // nothing. Measured rather than guessed.
-  dirtyBudgeted: ransac(dirtySet, { model: 'similarity', threshold: 2, maxIterations: 4 }),
+  dirtyBudgeted:    ransac(dirtySet, { model: 'similarity', threshold: 2, maxIterations: 4 }),
   // More parameters over the same dirty input: a larger minimal sample takes a
   // different path through the PRNG, and more freedom fits more noise.
-  dirtyHomography: ransac(dirtySet, { model: 'homography', threshold: 2 }),
-  dirtyAffine:     ransac(dirtySet, { model: 'affine', threshold: 3 }),
+  dirtyHomography:  ransac(dirtySet, { model: 'homography', threshold: 2 }),
+  dirtyAffine:      ransac(dirtySet, { model: 'affine', threshold: 3 }),
   // A threshold wide enough that everything is an inlier exercises the
   // `ratio >= 1` early exit, which is its own branch.
-  everythingFits: ransac(dirtySet, { model: 'similarity', threshold: 10_000 }),
+  everythingFits:   ransac(dirtySet, { model: 'similarity', threshold: 10_000 }),
   // Fewer matches than the model needs at all.
-  tooFew: ransac(cleanSet.slice(0, 1), { model: 'similarity', threshold: 2 }),
+  tooFew:           ransac(cleanSet.slice(0, 1), { model: 'similarity', threshold: 2 }),
   // An explicit floor the best consensus cannot clear.
   unreachableFloor: ransac(dirtySet, { model: 'similarity', threshold: 2, minInliers: 39 }),
-  findInliers: {
+  findInliers:      {
     exact: findInliers(cleanSet, SIMILARITY_TRUTH, 1e-6),
     dirty: findInliers(dirtySet, SIMILARITY_TRUTH, 2),
     wide:  findInliers(dirtySet, SIMILARITY_TRUTH, 10_000),
@@ -1581,9 +1581,9 @@ writeFileSync(
   join(goldenDir, 'align-transform-fitting.json'),
   JSON.stringify(
     {
-      truth: { similarity: SIMILARITY_TRUTH, affine: AFFINE_TRUTH, homography: HOMOGRAPHY_TRUTH },
-      sets:  { clean: cleanSet, dirty: dirtySet, hopeless: hopelessSet },
-      fits:  alignFits,
+      truth:  { similarity: SIMILARITY_TRUTH, affine: AFFINE_TRUTH, homography: HOMOGRAPHY_TRUTH },
+      sets:   { clean: cleanSet, dirty: dirtySet, hopeless: hopelessSet },
+      fits:   alignFits,
       ransac: alignRansac,
     },
     undefined,
@@ -1606,7 +1606,10 @@ const alignIndexSource = withoutComments(
 )
 const alignExported = new Set<string>()
 for (const match of alignIndexSource.matchAll(/export\s+(?:type\s+)?\{([^}]*)\}/gu)) {
-  for (const part of match[1].split(','))
+  const names = match[1].split(',')
+  // `a as b` re-exports under a new name; the SOURCE name is the one a port
+  // has to provide, so that is what is recorded.
+  for (const part of names)
     if (part.trim() !== '') alignExported.add(part.trim().split(/\s+as\s+/u, 1)[0].trim())
 }
 
