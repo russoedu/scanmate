@@ -35,7 +35,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 
-@dataclass(frozen=True, slots=True)
+# Deliberately NOT `slots=True`, unlike every other dataclass in this package.
+# `Bleed` exists to be MIXED IN - the TypeScript writes
+# `interface PageRegion extends ScanmateRect, Bleed`, and `pipeline_contract`
+# does the same thing here. CPython refuses to combine two bases that both
+# carry a non-empty `__slots__` ("multiple bases have instance lay-out
+# conflict"), so the one meant to be mixed in does without. The cost is one
+# dict per bleed, and there is one bleed per region.
+@dataclass(frozen=True)
 class Bleed:
     """A bleed as a caller gives it, with any side possibly unset."""
 

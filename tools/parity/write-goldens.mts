@@ -17,7 +17,7 @@
  * diffs, so drift in the TypeScript fails CI rather than being discovered when
  * a Python test mysteriously starts failing.
  */
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
@@ -931,3 +931,170 @@ writeFileSync(
   }, undefined, 2) + '\n',
 )
 process.stdout.write('wrote ' + join(goldenDir, 'text-normalisation.json') + '\n')
+
+/*
+ * The pipeline-contract goldens.
+ *
+ * This slice is types and nothing else, so there are no values to compare -
+ * the types are erased before anything runs. What CAN drift is the SHAPE: a
+ * field added to a TypeScript interface and forgotten on the Python dataclass
+ * would break nothing here and everything downstream.
+ *
+ * So the members are read out of the emitted `.d.ts` files, which are the
+ * build's own statement of what each interface holds. Extracted rather than
+ * listed by hand for the same reason the diacritics table is generated rather
+ * than retyped: a hand-kept list is a second thing to forget.
+ *
+ * Comments are stripped first, because a doc comment for a field mentions the
+ * field's own name and would otherwise be read as a member of it.
+ */
+const contractDir = join(here, '..', '..', 'packages', 'ink', 'dist', 'src', 'pipeline-contract')
+const CONTRACT_FILES = [
+  'page-region.contract.d.ts',
+  'scan-page.contract.d.ts',
+  'stage-event.contract.d.ts',
+  'text-run.contract.d.ts',
+]
+
+/**
+ * Strip block and line comments.
+ *
+ * Done first because a doc comment for a field mentions the field's own name,
+ * and would otherwise be read as a member.
+ *
+ * @param source - The declaration file's text.
+ * @returns The same text with comments blanked out.
+ */
+function withoutComments (source: string): string {
+  let out = ''
+  let index = 0
+  while (index < source.length) {
+    if (source.startsWith('/*', index)) {
+      const close = source.indexOf('*/', index + 2)
+      index = close === -1 ? source.length : close + 2
+      continue
+    }
+    if (source.startsWith('//', index)) {
+      const close = source.indexOf('\n', index)
+      index = close === -1 ? source.length : close
+      continue
+    }
+    out += source[index]
+    index++
+  }
+
+  return out
+}
+
+/**
+ * The balanced `{ ... }` starting at `open`, and where it ends.
+ *
+ * Scanned rather than matched with a regex because a member can itself be an
+ * object type - `baseline?: { x: number, y: number }` - and `[^}]*` stops at
+ * the INNER brace. That is not hypothetical: it is what the first version of
+ * this did, and it reported `TextRun` as holding a field called `y`.
+ *
+ * @param source - The text to scan.
+ * @param open - Index of the opening brace.
+ * @returns The body between the braces, and the index just past the close.
+ */
+function balanced (source: string, open: number): { body: string, end: number } {
+  let depth = 0
+  for (let index = open; index < source.length; index++) {
+    if (source[index] === '{') depth++
+    if (source[index] === '}') {
+      depth--
+      if (depth === 0) return { body: source.slice(open + 1, index), end: index + 1 }
+    }
+  }
+
+  throw new Error('unbalanced braces in a declaration file at ' + String(open))
+}
+
+/**
+ * How far the brace and parenthesis depth moves over one character.
+ *
+ * Angle brackets are deliberately NOT counted: an arrow type's `=>` would be
+ * read as a closing one, and `ProgressCallback` swallowed its own terminating
+ * semicolon when they were.
+ *
+ * @param character - One character.
+ * @returns 1, -1 or 0.
+ */
+function depthChange (character: string): number {
+  if (character === '{' || character === '(') return 1
+
+  return character === '}' || character === ')' ? -1 : 0
+}
+
+/**
+ * The text from `from` up to the next semicolon at depth zero.
+ *
+ * @param source - The text to scan.
+ * @param from - Where to start.
+ * @returns The text, not including the semicolon.
+ */
+function untilSemicolon (source: string, from: number): string {
+  let depth = 0
+  let text = ''
+  for (let index = from; index < source.length; index++) {
+    const character = source[index]
+    depth += depthChange(character)
+    if (character === ';' && depth === 0) return text
+    text += character
+  }
+
+  return text
+}
+
+/**
+ * Members of one interface body, as `[name, optional]`.
+ *
+ * Split on semicolons at depth zero only, for the same reason `balanced`
+ * exists: a member can itself be an object type.
+ *
+ * @param body - The text between the interface's braces.
+ * @returns Each member's name and whether it is optional.
+ */
+function membersOf (body: string): Array<[string, boolean]> {
+  const found: Array<[string, boolean]> = []
+  const terminated = body + ';'
+  let depth = 0
+  let current = ''
+  for (const character of terminated) {
+    depth += depthChange(character)
+    if (character === ';' && depth === 0) {
+      const match = /^\s*(\w+)(\??)\s*:/u.exec(current)
+      if (match !== null) found.push([match[1], match[2] === '?'])
+      current = ''
+    } else {
+      current += character
+    }
+  }
+
+  return found
+}
+
+const interfaces: Record<string, { extends: string[], members: Array<[string, boolean]> }> = {}
+const aliases: Record<string, string> = {}
+for (const file of CONTRACT_FILES) {
+  const source = withoutComments(readFileSync(join(contractDir, file), 'utf8'))
+
+  for (const match of source.matchAll(/export interface (\w+)(?:<[^>]*>)?\s*(?:extends ([^{]+))?\{/gu)) {
+    const { body } = balanced(source, match.index + match[0].length - 1)
+    const inherited = match[2] === undefined
+      ? []
+      : match[2].split(',').map(part => part.trim().replace(/<.*/u, '')).filter(Boolean)
+
+    interfaces[match[1]] = { extends: inherited, members: membersOf(body) }
+  }
+
+  for (const match of source.matchAll(/export type (\w+)(?:<[^>]*>)?\s*=/gu))
+    aliases[match[1]] = untilSemicolon(source, match.index + match[0].length).replaceAll(/\s+/gu, ' ').trim()
+}
+
+writeFileSync(
+  join(goldenDir, 'pipeline-contract.json'),
+  JSON.stringify({ interfaces, aliases }, undefined, 2) + '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'pipeline-contract.json') + '\n')
