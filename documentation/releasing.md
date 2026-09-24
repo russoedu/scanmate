@@ -40,7 +40,15 @@ gh run list --branch main --limit 5 --json databaseId,headSha -q "[.[] | select(
 ```
 
 Watch that id, confirm the log says `Releasing every package with specifier
-X.Y.Z, not from conventional commits`, and only then delete the variable. If it
+X.Y.Z, not from conventional commits`, and only then delete the variable.
+
+The same lag catches the PR's own check. `gh pr checks <n> --watch` straight
+after a push returns at once on the **previous** run's result, because the new
+one has not registered; a chain that merges on "checks passed" then merges on
+a stale verdict, or refuses on a stale failure. Match the run to the branch
+head instead, exactly as above with `--branch <branch>` and
+`headSha == $(git rev-parse HEAD)`, and require `conclusion == success` on
+that run. If it
 instead reports `No changes were detected using git history and the conventional
 commits standard`, the variable was gone too early.
 

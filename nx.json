@@ -13,7 +13,8 @@
     "sharedGlobals": [
       "{workspaceRoot}/eslint.config.mjs",
       "{workspaceRoot}/tsconfig.base.json",
-      "{workspaceRoot}/package.json"
+      "{workspaceRoot}/package.json",
+      "{workspaceRoot}/eslint.config.mnci.mjs"
     ]
   },
   "plugins": [
