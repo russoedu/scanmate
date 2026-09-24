@@ -117,11 +117,20 @@ Harmless to detection - that ink is the original's, so it never counts as added
 points below leaves a descender short. `{ bleedTop: 2, bleedBottom: 12 }` fits the
 field. Leaving every side unset reproduces the old uniform six exactly.
 
-**One rule decides it everywhere.** The bleed is resolved by `resolveBleed` in
-`@scanmate/ink`, and the same function sizes the band the comparison measures,
-the band the evidence page draws, and the band `Scanmate.mark` draws on the
-original. They cannot drift apart, which is the point of a band a reviewer is
-shown: it is the band that was checked.
+**And per region, because fields differ as much as sides do.** A signature box
+wants room below; the date beside it wants none. So an expected region can carry
+the same five fields itself, and they win over the options' side by side -
+`resolveRegionBleed` takes the region's named side, else its `bleed`, else the
+side the options resolved to. A region that says nothing claims exactly what the
+options say, which is what every region did before a region could speak for
+itself. The comparison hands each region back as it was given, own bleed
+included, so the evidence page draws the band that was actually claimed.
+
+**One rule decides it everywhere.** The bleed is resolved by `resolveBleed` and
+`resolveRegionBleed` in `@scanmate/ink`, and the same two functions size the
+band the comparison measures, the band the evidence page draws, and the band
+`Scanmate.mark` draws on the original. They cannot drift apart, which is the
+point of a band a reviewer is shown: it is the band that was checked.
 
 **Form rules are discounted**: a component spanning at least 90% of the region
 and no thicker than 0.6 mm is the box's own printed rule showing through a

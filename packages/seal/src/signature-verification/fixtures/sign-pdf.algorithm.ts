@@ -4,6 +4,8 @@ import type { webcrypto as WebCrypto } from 'node:crypto'
 import * as asn1js from 'asn1js'
 import * as pkijs from 'pkijs'
 
+import { pdfDate } from '../pdf-date.mapper'
+
 /**
  * A genuinely signed PDF, made here, for the tests.
  *
@@ -27,7 +29,12 @@ export interface SigningOptions {
   when?:       string
   /** The certificate's common name. */
   commonName?: string
-  /** When the certificate is valid. Default: from yesterday to tomorrow. */
+  /**
+   * When the certificate is valid. Default: a day either side of `when`, so
+   * the fixture never depends on what day the tests run - a certificate issued
+   * around the clock's today once expired against a signing time that stayed
+   * put, one day after it was written.
+   */
   validity?:   { from: Date, to: Date }
   /**
    * Sign with a certificate issued by an authority, and carry both, the
@@ -49,15 +56,15 @@ function commonNameOf (commonName: string): pkijs.AttributeTypeAndValue[] {
  * Serial numbers differ between the two, because the serial is how a signature
  * names which of the certificates it carries actually signed.
  */
-async function certificate (commonName: string, validity?: { from: Date, to: Date }, issuer?: Issued): Promise<Issued> {
+async function certificate (commonName: string, validity: { from: Date, to: Date }, issuer?: Issued): Promise<Issued> {
   const keys = await webcrypto.subtle.generateKey(ALGORITHM, true, ['sign', 'verify'])
   const cert = new pkijs.Certificate()
   cert.version = 2
   cert.serialNumber = new asn1js.Integer({ value: issuer === undefined ? 1 : 2 })
   cert.subject.typesAndValues.push(...commonNameOf(commonName))
   cert.issuer.typesAndValues.push(...(issuer === undefined ? commonNameOf(commonName) : issuer.cert.subject.typesAndValues))
-  cert.notBefore.value = validity?.from ?? new Date(Date.now() - 86_400_000)
-  cert.notAfter.value = validity?.to ?? new Date(Date.now() + 86_400_000)
+  cert.notBefore.value = validity.from
+  cert.notAfter.value = validity.to
   await cert.subjectPublicKeyInfo.importKey(keys.publicKey)
   await cert.sign(issuer?.keys.privateKey ?? keys.privateKey, 'SHA-256')
 
@@ -97,6 +104,9 @@ async function sign (covered: Uint8Array, cert: pkijs.Certificate, keys: WebCryp
 export async function signedPdf (options: SigningOptions = {}): Promise<Uint8Array> {
   pkijs.setEngine('node', new pkijs.CryptoEngine({ name: 'node', crypto: webcrypto, subtle: webcrypto.subtle }))
   const { name = 'A Person', when = 'D:20260922120000Z', commonName = 'Test Signer', validity, chain = false } = options
+  const signedAt = pdfDate(when)
+  if (signedAt === null) throw new TypeError(`the fixture's signing time must be a PDF date, and is ${when}`)
+  const window = validity ?? { from: new Date(signedAt.getTime() - 86_400_000), to: new Date(signedAt.getTime() + 86_400_000) }
 
   const objects = [
     '<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [4 0 R] /SigFlags 3 >> >>',
@@ -137,8 +147,8 @@ export async function signedPdf (options: SigningOptions = {}): Promise<Uint8Arr
   covered.set(bytes.subarray(range[0], range[0] + range[1]), 0)
   covered.set(bytes.subarray(range[2], range[2] + range[3]), range[1])
 
-  const authority = chain ? await certificate('Test Authority', validity) : undefined
-  const { cert, keys } = await certificate(commonName, validity, authority)
+  const authority = chain ? await certificate('Test Authority', window) : undefined
+  const { cert, keys } = await certificate(commonName, window, authority)
   // The authority first: a signature lists what it carries in no particular
   // order, and the first is as often the authority as the signer.
   const signature = await sign(covered, cert, keys, authority === undefined ? [cert] : [authority.cert, cert])

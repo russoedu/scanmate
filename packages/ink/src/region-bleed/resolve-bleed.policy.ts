@@ -22,15 +22,36 @@ export const DEFAULT_BLEED = 6
  */
 export function resolveBleed (bleed: Bleed = {}, fallback: number = DEFAULT_BLEED): ResolvedBleed {
   const all = bleed.bleed ?? fallback
-  const sides: ResolvedBleed = {
+
+  return checked({
     top:    bleed.bleedTop ?? all,
     right:  bleed.bleedRight ?? all,
     bottom: bleed.bleedBottom ?? all,
     left:   bleed.bleedLeft ?? all,
-  }
+  })
+}
 
-  // A negative bleed would shrink the region, so ink inside the very box it was
-  // drawn for could be reported as unexpected. Refuse it rather than obey it.
+/**
+ * One region's room, over the room every region gets: the region's named side,
+ * else its own `bleed`, else `base`'s side.
+ *
+ * `base` is already resolved, so the options' rule and the region's rule are
+ * the same rule applied twice, and a region that says nothing claims exactly
+ * what the options say - which is what every region did before a region could
+ * speak for itself.
+ */
+export function resolveRegionBleed (region: Bleed, base: ResolvedBleed): ResolvedBleed {
+  return checked({
+    top:    region.bleedTop ?? region.bleed ?? base.top,
+    right:  region.bleedRight ?? region.bleed ?? base.right,
+    bottom: region.bleedBottom ?? region.bleed ?? base.bottom,
+    left:   region.bleedLeft ?? region.bleed ?? base.left,
+  })
+}
+
+// A negative bleed would shrink the region, so ink inside the very box it was
+// drawn for could be reported as unexpected. Refuse it rather than obey it.
+function checked (sides: ResolvedBleed): ResolvedBleed {
   for (const [side, value] of Object.entries(sides))
     if (!Number.isFinite(value) || value < 0) throw new RangeError(`bleed ${side} must be a finite, non-negative number of points, and is ${value}`)
 

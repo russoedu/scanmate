@@ -49,6 +49,10 @@ export type ComparedPage<Page extends AlignedPage = AlignedPage> = Page & { diff
  *
  * It is the same rule `Scanmate.mark` draws, so the band a reviewer is shown is
  * the band that is measured.
+ *
+ * A region can carry its own bleed - the same five fields on the
+ * `ExpectedChange` itself - and that wins over these, side by side. So the
+ * signature box gets `bleedBottom: 20` while the date beside it keeps the six.
  */
 export interface DiffOptions extends Bleed {
   /** Units of `ExpectedChange` rectangles and of every rectangle reported back. Default `'points'`. */
@@ -172,7 +176,12 @@ export interface DiffOptions extends Bleed {
 }
 
 /** What happened in one expected region. */
-export interface ExpectedResult {
+/**
+ * What the comparison found in one expected region. The region is handed back
+ * as it was given - its rectangle, and its own bleed if it had one - so the
+ * evidence page draws the band that was actually claimed.
+ */
+export interface ExpectedResult extends Bleed {
   id:         string
   /** The region gained enough new ink to count as filled in. */
   identified: boolean

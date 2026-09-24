@@ -89,6 +89,23 @@ describe('diffPage', () => {
     expect(diff.unexpected).toEqual([])
   })
 
+  it('gives a region its own room when it carries a bleed, over the room every region gets', async () => {
+    // A descender ten points below the box: past the default six, within twenty.
+    const raster = signed()
+    fillRect(raster, { x: SIGNATURE.x + 20, y: SIGNATURE.y + SIGNATURE.height + 10, width: 60, height: 3 }, 20)
+    const region = expect_('signature', SIGNATURE)
+
+    const byDefault = await diffPage(page(raster), [region], { output: 'none' })
+    const byRegion = await diffPage(page(raster), [{ ...region, bleedBottom: 20 }], { output: 'none' })
+    const regionWins = await diffPage(page(raster), [{ ...region, bleedBottom: 2 }], { bleedBottom: 20, output: 'none' })
+
+    expect(byDefault.unexpected).toHaveLength(1)
+    expect(byRegion.unexpected).toEqual([])
+    expect(regionWins.unexpected).toHaveLength(1)
+    // Handed back as given, so the evidence page draws the band that was claimed.
+    expect(byRegion.expected[0]).toMatchObject({ id: 'signature', bleedBottom: 20 })
+  })
+
   it('does not identify an expected region that was left empty', async () => {
     const diff = await diffPage(page(signed()), [expect_('signature', SIGNATURE), expect_('tick', TICK)], { output: 'none' })
 
