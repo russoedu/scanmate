@@ -54,7 +54,7 @@
     "@swc/helpers": "0.5.18",
     "@types/node": "^24.0.0",
     "@typescript/native": "npm:typescript@^7.0.2",
-    "@vitest/coverage-v8": "~4.1.0",
+    "@vitest/coverage-v8": "~5.0.1",
     "adm-zip": "^0.6.1",
     "esbuild": "^0.28.1",
     "eslint": "^10.8.0",
