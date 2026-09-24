@@ -19,6 +19,7 @@ from .raster_model import (
     is_raster,
     to_bytes,
 )
+from .source_contract import Rgba, ScanmateBinarySource, ScanmateSource
 
 __all__ = [
     "BinaryImage",
@@ -26,6 +27,9 @@ __all__ = [
     "ImageFormat",
     "ImageMetadata",
     "Raster",
+    "Rgba",
+    "ScanmateBinarySource",
+    "ScanmateSource",
     "clone_raster",
     "count_pages",
     "create_binary",

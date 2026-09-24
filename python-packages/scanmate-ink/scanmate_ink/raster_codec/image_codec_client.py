@@ -42,6 +42,7 @@ import numpy as np
 from PIL import Image, ImageOps
 
 from .raster_model import Raster, is_raster, to_bytes
+from .source_contract import ScanmateSource
 
 ImageFormat = Literal["png", "jpeg", "webp", "tiff"]
 
@@ -83,7 +84,7 @@ def _open(source: Any) -> Image.Image:  # noqa: ANN401 - mirrors the TS union
     return Image.open(io.BytesIO(encoded))
 
 
-def decode_image(source: Any, *, auto_orient: bool = True, page: int = 0) -> Raster:  # noqa: ANN401
+def decode_image(source: ScanmateSource, *, auto_orient: bool = True, page: int = 0) -> Raster:
     """Decode anything Pillow can read to RGBA.
 
     A :class:`Raster` passes straight through, so this is safe to call on a
@@ -98,7 +99,7 @@ def decode_image(source: Any, *, auto_orient: bool = True, page: int = 0) -> Ras
     :returns: The decoded raster.
     """
     if is_raster(source):
-        return source  # type: ignore[no-any-return]
+        return source
 
     with _open(source) as opened:
         if page:

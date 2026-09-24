@@ -1261,3 +1261,36 @@ writeFileSync(
   }, undefined, 2) + '\n',
 )
 process.stdout.write('wrote ' + join(goldenDir, 'synthetic-document.json') + '\n')
+
+/*
+ * The package surface itself.
+ *
+ * Every other golden here checks that a function AGREES with its TypeScript
+ * counterpart. None of them checks that the counterpart was ported at all - a
+ * whole export could be missing and every test in the package would still
+ * pass. So the last golden is the surface: every name `@scanmate/ink` exports,
+ * read out of its own built `index.d.ts`.
+ *
+ * The Python side then has to account for each one, either by exporting it or
+ * by recording why it does not. Two are deliberately absent and always will
+ * be - `resampleRaster` and `blurRaster` go through libvips, and Pillow
+ * disagrees with it on 78.8% of pixels - and that absence is a decision worth
+ * failing over if it is ever made silently.
+ */
+const indexSource = withoutComments(
+  readFileSync(join(here, '..', '..', 'packages', 'ink', 'dist', 'index.d.ts'), 'utf8'),
+)
+const exported = new Set<string>()
+for (const match of indexSource.matchAll(/export\s+(?:type\s+)?\{([^}]*)\}/gu)) {
+  const names = match[1].split(',')
+  // `a as b` re-exports under a new name; the SOURCE name is the one a port
+  // has to provide, so that is what is recorded.
+  for (const part of names)
+    if (part.trim() !== '') exported.add(part.trim().split(/\s+as\s+/u, 1)[0].trim())
+}
+
+writeFileSync(
+  join(goldenDir, 'package-surface.json'),
+  JSON.stringify({ exports: [...exported].sort((a, b) => a.localeCompare(b)) }, undefined, 2) + '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'package-surface.json') + '\n')

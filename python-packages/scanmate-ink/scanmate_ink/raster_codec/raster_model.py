@@ -22,7 +22,7 @@ inconsistency is unrepresentable.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, TypeGuard
 
 import numpy as np
 import numpy.typing as npt
@@ -151,12 +151,17 @@ def clone_raster(image: Raster) -> Raster:
     return Raster(image.pixels.copy())
 
 
-def is_raster(value: Any) -> bool:  # noqa: ANN401 - the point is to accept anything
+def is_raster(value: Any) -> TypeGuard[Raster]:  # noqa: ANN401 - the point is to accept anything
     """True when the value is already a decoded raster.
 
     Structural rather than ``isinstance``, matching the TypeScript: a caller
     should be able to hand over something they built themselves without
     importing anything from here.
+
+    Declared as a :class:`TypeGuard` so that a caller writing
+    ``if is_raster(source): return source`` narrows the union properly - which
+    is what the codec's fast path does, and what otherwise needed an ignore
+    comment to get past the type checker.
 
     :param value: Any object.
     :returns: Whether it looks like a decoded RGBA raster.
@@ -172,7 +177,7 @@ def is_raster(value: Any) -> bool:  # noqa: ANN401 - the point is to accept anyt
     )
 
 
-def to_bytes(source: Any) -> bytes | None:  # noqa: ANN401 - mirrors the TS union
+def to_bytes(source: Any) -> bytes | None:  # noqa: ANN401 - the TS union, before it is narrowed
     """Narrow an accepted input to the bytes of an encoded image.
 
     :param source: A raster, bytes, or a path.
