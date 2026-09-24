@@ -801,9 +801,9 @@ process.stdout.write('wrote ' + join(goldenDir, 'region-bleed.json') + '\n')
  * sentence is exactly where a port looks right: JavaScript's `\s` and
  * Python's are different sets in BOTH directions, `\p{L}` has no equivalent
  * in Python's `re` at all, and the two runtimes are on different Unicode
- * versions - V8 on 16.0 against CPython's 15.1 at the time of writing, which
- * `runtime.unicodeVersion` records so a future reader can see whether that
- * still holds.
+ * versions - and not consistently so: CPython is on 15.1, the Node that
+ * generated these was on 16.0, and CI's Node is on 17.0. They agree on every
+ * value here regardless, across that 16-to-17 gap included.
  *
  * `runtime` also carries what V8 itself produced for `toLowerCase` and NFKC on
  * every entry, so the Python can check the two RUNTIMES against each other
@@ -932,11 +932,24 @@ writeFileSync(
     foldConfusables: foldedConfusables,
     foldDiacritics:  foldedDiacritics,
     diacriticsMap:   [...diacriticsMap()],
-    /* What V8 itself reports, so the Python can check the runtime rather than guess. */
+    /*
+     * What V8 itself produced, so the Python can check the two RUNTIMES against
+     * each other rather than inferring a disagreement from a whole pipeline.
+     *
+     * `process.versions.unicode` used to be here and is deliberately gone. A
+     * golden has to be a function of the SOURCE, not of the host: the machine
+     * that last regenerated these reports Unicode 16.0 and CI's Node reports
+     * 17.0, so recording it made `parity:check` fail everywhere except the one
+     * machine. Caught on the guard's first CI run.
+     *
+     * Nothing is lost by dropping it. Every value below is IDENTICAL under
+     * both versions - measured, by that same failure, which changed exactly
+     * one line out of the whole file - so the agreement these pin is the
+     * substantive claim and the version string was only a label on it.
+     */
     runtime:         {
-      unicodeVersion: process.versions.unicode,
-      lowerCased:     lowerCasedCorpus,
-      nfkc:           nfkcCorpus,
+      lowerCased: lowerCasedCorpus,
+      nfkc:       nfkcCorpus,
     },
   }, undefined, 2) + '\n',
 )

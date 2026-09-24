@@ -5469,7 +5469,6 @@
     ]
   ],
   "runtime": {
-    "unicodeVersion": "16.0",
     "lowerCased": {
       "plain": "  the  quick  brown  fox  ",
       "nbsp": "a b",

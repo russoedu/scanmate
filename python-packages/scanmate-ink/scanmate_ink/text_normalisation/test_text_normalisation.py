@@ -19,13 +19,15 @@ the two languages disagree:
   the corpus exercises letters, digits, currency signs, Roman numerals and
   vulgar fractions, which are four different categories that all have to come
   out on the right side of "meaningful".
-- The two runtimes are on different UNICODE VERSIONS - V8 on 16.0 against
-  CPython's 15.1 when this was written. They agree on every case-fold and
-  every NFKC in this corpus, which is a measured fact about these characters
-  and not a guarantee about all of them. The golden records both versions, and
+- The two runtimes are on different UNICODE VERSIONS, and not even
+  consistently: CPython here is on 15.1, the Node that generated these goldens
+  was on 16.0, and CI's Node is on 17.0. They agree on every case-fold and
+  every NFKC in this corpus anyway - measured, and measured across that
+  16-to-17 gap in particular, which moved exactly nothing in these values.
+  That is a fact about these characters, not a guarantee about all of them, so
   :func:`test_the_two_runtimes_still_agree_on_case_and_nfkc` checks the
-  runtimes directly, so a future divergence is reported as what it is rather
-  than as a mystery in the pipeline.
+  runtimes against each other directly and a future divergence is reported as
+  what it is rather than as a mystery in the pipeline.
 """
 
 from __future__ import annotations
@@ -141,11 +143,11 @@ def test_the_two_runtimes_still_agree_on_case_and_nfkc() -> None:
         assert text.lower() == _GOLDEN["runtime"]["lowerCased"][name], name
         assert unicodedata.normalize("NFKC", text) == _GOLDEN["runtime"]["nfkc"][name], name
 
-    # Recorded, not asserted equal: they are 16.0 and 15.1 today, and the two
-    # aligning later would be good news rather than a regression. What must
-    # hold is that the golden carries a version at all, so a future reader can
-    # see which pair of runtimes the agreement above was measured between.
-    assert _GOLDEN["runtime"]["unicodeVersion"]
+    # No version is asserted, and none is in the golden. A golden has to be a
+    # function of the SOURCE, and `process.versions.unicode` is a function of
+    # the HOST - recording it made `parity:check` fail on every machine that
+    # was not the one that last regenerated. What is pinned is the agreement
+    # itself, above, which is the claim that actually matters.
     assert unicodedata.unidata_version
 
 
