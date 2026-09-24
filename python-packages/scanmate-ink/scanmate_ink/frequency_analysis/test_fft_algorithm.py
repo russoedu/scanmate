@@ -5,8 +5,14 @@ TWO BARS, AND WHICH SIZE GETS WHICH IS THE EVIDENCE
 
 Transforms of 1, 2 and 4 points are asserted with ``==``, and they pass. They
 never run a ``len = 8`` stage, so they never touch ``sin(+/- pi / 4)`` - the one
-twiddle base where V8 and Python disagree, and where Python is the one that is
-right.
+twiddle base where V8 and Python CAN disagree.
+
+Whether they actually do is a property of the C library this Python was built
+against rather than of either implementation. On Windows, CPython returns the
+correctly rounded 0.7071067811865476 and V8 returns 0.7071067811865475; on
+Linux, CPython returns V8's value and the two agree exactly. Both are within
+one unit in the last place of the true value, and the bar below holds either
+way.
 
 Transforms of 8 points and up are asserted to an absolute 1e-12. The worst
 deviation actually measured across every golden here is 6.22e-15, so the bar
@@ -87,28 +93,56 @@ def test_is_power_of_two(n: int, expected: bool) -> None:
     assert is_power_of_two(n) is expected
 
 
-def test_only_one_twiddle_base_disagrees_with_v8() -> None:
-    """The whole tolerance, traced to its single cause.
+def test_no_twiddle_base_disagrees_with_v8_by_more_than_one_bit() -> None:
+    """The whole tolerance, bounded at its single possible cause.
 
-    Every twiddle base for every size up to 4096 is 24 values. This checks all
-    of them against V8's, and asserts that the only disagreement is the sine of
-    a quarter pi - where the golden carries V8's -0.7071067811865475 and the
-    correctly rounded double, which Python returns, is -0.7071067811865476.
+    Every twiddle base for every size up to 4096 is 24 values, and this checks
+    all of them. The cosines agree everywhere, on every platform tried. The
+    sines agree everywhere too, EXCEPT possibly at a quarter pi - and whether
+    they do there is a property of the C library this Python was built against,
+    not of either implementation:
 
-    If a future runtime fixes that, this test fails and says so, and the
-    tolerance below can be tightened rather than quietly kept.
+        Windows (MSVC)   sin(pi/4) = 0.7071067811865476   <- correctly rounded
+        Linux (glibc)    sin(pi/4) = 0.7071067811865475   <- agrees with V8
+        V8               sin(pi/4) = 0.7071067811865475
+
+    So this asserts the bound rather than the outcome: nothing outside that one
+    angle may differ, and the difference there may not exceed one unit in the
+    last place. An earlier version asserted the disagreement was PRESENT, which
+    passed on Windows and failed on CI - a test that had hard-coded the
+    developer's libm.
+
+    That bound is what the 1e-12 tolerance below rests on. It holds either way,
+    which is why the tolerance does not change between platforms.
     """
     disagreeing = []
     for length, sign, angle, cosine, sine in _GOLDEN["twiddleAngles"]:
         assert (sign * 2 * math.pi) / length == angle
-        assert math.cos(angle) == cosine
+        assert math.cos(angle) == cosine, f"cos disagreed at len {length}"
         if math.sin(angle) != sine:
             disagreeing.append((length, sign, math.sin(angle), sine))
 
-    assert [(length, sign) for length, sign, _, _ in disagreeing] == [(8, -1), (8, 1)]
-    for _, sign, ours, theirs in disagreeing:
-        assert ours == sign * _SIN_QUARTER_PI
+    assert {(length, sign) for length, sign, _, _ in disagreeing} <= {(8, -1), (8, 1)}
+
+    for length, sign, ours, theirs in disagreeing:
+        # One ULP at this magnitude, and no more. Anything larger would not be
+        # a rounding difference and the tolerance below would be a guess.
         assert abs(ours - theirs) == pytest.approx(1.1102230246251565e-16)
+        assert ours == sign * _SIN_QUARTER_PI, f"len {length}: not the quarter-pi value"
+
+
+def test_the_correctly_rounded_quarter_pi_sine_is_the_one_python_may_return() -> None:
+    """Whichever way this platform went, the value is one of exactly two.
+
+    Pinned separately because it is the fact that makes the bound above safe:
+    there is no third answer for a library to return here, so "at most one ULP
+    at one angle" is the complete statement of how far the two runtimes can be
+    apart in this slice.
+    """
+    quarter_pi = (2 * math.pi) / 8
+
+    assert math.sin(quarter_pi) in {_SIN_QUARTER_PI, 0.7071067811865475}
+    assert _SIN_QUARTER_PI == math.sqrt(2) / 2
 
 
 @pytest.mark.parametrize("size", _SIZES)

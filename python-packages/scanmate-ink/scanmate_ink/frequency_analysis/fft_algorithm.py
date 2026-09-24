@@ -11,21 +11,28 @@ THE ONE SLICE THAT CANNOT BE BIT-EXACT, AND WHOSE FAULT THAT IS
 Everything here is additions, multiplications and divisions except the twiddle
 bases, which are the cosine and sine of ``+/- 2 * pi / len``. That is 24
 distinct values across every size up to 4096, and 23 of them agree with V8 to
-the last bit. The exception is ``sin(+/- pi / 4)``: V8 returns
--0.7071067811865475 where the correctly rounded double is -0.7071067811865476.
-Python returns the correct one, so it is **V8 that is a unit in the last place
-wrong here, not the port**.
+the last bit on every platform tried. The twenty-fourth is ``sin(+/- pi / 4)``,
+where the answer depends on the C library this Python was built against:
 
-That single bit does not stay put. Every transform of eight or more points runs
-a ``len = 8`` stage, and the twiddle is advanced by REPEATED MULTIPLICATION
-rather than recomputed per step, so the error is carried forward through that
-stage and into every larger one. The parity tests therefore compare against a
-measured bound instead of ``==``, and they state the bound they measured.
+    Windows (MSVC)   0.7071067811865476   correctly rounded
+    Linux (glibc)    0.7071067811865475   agrees with V8
+    V8               0.7071067811865475
 
-Matching V8 exactly would mean hardcoding its wrong value, which would pin a
-particular runtime's libm rather than this algorithm, and would make the Python
-worse to make a test greener. The transform stays correct and the tolerance is
-written down.
+Both are within one unit in the last place of the true value, so neither is
+"wrong" in any sense a port can act on - and the difference is not V8's fault,
+which is what an earlier version of this comment claimed. It is a difference
+between two libms, and this file happens to sit on the seam.
+
+That single bit does not stay put when it appears. Every transform of eight or
+more points runs a ``len = 8`` stage, and the twiddle is advanced by REPEATED
+MULTIPLICATION rather than recomputed per step, so the difference is carried
+forward through that stage and into every larger one. The parity tests
+therefore compare against a measured bound instead of ``==``, and the bound
+holds on both platforms.
+
+Hardcoding either value would pin one runtime's libm rather than this
+algorithm, and would make the Python wrong on the other platform to make a test
+greener. The transform stays correct and the tolerance is written down.
 
 WHY THE LOOPS ARE LOOPS
 -----------------------
