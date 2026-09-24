@@ -89,8 +89,9 @@ import {
   warpGray,
   warpRaster,
 } from '../../packages/ink/dist/index.esm.js'
-import type { Bleed, Matrix3, Raster, ScanOptions } from '../../packages/ink/dist/src/index.d.ts'
+import type { Bleed, GrayImage, Matrix3, Raster, ScanOptions } from '../../packages/ink/dist/src/index.d.ts'
 import {
+  phaseCorrelate,
   findInliers,
   fitAffine,
   fitHomography,
@@ -1591,6 +1592,171 @@ writeFileSync(
   ) + '\n',
 )
 process.stdout.write('wrote ' + join(goldenDir, 'align-transform-fitting.json') + '\n')
+
+/* ---------------------------------------------------------------------------
+ * @scanmate/align: phase correlation
+ *
+ * This one CANNOT be held to `==` throughout, and the reason is already
+ * written down in `packages/ink/src/frequency-analysis`: `sin(±π/4)` differs
+ * by one unit in the last place between MSVC's libm (correctly rounded) and
+ * glibc's (which agrees with V8), and every transform of eight or more points
+ * carries that bit forward through repeated twiddle multiplication. Phase
+ * correlation runs two forward transforms and one inverse, so `dx`, `dy` and
+ * `peak` all sit on that seam.
+ *
+ * The golden therefore separates what can be exact from what cannot, and the
+ * Python tests treat the two differently. A single loose tolerance over
+ * everything would also pass a port that had genuinely lost the plot.
+ *
+ *   - `cos` below pins the libm seam ON ITS OWN, at exactly the arguments the
+ *     Hann window uses. Without it, a `Math.cos` disagreement would be
+ *     indistinguishable from the FFT's, and the tolerance would quietly be
+ *     covering two faults instead of one.
+ *   - Which PIXEL the spike lands on is held to `==` for every case. The
+ *     surface only wobbles by a fraction of an ULP, which cannot move which
+ *     sample is largest - and if it ever did, the answer would be a whole
+ *     pixel out, which no tolerance should ever absorb.
+ *   - `dx`, `dy` and `peak` are held to an absolute 1e-12, the same bar the
+ *     FFT's own tests use. Measured worst case on Windows: 2.22e-16, one ULP
+ *     at this magnitude.
+ *
+ * An earlier draft of this claimed whole-pixel shifts would be exact on `dx`
+ * and `dy`. They are not: the parabolic vertex fires for them too - the
+ * windowed, noisy surface is not symmetric about the peak - so `dx` for a
+ * requested shift of 7 comes out 7.003108, and carries the seam like
+ * everything else. Measured, then corrected.
+ * ------------------------------------------------------------------------- */
+
+/** Shifts chosen to cover both regimes, and both signs. */
+const PHASE_SHIFTS: readonly { label: string, dx: number, dy: number }[] = [
+  { label: 'still', dx: 0, dy: 0 },
+  { label: 'right', dx: 7, dy: 0 },
+  { label: 'down', dx: 0, dy: 5 },
+  { label: 'diagonal', dx: 6, dy: 9 },
+  // Negative, which exercises `wrap`: the spike comes back near the far edge
+  // and has to be read as a negative shift rather than a large positive one.
+  { label: 'back', dx: -4, dy: -3 },
+  // Sub-pixel, so the parabolic vertex is doing real work rather than
+  // returning 0.
+  { label: 'subPixel', dx: 3.4, dy: -2.7 },
+  /*
+   * NOT included: a shift of exactly half the padded width, which is the one
+   * input where `wrap`'s `>` and `>=` differ. It was tried, and this texture
+   * repeats every 16 pixels, so a 32-pixel shift aliases onto nothing
+   * findable - peak 0.166, answer (8.08, -8.05). A golden that records a
+   * meaningless number is worse than no golden. That boundary is pinned by a
+   * contract test on `wrap` instead; see the Python side.
+   */
+]
+
+const PHASE_WIDTH = 64
+const PHASE_HEIGHT = 48
+
+/** A page with enough structure that the correlation has a real peak to find. */
+function phaseSource (width: number, height: number): GrayImage {
+  const image = createGray(width, height)
+  const random = createRandom(4_242)
+  for (let y = 0; y < height; y++)
+    for (let x = 0; x < width; x++) {
+      // Blocky texture plus a little noise: structured enough to correlate,
+      // and the noise breaks the ties a purely periodic pattern would leave
+      // all over the correlation surface.
+      const block = ((x >> 3) + (y >> 3)) % 2 === 0 ? 0.82 : 0.18
+      image.data[y * width + x] = Math.min(1, Math.max(0, block + (random() - 0.5) * 0.2))
+    }
+
+  return image
+}
+
+/** `source` shifted by (dx, dy), sampled bilinearly so a fractional shift is real. */
+function phaseShifted (source: GrayImage, dx: number, dy: number): GrayImage {
+  const out = createGray(source.width, source.height)
+  for (let y = 0; y < source.height; y++)
+    for (let x = 0; x < source.width; x++)
+      out.data[y * source.width + x] = sampleGrayBilinear(source, x - dx, y - dy)
+
+  return out
+}
+
+const phaseBase = phaseSource(PHASE_WIDTH, PHASE_HEIGHT)
+
+/*
+ * Two degenerate pages, correlated with themselves. Both are the case this
+ * algorithm exists FOR - a mostly blank form is precisely where feature
+ * matching has nothing to work with - and both reach branches no textured
+ * image does:
+ *
+ *   - a uniform grey page drives the cross-power magnitude below 1e-12 on
+ *     1,495 of 4,096 bins, which is the guard that zeroes them;
+ *   - an all-zero page does it on ALL 4,096, and leaves a correlation surface
+ *     where every one of the 4,096 samples ties for largest. That is the only
+ *     input here that can tell "first maximum wins" from "last maximum wins",
+ *     and the two answers are a whole page apart.
+ *
+ * Both were added after a mutation run: with only the textured cases, a port
+ * that dropped the guard or took the last maximum passed everything.
+ */
+const phaseDegenerate = [
+  { label: 'uniform', fill: 0.5 },
+  { label: 'empty', fill: 0 },
+].map(({ label, fill }) => {
+  const image = createGray(PHASE_WIDTH, PHASE_HEIGHT)
+  image.data.fill(fill)
+
+  return { label, pixels: [...image.data], result: phaseCorrelate(image, image) }
+})
+
+const phaseCases = PHASE_SHIFTS.map(({ label, dx, dy }) => {
+  const shifted = phaseShifted(phaseBase, dx, dy)
+
+  return {
+    label,
+    requested: { dx, dy },
+    // Whether the requested shift was a whole number of pixels. Recorded
+    // rather than re-derived in the test, so the two cannot disagree.
+    integer:   Number.isSafeInteger(dx) && Number.isSafeInteger(dy),
+    shifted:   [...shifted.data],
+    result:    phaseCorrelate(phaseBase, shifted),
+  }
+})
+
+/*
+ * `Math.cos` at exactly the Hann window's arguments, for every length these
+ * cases use, plus the two that are special: 1 (where the window is [1] and
+ * `n - 1` is never divided by) and 2 (where the whole window is [0, 0],
+ * because cos(0) and cos(2π) are both 1 — a port that "helpfully" avoided the
+ * zero would fail against it).
+ *
+ * The window itself is private to the algorithm, so goldening it would mean
+ * restating it here — and a golden written by hand only proves that two copies
+ * of the same misunderstanding agree. Its inputs are not private: they are
+ * `Math.cos` of a number, and that is what gets pinned.
+ */
+const HANN_LENGTHS = [1, 2, 3, 8, PHASE_HEIGHT, PHASE_WIDTH]
+const hannCos = Object.fromEntries(
+  HANN_LENGTHS.filter(n => n > 1).map(n => [
+    String(n),
+    Array.from({ length: n }, (_, i) => Math.cos((2 * Math.PI * i) / (n - 1))),
+  ]),
+)
+
+writeFileSync(
+  join(goldenDir, 'align-phase-correlation.json'),
+  JSON.stringify(
+    {
+      size:       { width: PHASE_WIDTH, height: PHASE_HEIGHT },
+      // The input pixels themselves, so a Python failure means the
+      // CORRELATION diverged rather than the fixture. Float32 on both sides.
+      base:       [...phaseBase.data],
+      cases:      phaseCases,
+      degenerate: phaseDegenerate,
+      cos:        hannCos,
+    },
+    undefined,
+    2,
+  ) + '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'align-phase-correlation.json') + '\n')
 
 /*
  * `@scanmate/align`'s own surface, for the same reason ink has one: a whole

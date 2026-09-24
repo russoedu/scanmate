@@ -5,6 +5,7 @@ held to the TypeScript's own output by the parity goldens in
 ``tools/parity/goldens``, so "equivalent" here means ``==``, not "close".
 """
 
+from .phase_correlation import PhaseCorrelationResult, hann, phase_correlate
 from .transform_fitting import (
     Correspondence,
     RansacOptions,
@@ -20,6 +21,7 @@ from .transform_fitting import (
 
 __all__ = [
     "Correspondence",
+    "PhaseCorrelationResult",
     "RansacOptions",
     "RansacResult",
     "find_inliers",
@@ -27,6 +29,8 @@ __all__ = [
     "fit_homography",
     "fit_model",
     "fit_similarity",
+    "hann",
     "minimum_samples",
+    "phase_correlate",
     "ransac",
 ]
