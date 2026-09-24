@@ -53,12 +53,18 @@ jobs:
       - run: npm ci
         name: Install dependencies
 
-      # The writer imports `packages/ink/dist`, so the build has to have
+      # The writer imports each package's `dist`, so the build has to have
       # happened. Built explicitly rather than relying on the verify step in
       # ci.yml: that one is `nx affected` on a pull request, so a PR touching
-      # only Python would never build ink and this would fail on a missing
+      # only Python would never build them and this would fail on a missing
       # import rather than on a stale golden.
-      - run: npx nx build @scanmate/ink @scanmate/align
+      #
+      # `run-many -p a,b`, NOT `nx build a b`. The second form passes `b` as an
+      # argument to a's build COMMAND - here that made rollup bundle
+      # `@scanmate/align` into ink's own output, which succeeds silently on a
+      # machine where align's dist already exists and fails only on a clean
+      # checkout. This step is that clean checkout, and it caught it.
+      - run: npx nx run-many -t build -p @scanmate/ink,@scanmate/align
         name: Build the TypeScript the goldens are generated from
 
       - run: npm run parity:check
