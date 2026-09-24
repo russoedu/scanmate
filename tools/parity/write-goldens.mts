@@ -24,10 +24,23 @@ import {
   createRandom,
   createRaster,
   decodeImage,
+  decompose,
   encodeImage,
   gaussian,
+  invert,
+  isPlausible,
+  jacobiEigen,
+  mapRectCorners,
+  multiply,
+  normalize,
   readImageMetadata,
+  rebase,
+  reprojectionError,
+  similarity,
+  smallestEigenvector,
+  solve,
 } from '../../packages/ink/dist/index.esm.js'
+import type { Matrix3 } from '../../packages/ink/dist/src/index.d.ts'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const goldenDir = join(here, 'goldens')
@@ -111,3 +124,85 @@ writeFileSync(
   }, undefined, 2) + '\n',
 )
 process.stdout.write('wrote ' + join(goldenDir, 'raster.json') + '\n')
+
+/*
+ * The plane-geometry goldens.
+ *
+ * Two kinds of value, and the split is the point. Everything built from
+ * additions, multiplications and divisions alone is reproducible EXACTLY in
+ * Python. Everything that reaches for hypot, atan2, cos or log is not:
+ * measured across 169 argument pairs, Python and V8 disagree by at most one
+ * unit in the last place on each of those, so those goldens are compared to
+ * within 1 ULP rather than exactly. The Python tests carry that distinction
+ * per function rather than applying one blanket tolerance.
+ */
+const A: Matrix3 = [2, 0.5, -3, 0.25, 1.5, 7, 0.001, -0.002, 1]
+const B: Matrix3 = [0.9, -0.1, 4, 0.2, 1.1, -6, 0.0005, 0.0015, 1]
+
+const geometrySeed = createRandom(77_777)
+const symmetric = (n: number): number[] => {
+  const raw = Array.from({ length: n * n }, () => geometrySeed() * 2 - 1)
+  const out = Array.from({ length: n * n })
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < n; c++) out[r * n + c] = raw[r * n + c] + raw[c * n + r]
+  }
+
+  return out
+}
+
+const ASSOC_A: Matrix3 = [1, 1e16, -1e16, 0, 1, 0, 0, 0, 1]
+const ASSOC_B: Matrix3 = [1, 0, 0, 1, 0, 0, 1, 0, 1]
+
+const solveA = [4, -2, 1, -2, 4, -2, 1, -2, 4]
+const solveB = [11, -16, 17]
+const symmetric4 = symmetric(4)
+const symmetric6 = symmetric(6)
+const eigen4 = jacobiEigen(Float64Array.from(symmetric4), 4)
+
+// Hoisted out of the object literal below: inlining them nests calls four deep,
+// which `unicorn/max-nested-calls` rejects, and named steps read better anyway.
+const solved = solve(Float64Array.from(solveA), Float64Array.from(solveB), 3)
+const singularA = Float64Array.from([1, 2, 2, 4])
+const singularB = Float64Array.from([1, 2])
+const symmetric6Input = Float64Array.from(symmetric6)
+const corners = mapRectCorners(A, { x: 3, y: 5, width: 40, height: 25 })
+
+writeFileSync(
+  join(goldenDir, 'plane-geometry.json'),
+  JSON.stringify({
+    exact: {
+      multiply:       multiply(A, B),
+      invert:         invert(A),
+      normalize:      normalize([2, 4, 6, 8, 10, 12, 14, 16, 2]),
+      rebase:         rebase(A, 0.25, 0.5),
+      mapRectCorners: corners.map(p => [p.x, p.y]),
+      solve:          [...(solved ?? [])],
+      solveSingular:  solve(singularA, singularB, 2) === null,
+      jacobiValues:   [...eigen4.values],
+      jacobiVectors:  [...eigen4.vectors],
+      smallestEigen:  [...smallestEigenvector(symmetric6Input, 6)],
+    },
+    withinOneUlp: {
+      similarity:        similarity(1.25, 0.31, { x: 100, y: 200 }, { x: 310, y: 90 }),
+      decompose:         decompose(A, 'homography'),
+      reprojectionError: reprojectionError(A, { x: 11, y: 13 }, { x: 17, y: 19 }),
+      isPlausible:       [A, B, [1, 0, 0, 0, -1, 0, 0, 0, 1], [1e9, 0, 0, 0, 1e9, 0, 0, 0, 1]].map(
+        m => isPlausible(m as Matrix3),
+      ),
+    },
+    /*
+     * A pair chosen so that floating-point ASSOCIATION matters: the first term
+     * of the product is 1 + 1e16 + -1e16, which is 0 summed left to right and
+     * 1 summed right to left. Without it the exact-equality assertions pass
+     * just as happily on a reassociated `multiply` - measured, by reversing
+     * that sum and watching all 84 tests stay green. This is the input that
+     * makes `==` mean "the same operation order" rather than "the same maths".
+     */
+    associativity: {
+      inputs:  [ASSOC_A, ASSOC_B],
+      product: multiply(ASSOC_A, ASSOC_B),
+    },
+    inputs: { A, B, solveA, solveB, symmetric4, symmetric6 },
+  }, undefined, 2) + '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'plane-geometry.json') + '\n')

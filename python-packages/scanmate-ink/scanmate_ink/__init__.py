@@ -6,6 +6,22 @@ TypeScript build - see ``tools/parity``.
 """
 
 from .deterministic_sampling import create_random, gaussian
+from .plane_geometry import (
+    IDENTITY,
+    Matrix3,
+    Point,
+    PointMatch,
+    TransformModel,
+    TransformSummary,
+    apply_point,
+    decompose,
+    invert,
+    is_plausible,
+    multiply,
+    normalize,
+    similarity,
+    solve,
+)
 from .raster_codec import (
     BinaryImage,
     GrayImage,
@@ -22,6 +38,7 @@ from .raster_codec import (
 )
 
 __all__ = [
+    "IDENTITY",
     "BinaryImage",
     "GrayImage",
     "Raster",
@@ -33,7 +50,20 @@ __all__ = [
     "create_random",
     "decode_image",
     "encode_image",
+    "Matrix3",
+    "Point",
+    "PointMatch",
+    "TransformModel",
+    "TransformSummary",
+    "apply_point",
+    "decompose",
     "gaussian",
+    "invert",
+    "is_plausible",
     "is_raster",
+    "multiply",
+    "normalize",
+    "similarity",
+    "solve",
     "read_image_metadata",
 ]
