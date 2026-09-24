@@ -34,7 +34,7 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -45,7 +45,7 @@ jobs:
       - run: git config user.name "github-actions[bot]" && git config user.email "github-actions[bot]@users.noreply.github.com"
         name: Set the git identity used for release tags
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           # Caches ~/.npm keyed on package-lock.json, so `npm ci` restores from
@@ -131,7 +131,7 @@ jobs:
       # directly rather than a hand-rolled 'node -e' guard — see
       # DOTNET_DETECT_AZURE's remarks for the full reasoning. hashFiles()
       # gates it inline, so a JS-only workspace pays nothing.
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         if: ${{ hashFiles('apps/*/*.csproj', 'packages/*/*.csproj', 'libs/*/*.csproj') != '' }}
         with:
           dotnet-version: 10.0.x
@@ -163,12 +163,35 @@ jobs:
         name: Pack all apps (one zip per app -> dist/drop)
         if: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
         with:
           name: drop
           path: dist/drop
           if-no-files-found: ignore
+
+      # nx release resolves each package's current version from its git tag,
+      # and falls back to the (permanently stale, since git.commit is false)
+      # on-disk version when a tag cannot be resolved — which happens
+      # whenever this checkout lacks full history. This is currently
+      # guaranteed by fetch-depth 0 above plus the explicit fetch below, but
+      # neither is expressed as a dependency anywhere else, so this makes it
+      # a hard, loud precondition instead of a silently wrong version
+      # discovered after release.
+      - run: node -e "const r=require('node:child_process').spawnSync('git',['rev-parse','--is-shallow-repository'],{encoding:'utf8'});if(r.status!==0){console.error('Could not determine whether this checkout has full history (git rev-parse --is-shallow-repository failed) - refusing to release. '+(r.stderr||'').trim());process.exit(1)}if(r.stdout.trim()==='true'){console.error('This checkout is a shallow clone. nx release resolves the current version of each package from its git tag, and silently falls back to the permanently-stale on-disk version when a tag cannot be found - which can propose, and publish, a version DOWNGRADE. Fetch full history before releasing - set fetchDepth (Azure) or fetch-depth (GitHub) to 0.');process.exit(1)}"
+        name: Verify this is a full checkout (nx release needs the real tag history)
+        if: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
+
+      # Prove npm will accept us BEFORE anything irreversible happens. nx
+      # release tags first and publishes last, so a rejected token leaves a
+      # version tagged with nothing on the registry - and that number is then
+      # skipped forever, because the next run resolves the current version
+      # from the newest tag.
+      - run: node -e "const fs=require('node:fs'),cp=require('node:child_process');if(fs.globSync('packages/*/package.json').length===0){console.log('No npm packages to release - skipping.');process.exit(0)}if(!process.env.NODE_AUTH_TOKEN){console.error('NPM_TOKEN is empty or unset, so the publish would fail AFTER nx release has already tagged. Add it as a repository secret named exactly NPM_TOKEN - under Actions, not the Dependabot or Codespaces tab, and not an Environment secret. Use an npm Automation token - a Publish token is refused by 2FA in CI.');process.exit(1)}const r=cp.spawnSync('npm',['whoami','--registry=https://registry.npmjs.org/'],{encoding:'utf8',shell:process.platform==='win32'});if(r.status!==0){console.error('NPM_TOKEN is set but the registry rejected it - '+((r.stderr||'')+(r.stdout||'')).trim()+'. Check that it has not expired and that it grants publish rights on this scope.');process.exit(1)}console.log('npm auth OK as '+r.stdout.trim())"
+        name: Preflight — npm must accept the token before anything is tagged
+        if: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       # Version + tag + publish, in one release, for npm (packages/*), Python
       # (python-packages/*) AND C# (packages/*/*.csproj) — conventional
@@ -176,59 +199,30 @@ jobs:
       # scope, so skip cleanly when there is nothing to release. When there
       # are Python or C# packages and an Azure feed, twine/NuGet publish
       # credentials are exported (raw PAT, decoded from the base64 secret).
+      #
+      # RELEASE_SPECIFIER (repository variable, Settings -> Secrets and
+      # variables -> Actions -> Variables) overrides the bump nx would compute
+      # from conventional commits for THIS run: 'major', 'minor', 'patch', or
+      # an exact version ('1.2.3'). In a workspace with more than one
+      # releasable package, a bare keyword is unreliable — nx versions
+      # interdependent packages in two passes (a dependency-bump pass, then
+      # the specifier pass), and the second pass computes from a version
+      # cached before the first pass ran, silently landing back on the same
+      # patch bump either way. An exact version does not have this problem,
+      # since both passes apply it verbatim — prefer it whenever more than one
+      # package is releasable. The guard below fails the run rather than
+      # under-bumping silently: unset or clear the variable once the override
+      # is no longer needed.
       # This provider also creates a per-project GitHub Release (changelog
       # generated from conventional commits since that project's last tag),
       # which is why 'nx release' pushes the tag itself here — see
       # releaseConfig's remarks for why that is safe on this Nx version and
       # why every other provider combination keeps the explicit push step below.
-      # Prove npm will accept us BEFORE anything irreversible happens.
-      #
-      # 'nx release' versions, pushes, tags, pushes the tag and creates the
-      # GitHub Release, and only then publishes. So a missing or rejected token
-      # does not simply fail - it leaves a version tagged and released with
-      # nothing on the registry, and because the next run resolves the current
-      # version from the newest tag, that number is then skipped forever. That
-      # is exactly what happened to 0.0.2.
-      #
-      # 'npm whoami' is the cheapest thing that exercises the whole auth path:
-      # the secret reaching the step, .npmrc's ${NODE_AUTH_TOKEN} expanding,
-      # and the registry accepting the token. An empty secret renders blank in
-      # the step's env log rather than as ***, which is the tell.
-      - run: |
-          if [ -z "$(ls packages/*/package.json 2>/dev/null)" ]; then
-            echo "No npm packages to release - skipping."
-            exit 0
-          fi
-          if [ -z "$NODE_AUTH_TOKEN" ]; then
-            echo "::error::NPM_TOKEN is empty or unset, so the publish would fail after tagging. Add it under Settings > Secrets and variables > ACTIONS (not the Dependabot or Codespaces tab, and not an Environment secret) as a repository secret named exactly NPM_TOKEN. Use an npm Automation token - a Publish token is refused by 2FA in CI."
-            exit 1
-          fi
-          if ! user=$(npm whoami --registry=https://registry.npmjs.org/ 2>&1); then
-            echo "::error::NPM_TOKEN is set but the registry rejected it: ${user}. Check that the token has not expired and grants publish rights on this scope."
-            exit 1
-          fi
-          echo "npm auth OK as ${user}"
-        name: Preflight — npm must accept the token before anything is tagged
-        if: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      # RELEASE_SPECIFIER (Settings > Secrets and variables > ACTIONS > Variables)
-      # overrides the bump for one release, when the next version is a decision
-      # rather than what the commits imply. Clear it afterwards; empty - the
-      # normal state - versions from conventional commits.
-      #
-      # Give it an exact version ('0.1.0'), not a keyword. A keyword loses to the
-      # patch that `updateDependents` applies first: nx versions each package
-      # twice, once because a dependency moved and once from the specifier, and
-      # the second pass resolves the keyword against a stale cached version, so
-      # 'minor' on 0.0.2 came out as 0.0.3. An exact value is applied verbatim
-      # by both passes. Keywords are still accepted for a single package whose
-      # dependencies have not moved.
-      - run: node -e "const fs=require('node:fs'),cp=require('node:child_process');const hasNpm=fs.globSync('packages/*/package.json').length>0;const hasPython=fs.globSync('python-packages/*/pyproject.toml').length>0;const hasCsharp=fs.globSync('packages/*/*.csproj').length>0;if(!hasNpm&&!hasPython&&!hasCsharp){console.log('Nothing to release - skipping.');process.exit(0)}const specifier=(process.env.RELEASE_SPECIFIER||'').trim();if(specifier&&!/^(major|minor|patch|\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?)$/.test(specifier)){console.error('::error::RELEASE_SPECIFIER must be an exact version such as 1.2.0, or major, minor or patch, and is '+specifier);process.exit(1)}if(specifier)console.log('Releasing every package with specifier '+specifier+', not from conventional commits.');const env={...process.env};process.exit(cp.spawnSync('npx nx release '+specifier+' --yes',{stdio:'inherit',shell:true,env}).status ?? 1)"
+      - run: node -e "const fs=require('node:fs'),cp=require('node:child_process');const npmCount=fs.globSync('packages/*/package.json').length;const csharpCount=fs.globSync('packages/*/*.csproj').length;const pythonCount=fs.globSync('python-packages/*/pyproject.toml').length;const dartCount=fs.globSync('packages/*/pubspec.yaml').length;const hasNpm=npmCount>0;const hasPython=pythonCount>0;const hasCsharp=csharpCount>0;const hasDart=dartCount>0;if(!hasNpm&&!hasPython&&!hasCsharp&&!hasDart){console.log('Nothing to release - skipping.');process.exit(0)}const specifier=process.env.RELEASE_SPECIFIER||'';let releaseCmd='npx nx release --yes';if(specifier){if(!/^(major|minor|patch|\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?)$/.test(specifier)){console.error('RELEASE_SPECIFIER value \''+specifier+'\' is invalid - use major, minor, patch, or an exact version like 1.2.3.');process.exit(1)}const releaseProjectCount=npmCount+csharpCount+pythonCount+dartCount;if(/^(major|minor|patch)$/.test(specifier)&&releaseProjectCount>1){console.error('RELEASE_SPECIFIER is a keyword (\''+specifier+'\') but this workspace has '+releaseProjectCount+' releasable packages - a keyword under-bumps interdependent packages, because nx computes the dependency-bump pass from a stale cached version. Set RELEASE_SPECIFIER to an exact version instead, or clear it.');process.exit(1)}releaseCmd='npx nx release '+specifier+' --yes'}const env={...process.env};if(hasPython){if(!process.env.PYPI_TOKEN){console.error('This workspace has '+pythonCount+' Python package(s) to publish but PYPI_TOKEN is empty. Add a PyPI API token as a secret named PYPI_TOKEN, or remove the Python packages from release.projects.');process.exit(1)}env.TWINE_USERNAME='__token__';env.TWINE_PASSWORD=process.env.PYPI_TOKEN;env.TWINE_NON_INTERACTIVE='1'}process.exit(cp.spawnSync(releaseCmd,{stdio:'inherit',shell:true,env}).status ?? 1)"
         name: Release — version, tag, publish and GitHub Release (npm + Python + C#)
         if: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
         env:
-          NODE_AUTH_TOKEN:    ${{ secrets.NPM_TOKEN }}
-          GITHUB_TOKEN:       ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_SPECIFIER:  ${{ vars.RELEASE_SPECIFIER }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+          RELEASE_SPECIFIER: ${{ vars.RELEASE_SPECIFIER }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
