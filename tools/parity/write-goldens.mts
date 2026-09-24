@@ -29,6 +29,7 @@ import {
   decompose,
   downscaleGray,
   encodeImage,
+  estimateSkew,
   fft1d,
   fft2d,
   gaussian,
@@ -50,6 +51,7 @@ import {
   boxBlur,
   boxBlurRaster,
   coverage,
+  contentExtent,
   correlation,
   dilate,
   grayToRaster,
@@ -58,6 +60,7 @@ import {
   intersectionOverUnion,
   mean,
   otsuThreshold,
+  profileSharpness,
   resizeGray,
   sampleGrayBilinear,
   toGrayscale,
@@ -579,3 +582,86 @@ writeFileSync(
   }, undefined, 2) + '\n',
 )
 process.stdout.write('wrote ' + join(goldenDir, 'similarity-scoring.json') + '\n')
+
+/*
+ * The content-geometry goldens - the riskiest in this file, and the reason is
+ * a `Math.floor` rather than anything about the arithmetic.
+ *
+ * Both functions project ink into integer bins by flooring a product of a
+ * coordinate with `Math.cos` or `Math.sin` of an arbitrary angle. Those two
+ * are NOT correctly rounded, so Python and V8 can differ in the last bit, and
+ * a floor turns a last-bit difference into a whole bin. `estimateSkew` then
+ * takes an argmax over those scores, which can turn one flipped bin into a
+ * different answer entirely. Nothing about that is gradual.
+ *
+ * So the input is a page with a REAL skew rather than the noise page the other
+ * goldens use: stripes of ink laid down at a known slope, which give the
+ * argmax a clear peak instead of a field of near-ties. A near-tie is exactly
+ * the situation where a one-bin difference would change the result, and
+ * measuring parity against one would be measuring luck.
+ *
+ * `sharpness` carries the score at every angle the search actually visits, so
+ * the Python can be checked angle by angle rather than only on the answer -
+ * if they ever diverge, this says at which angle and by how much.
+ */
+const STRIPE_SLOPE = 0.1
+const STRIPE_PERIOD = 6
+const skewed = createGray(RASTER_WIDTH, RASTER_HEIGHT)
+for (let y = 0; y < RASTER_HEIGHT; y++)
+  for (let x = 0; x < RASTER_WIDTH; x++) {
+    const band = Math.floor((y - STRIPE_SLOPE * x) / STRIPE_PERIOD)
+    skewed.data[y * RASTER_WIDTH + x] = band % 3 === 0 ? 0.85 : 0
+  }
+
+const TO_RAD = Math.PI / 180
+const visitedDegrees: number[] = []
+for (let deg = -12; deg <= 12; deg += 1) visitedDegrees.push(deg)
+const coarseBest = 6
+for (const [span, step] of [[1, 0.2], [0.2, 0.04]] as const)
+  for (let deg = coarseBest - span; deg <= coarseBest + span + 1e-9; deg += step)
+    visitedDegrees.push(deg)
+
+/*
+ * A blank page scores exactly zero at EVERY angle, which is the only input
+ * that makes the argmax's tie-breaking visible. `score > bestScore` keeps the
+ * first angle tried and returns -12 degrees; `>=` would keep the last and
+ * return +12. On any page with real ink the scores differ and both rules agree,
+ * so without this the comparison could be flipped unnoticed.
+ */
+const blankPage = createGray(RASTER_WIDTH, RASTER_HEIGHT)
+
+const skewOfSkewed = estimateSkew(skewed)
+const skewOfInk = estimateSkew(ink)
+
+writeFileSync(
+  join(goldenDir, 'content-geometry.json'),
+  JSON.stringify({
+    stripe: { slope: STRIPE_SLOPE, period: STRIPE_PERIOD, data: [...skewed.data] },
+    /* Every angle the two-stage search visits, and what cos/sin gave for it. */
+    angles: visitedDegrees.map(deg => [
+      deg, deg * TO_RAD, Math.cos(deg * TO_RAD), Math.sin(deg * TO_RAD),
+    ]),
+    sharpness: {
+      skewed: visitedDegrees.map(deg => profileSharpness(skewed, deg * TO_RAD)),
+      ink:    visitedDegrees.map(deg => profileSharpness(ink, deg * TO_RAD)),
+    },
+    estimateSkew: {
+      skewed:      skewOfSkewed,
+      skewedDeg:   skewOfSkewed / TO_RAD,
+      ink:         skewOfInk,
+      narrowRange: estimateSkew(skewed, { maxAngleDeg: 2 }),
+      blank:       estimateSkew(blankPage),
+      blankDeg:    estimateSkew(blankPage) / TO_RAD,
+    },
+    contentExtent: {
+      inkUnrotated:  contentExtent(ink),
+      inkAtSkew:     contentExtent(ink, skewOfInk),
+      skewedAtSkew:  contentExtent(skewed, skewOfSkewed),
+      skewedNoTrim:  contentExtent(skewed, 0, 0),
+      skewedBigTrim: contentExtent(skewed, 0, 0.2),
+      /* A zeroed image takes the nothing-printed branch: the whole frame, density 0. */
+      blank:         contentExtent(blankPage),
+    },
+  }, undefined, 2) + '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'content-geometry.json') + '\n')

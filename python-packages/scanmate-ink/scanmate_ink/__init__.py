@@ -5,6 +5,13 @@ subfeature here is measured against goldens produced by running the real
 TypeScript build - see ``tools/parity``.
 """
 
+from .content_geometry import (
+    ContentExtent,
+    SkewOptions,
+    content_extent,
+    estimate_skew,
+    profile_sharpness,
+)
 from .deterministic_sampling import create_random, gaussian
 from .frequency_analysis import fft1d, fft2d, is_power_of_two, next_power_of_two
 from .geometric_transform import (
@@ -65,6 +72,7 @@ from .similarity_scoring import correlation, intersection_over_union, mean
 __all__ = [
     "IDENTITY",
     "BinaryImage",
+    "ContentExtent",
     "Downscaled",
     "InkOptions",
     "Interpolation",
@@ -75,6 +83,7 @@ __all__ = [
     "box_blur",
     "box_blur_raster",
     "clone_raster",
+    "content_extent",
     "correlation",
     "count_pages",
     "coverage",
@@ -88,8 +97,10 @@ __all__ = [
     "fft1d",
     "fft2d",
     "encode_image",
+    "estimate_skew",
     "Matrix3",
     "Point",
+    "SkewOptions",
     "PointMatch",
     "TransformModel",
     "TransformSummary",
@@ -108,6 +119,7 @@ __all__ = [
     "multiply",
     "next_power_of_two",
     "normalize",
+    "profile_sharpness",
     "otsu_threshold",
     "similarity",
     "read_image_metadata",
