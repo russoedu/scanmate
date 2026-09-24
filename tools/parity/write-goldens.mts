@@ -30,6 +30,8 @@ import {
   downscaleGray,
   encodeImage,
   estimateSkew,
+  foldConfusables,
+  foldDiacritics,
   fft1d,
   fft2d,
   gaussian,
@@ -42,6 +44,7 @@ import {
   mapRectCorners,
   multiply,
   nextPowerOfTwo,
+  normaliseText,
   normalize,
   readImageMetadata,
   DEFAULT_BLEED,
@@ -52,12 +55,15 @@ import {
   similarity,
   smallestEigenvector,
   solve,
+  tokenise,
   binarize,
   boxBlur,
   boxBlurRaster,
   coverage,
   contentExtent,
+  DEFAULT_NORMALISE,
   correlation,
+  diacriticsMap,
   dilate,
   grayToRaster,
   inkMap,
@@ -776,3 +782,152 @@ writeFileSync(
   }, undefined, 2) + '\n',
 )
 process.stdout.write('wrote ' + join(goldenDir, 'region-bleed.json') + '\n')
+
+/*
+ * The text-normalisation goldens.
+ *
+ * The corpus is adversarial on purpose. Each entry targets a specific way the
+ * two languages disagree rather than a plausible sentence, because a plausible
+ * sentence is exactly where a port looks right: JavaScript's `\s` and
+ * Python's are different sets in BOTH directions, `\p{L}` has no equivalent
+ * in Python's `re` at all, and the two runtimes are on different Unicode
+ * versions - V8 on 16.0 against CPython's 15.1 at the time of writing, which
+ * `runtime.unicodeVersion` records so a future reader can see whether that
+ * still holds.
+ *
+ * `runtime` also carries what V8 itself produced for `toLowerCase` and NFKC on
+ * every entry, so the Python can check the two RUNTIMES against each other
+ * rather than inferring a disagreement from a whole pipeline.
+ */
+const U = (...codes: number[]): string => String.fromCodePoint(...codes)
+
+/*
+ * The corpus is adversarial on purpose. Each entry targets a specific way the
+ * two languages disagree rather than a plausible sentence - plausible
+ * sentences are where a port looks right.
+ */
+const CORPUS = {
+  plain:            '  The  Quick  Brown  FOX  ',
+  nbsp:             `a${U(0xA0)}b`,
+  bom:              `x${U(0x200B)}y${U(0xFEFF)}z`,
+  zwj:              `a${U(0x200D)}b${U(0x200C)}c${U(0x2060)}d`,
+  pythonOnlySpace:  `a${U(0x1C)}b${U(0x85)}c`,
+  lineSeparators:   `a${U(0x2028)}b${U(0x2029)}c`,
+  ogham:            `a${U(0x1680)}b`,
+  ligature:         `${U(0xFB01)}ne ${U(0xFB02)}ag`,
+  fullWidth:        `${U(0xFF21)}${U(0xFF22)}${U(0xFF43)}`,
+  circled:          `${U(0x24B6)}${U(0x24D0)}`,
+  accents:          `caf${U(0xE9)} ${U(0xC6)}ther na${U(0xEF)}ve`,
+  sharpS:           `Stra${U(0xDF)}e GRO${U(0x1E9E)}`,
+  turkishDotted:    `${U(0x130)}stanbul ${U(0x131)}`,
+  quotes:           `${U(0x2018)}q${U(0x2019)} ${U(0x201C)}d${U(0x201D)} ${U(0x2032)}p${U(0x2033)}`,
+  dashes:           `a${U(0x2010)}b${U(0x2013)}c${U(0x2014)}d${U(0x2212)}e`,
+  ellipsis:         `wait${U(0x2026)}now`,
+  hyphenWrap:       'informa-\ntion',
+  hyphenWrapCrLf:   'informa-\r\ntion',
+  hyphenWrapSpaces: 'informa-  \n  tion',
+  softHyphenWrap:   `informa${U(0xAD)}\ntion`,
+  hyphenBeforeCaps: 'wrap-\nPing',
+  hyphenAfterDigit: '5-\nx',
+  hyphenNoBreak:    'in-line',
+  noise:            'a | b ___ c ~ . 5',
+  currency:         `${U(0x24)}5 ${U(0xA3)}6 ${U(0x20AC)}7 ${U(0xA5)}8`,
+  /* BARE signs: every token above also carries a digit, so they survive even without Sc. */
+  bareCurrency:     `${U(0x24)} ${U(0xA3)} ${U(0x20AC)} ${U(0xA5)}`,
+  /* U+0085 at BOTH EDGES: whitespace to Python, not to JavaScript, so a final
+   * `strip()` on Python's set would trim what JavaScript keeps. */
+  pythonSpaceEdges: `${U(0x85)}edge${U(0x85)}`,
+  numbers:          '1,250.00 and 3.14',
+  romanNumeral:     `${U(0x2160)}${U(0x2161)}`,
+  fractionVulgar:   `${U(0xBD)} cup`,
+  confusable:       'rn1 cli vv0 5ale |8 !6 2ip',
+  empty:            '',
+  onlyNoise:        ' | ___ ~~ ',
+  onlySpace:        `  ${U(0xA0)}${U(0x3000)} `,
+  mixedScript:      `Hello ${U(0x41F)}${U(0x440)}${U(0x438)} 123`,
+  combining:        `e${U(0x301)}cole`,
+  emoji:            `a ${U(0x1F600)} b`,
+}
+
+const VARIANTS = {
+  defaults:         {},
+  noNfkc:           { nfkc: false },
+  noTypography:     { typography: false },
+  noDehyphenate:    { dehyphenate: false },
+  noDiacritics:     { diacritics: false },
+  noCase:           { caseFold: false },
+  noDropNoise:      { dropNoise: false },
+  stripPunctuation: { stripPunctuation: true },
+  confusables:      { confusables: true },
+  everythingOff:    {
+    nfkc:        false,
+    typography:  false,
+    dehyphenate: false,
+    diacritics:  false,
+    caseFold:    false,
+    dropNoise:   false,
+  },
+  everythingOn: { stripPunctuation: true, confusables: true },
+}
+
+const normalised: Record<string, Record<string, string>> = {}
+const tokenised: Record<string, Record<string, string[]>> = {}
+for (const [variant, options] of Object.entries(VARIANTS)) {
+  normalised[variant] = {}
+  tokenised[variant] = {}
+  for (const [name, text] of Object.entries(CORPUS)) {
+    normalised[variant][name] = normaliseText(text, options)
+    tokenised[variant][name] = tokenise(text, options)
+  }
+}
+
+/*
+ * `c1` and `c!` are the only entries here that pin PAIRS-before-SINGLES.
+ * Measured: `rn1` and `cli` - the obvious choices - fold to `ml` and `dl`
+ * under either order. `c1` folds to `cl` when the pairs run first and to `d`
+ * when the singles do, because the single turns the `1` into an `l` and
+ * manufactures a `cl` that was never in the text.
+ *
+ * The order AMONG the pairs, by contrast, does not matter at all - checked
+ * exhaustively over every string up to length five in the alphabet they
+ * touch, zero differ - so nothing here pretends to pin it.
+ */
+const CONFUSABLE_ONLY = [
+  'rn', 'cl', 'vv', 'rn1', 'cli', 'vvi', '0o', '1l', 'i|!', '586', '2z', 'rnrn', 'ccll',
+  'c1', 'c!', 'c1c1',
+]
+const DIACRITIC_ONLY = [
+  `caf${U(0xE9)}`, U(0xC6), U(0x1F1), U(0xFF21), U(0x24B6), U(0x152), U(0x1E9E), `e${U(0x301)}`,
+]
+
+/*
+ * Hoisted out of the object literal below: each is a `fromEntries` of a `map`
+ * of a call, one level past what the lint allows - and naming them says what
+ * each is for anyway.
+ */
+const corpusEntries = Object.entries(CORPUS)
+const foldedConfusables = Object.fromEntries(CONFUSABLE_ONLY.map(t => [t, foldConfusables(t)]))
+const foldedDiacritics = Object.fromEntries(DIACRITIC_ONLY.map(t => [t, foldDiacritics(t)]))
+const lowerCasedCorpus = Object.fromEntries(corpusEntries.map(([n, t]) => [n, t.toLowerCase()]))
+const nfkcCorpus = Object.fromEntries(corpusEntries.map(([n, t]) => [n, t.normalize('NFKC')]))
+
+writeFileSync(
+  join(goldenDir, 'text-normalisation.json'),
+  JSON.stringify({
+    defaults:        DEFAULT_NORMALISE,
+    corpus:          CORPUS,
+    variants:        VARIANTS,
+    normaliseText:   normalised,
+    tokenise:        tokenised,
+    foldConfusables: foldedConfusables,
+    foldDiacritics:  foldedDiacritics,
+    diacriticsMap:   [...diacriticsMap()],
+    /* What V8 itself reports, so the Python can check the runtime rather than guess. */
+    runtime:         {
+      unicodeVersion: process.versions.unicode,
+      lowerCased:     lowerCasedCorpus,
+      nfkc:           nfkcCorpus,
+    },
+  }, undefined, 2) + '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'text-normalisation.json') + '\n')

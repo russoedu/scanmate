@@ -77,9 +77,20 @@ from .region_bleed import (
     resolve_region_bleed,
 )
 from .similarity_scoring import correlation, intersection_over_union, mean
+from .text_normalisation import (
+    DEFAULT_NORMALISE,
+    NormaliseOptions,
+    diacritics_map,
+    fold_confusables,
+    fold_diacritics,
+    normalise_text,
+    tokenise,
+    with_options,
+)
 
 __all__ = [
     "DEFAULT_BLEED",
+    "DEFAULT_NORMALISE",
     "IDENTITY",
     "BinaryImage",
     "Bleed",
@@ -103,13 +114,17 @@ __all__ = [
     "create_raster",
     "create_random",
     "decode_image",
+    "diacritics_map",
     "dilate",
     "downscale_gray",
     "fft1d",
     "fft2d",
     "encode_image",
     "estimate_skew",
+    "fold_confusables",
+    "fold_diacritics",
     "Matrix3",
+    "NormaliseOptions",
     "Point",
     "ResolvedBleed",
     "SkewOptions",
@@ -132,6 +147,7 @@ __all__ = [
     "mean",
     "multiply",
     "next_power_of_two",
+    "normalise_text",
     "normalize",
     "profile_sharpness",
     "otsu_threshold",
@@ -143,6 +159,8 @@ __all__ = [
     "sample_gray_bilinear",
     "solve",
     "to_grayscale",
+    "tokenise",
     "warp_gray",
     "warp_raster",
+    "with_options",
 ]
