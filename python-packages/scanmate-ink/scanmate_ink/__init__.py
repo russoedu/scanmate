@@ -67,11 +67,22 @@ from .raster_codec import (
     is_raster,
     read_image_metadata,
 )
+from .region_bleed import (
+    DEFAULT_BLEED,
+    Bleed,
+    ResolvedBleed,
+    grow_by,
+    has_bleed,
+    resolve_bleed,
+    resolve_region_bleed,
+)
 from .similarity_scoring import correlation, intersection_over_union, mean
 
 __all__ = [
+    "DEFAULT_BLEED",
     "IDENTITY",
     "BinaryImage",
+    "Bleed",
     "ContentExtent",
     "Downscaled",
     "InkOptions",
@@ -100,6 +111,7 @@ __all__ = [
     "estimate_skew",
     "Matrix3",
     "Point",
+    "ResolvedBleed",
     "SkewOptions",
     "PointMatch",
     "TransformModel",
@@ -108,6 +120,8 @@ __all__ = [
     "decompose",
     "gaussian",
     "gray_to_raster",
+    "grow_by",
+    "has_bleed",
     "ink_map",
     "integral_image",
     "invert",
@@ -123,6 +137,8 @@ __all__ = [
     "otsu_threshold",
     "similarity",
     "read_image_metadata",
+    "resolve_bleed",
+    "resolve_region_bleed",
     "resize_gray",
     "sample_gray_bilinear",
     "solve",

@@ -33,6 +33,8 @@ import {
   fft1d,
   fft2d,
   gaussian,
+  growBy,
+  hasBleed,
   invert,
   isPlausible,
   isPowerOfTwo,
@@ -42,8 +44,11 @@ import {
   nextPowerOfTwo,
   normalize,
   readImageMetadata,
+  DEFAULT_BLEED,
   rebase,
   reprojectionError,
+  resolveBleed,
+  resolveRegionBleed,
   similarity,
   smallestEigenvector,
   solve,
@@ -67,7 +72,7 @@ import {
   warpGray,
   warpRaster,
 } from '../../packages/ink/dist/index.esm.js'
-import type { Matrix3 } from '../../packages/ink/dist/src/index.d.ts'
+import type { Bleed, Matrix3 } from '../../packages/ink/dist/src/index.d.ts'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const goldenDir = join(here, 'goldens')
@@ -665,3 +670,109 @@ writeFileSync(
   }, undefined, 2) + '\n',
 )
 process.stdout.write('wrote ' + join(goldenDir, 'content-geometry.json') + '\n')
+
+/*
+ * The region-bleed goldens. No floating point anywhere in this slice, so
+ * nothing here is about the last bit - it is about one operator.
+ *
+ * Every side is chosen with `??`, which falls through on null and undefined
+ * and NOT on zero. Python's `or` falls through on zero too, so a port written
+ * the obvious way turns "no room on this side" into "the default six points"
+ * and silently widens every region that asked for none. Most of the cases
+ * below exist to make that substitution fail: a zero in every position where
+ * one can legally appear.
+ */
+const bleedBase = resolveBleed({ bleed: 5, bleedBottom: 11 })
+const bleedCases: Array<[string, Bleed, number | undefined]> = [
+  ['empty', {}, undefined],
+  ['fallbackOnly', {}, 10],
+  ['allZero', { bleed: 0 }, undefined],
+  ['allZeroOverFallback', { bleed: 0 }, 10],
+  ['sidedOverAll', { bleed: 4, bleedBottom: 14 }, undefined],
+  ['zeroTopOverFallback', { bleedTop: 0 }, 5],
+  ['zeroSideOverAll', { bleed: 7, bleedRight: 0 }, undefined],
+  ['allBeatsFallback', { bleed: 3 }, 99],
+  ['everySideNamed', { bleedTop: 1, bleedRight: 2, bleedBottom: 3, bleedLeft: 4 }, 99],
+  ['fallbackZero', {}, 0],
+]
+const regionCases: Array<[string, Bleed]> = [
+  ['emptyRegion', {}],
+  ['regionAllZero', { bleed: 0 }],
+  ['regionZeroLeft', { bleedLeft: 0 }],
+  ['regionSidedOverAll', { bleed: 2, bleedTop: 9 }],
+  ['regionAllOnly', { bleed: 8 }],
+  ['regionEverySide', { bleedTop: 0, bleedRight: 0, bleedBottom: 0, bleedLeft: 0 }],
+]
+
+const rejected = (run: () => unknown): string => {
+  try {
+    run()
+  } catch (error) {
+    return (error as Error).message
+  }
+
+  return 'DID NOT THROW'
+}
+
+const bleedRect = { x: 12, y: 30, width: 100, height: 40 }
+
+/*
+ * Hoisted rather than nested inside the object literal below: `growBy` of
+ * `resolveBleed` of a literal is three calls deep, which the lint rejects, and
+ * naming each one says what it is for.
+ */
+const uniformSides = resolveBleed()
+const zeroSides = resolveBleed({ bleed: 0 })
+/*
+ * Four DISTINCT sides. Every other `growBy` case here is symmetric left to
+ * right, so a port widening by `left + left` instead of `left + right` matched
+ * all of them - measured, by making exactly that change and watching all 32
+ * tests stay green.
+ */
+const asymmetricSides = resolveBleed({ bleedTop: 1, bleedRight: 17, bleedBottom: 9, bleedLeft: 3 })
+const oneSideSides = resolveBleed({ bleed: 0, bleedTop: 1 })
+const lastSideSides = resolveBleed({ bleed: 0, bleedLeft: 1 })
+
+const resolvedCases = bleedCases.map(([name, bleed, fallback]) => {
+  const resolved = fallback === undefined ? resolveBleed(bleed) : resolveBleed(bleed, fallback)
+
+  return [name, { bleed, fallback, resolved }] as const
+})
+const resolvedRegionCases = regionCases.map(([name, region]) => {
+  const resolved = resolveRegionBleed(region, bleedBase)
+
+  return [name, { region, resolved }] as const
+})
+
+writeFileSync(
+  join(goldenDir, 'region-bleed.json'),
+  JSON.stringify({
+    defaultBleed:       DEFAULT_BLEED,
+    base:               bleedBase,
+    resolveBleed:       Object.fromEntries(resolvedCases),
+    resolveRegionBleed: Object.fromEntries(resolvedRegionCases),
+    /* The message names the FIRST offending side, in top/right/bottom/left order. */
+    rejects:            {
+      negativeAll:    rejected(() => resolveBleed({ bleed: -1 })),
+      negativeSide:   rejected(() => resolveBleed({ bleedBottom: -0.5 })),
+      notFinite:      rejected(() => resolveBleed({ bleed: Infinity })),
+      notANumber:     rejected(() => resolveBleed({ bleedLeft: NaN })),
+      negativeRegion: rejected(() => resolveRegionBleed({ bleedRight: -2 }, bleedBase)),
+      twoBadSides:    rejected(() => resolveBleed({ bleedRight: -1, bleedLeft: -2 })),
+    },
+    growBy: {
+      rect:       bleedRect,
+      uniform:    growBy(bleedRect, uniformSides),
+      sided:      growBy(bleedRect, bleedBase),
+      zero:       growBy(bleedRect, zeroSides),
+      asymmetric: growBy(bleedRect, asymmetricSides),
+    },
+    hasBleed: {
+      uniform:  hasBleed(uniformSides),
+      zero:     hasBleed(zeroSides),
+      oneSide:  hasBleed(oneSideSides),
+      lastSide: hasBleed(lastSideSides),
+    },
+  }, undefined, 2) + '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'region-bleed.json') + '\n')
