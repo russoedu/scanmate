@@ -52,7 +52,9 @@ class TestJsRound:
         [(0.5, 1), (2.5, 3), (-0.5, 0), (-1.5, -1), (1.5, 2), (3.5, 4)],
     )
     def test_matches_javascript_on_every_half_way_case(
-        self, value: float, expected: int,
+        self,
+        value: float,
+        expected: int,
     ) -> None:
         assert js_round(value) == expected
 
@@ -61,7 +63,9 @@ class TestJsRound:
         [(0.4, 0), (0.6, 1), (2.49, 2), (-2.4, -2), (-2.6, -3), (7.0, 7)],
     )
     def test_behaves_normally_away_from_the_half_way_cases(
-        self, value: float, expected: int,
+        self,
+        value: float,
+        expected: int,
     ) -> None:
         assert js_round(value) == expected
 

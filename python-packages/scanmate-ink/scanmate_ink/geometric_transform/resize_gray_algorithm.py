@@ -25,8 +25,9 @@ Two things have to be reproduced rather than improved on:
   the two passes is part of the answer.
 - The area average accumulates **left to right**. ``total += src[i] * w`` in a
   loop is not ``np.sum`` of the same products - numpy sums pairwise, which is
-  more accurate and a different number. Every accumulation here is a
-  ``cumsum``, which is sequential by construction.
+  more accurate and a different number. Every accumulation here goes through
+  :func:`~..js_semantics.sequential_sum`, which is a ``cumsum`` and so is
+  sequential by construction.
 """
 
 from __future__ import annotations
@@ -36,22 +37,10 @@ from dataclasses import dataclass
 import numpy as np
 import numpy.typing as npt
 
-from ..js_semantics import js_round
+from ..js_semantics import js_round, sequential_sum
 from ..raster_codec import GrayImage, Raster
 
 _RGBA = 4
-
-
-def _sequential_sum(values: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
-    """Sum the last axis strictly left to right, the way a ``+=`` loop does.
-
-    :param values: A ``(rows, terms)`` array.
-    :returns: One running-order total per row.
-    """
-    if values.shape[1] == 0:
-        return np.zeros(values.shape[0], dtype=np.float64)
-
-    return np.cumsum(values, axis=1)[:, -1]
 
 
 def _area_plan(
@@ -106,8 +95,8 @@ def _resample_axis(
     if ratio > 1:
         indices, weights = _area_plan(src_length, dst_length, ratio)
         gathered = data[:, indices]
-        totals = _sequential_sum((gathered * weights).reshape(-1, weights.shape[1]))
-        divisors = _sequential_sum(weights)
+        totals = sequential_sum((gathered * weights).reshape(-1, weights.shape[1]))
+        divisors = sequential_sum(weights)
         averaged = np.divide(
             totals.reshape(data.shape[0], dst_length),
             divisors,

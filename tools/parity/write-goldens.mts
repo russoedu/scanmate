@@ -22,6 +22,8 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
   createRandom,
+  createBinary,
+  createGray,
   createRaster,
   decodeImage,
   decompose,
@@ -48,10 +50,13 @@ import {
   boxBlur,
   boxBlurRaster,
   coverage,
+  correlation,
   dilate,
   grayToRaster,
   inkMap,
   integralImage,
+  intersectionOverUnion,
+  mean,
   otsuThreshold,
   resizeGray,
   sampleGrayBilinear,
@@ -488,3 +493,89 @@ writeFileSync(
   }, undefined, 2) + '\n',
 )
 process.stdout.write('wrote ' + join(goldenDir, 'frequency-analysis.json') + '\n')
+
+/*
+ * The similarity-scoring goldens.
+ *
+ * Everything here is a SEQUENTIAL accumulation over every pixel - `sum += x`
+ * across 3072 of them - and that is the whole parity risk. `np.sum` reduces
+ * pairwise, which is more accurate and a different number, so the Python has
+ * to accumulate in running order to match. These goldens are what proves it
+ * did, and the pairs below are chosen to span the range rather than to look
+ * plausible: a self-correlation that must be exactly 1, an inverted image that
+ * must be exactly -1, a flat image with no variance at all, and two genuinely
+ * different images in between.
+ */
+const inverted = createGray(RASTER_WIDTH, RASTER_HEIGHT)
+for (let i = 0; i < gray.data.length; i++) inverted.data[i] = 1 - gray.data[i]
+
+const flat = createGray(RASTER_WIDTH, RASTER_HEIGHT)
+flat.data.fill(0.5)
+
+const blurredGray = boxBlur(gray, 3)
+
+/*
+ * Barely-varying: 0.5 everywhere except one pixel moved by a single float32
+ * step. Its variance is 3.55e-15, safely under the 1e-12 floor, so this is the
+ * input that distinguishes the floor from a plain `denom > 0` test - with the
+ * floor it scores 0, without it the two identical images score 1.
+ */
+const nearFlat = createGray(RASTER_WIDTH, RASTER_HEIGHT)
+nearFlat.data.fill(0.5)
+nearFlat.data[0] = Math.fround(0.5) + Math.pow(2, -24)
+const scoringWarp = warpGray(gray, MINIFYING, RASTER_WIDTH, RASTER_HEIGHT)
+const emptyGray = { width: 0, height: 0, data: new Float32Array(0) }
+
+const dilatedMask = dilate(mask, 2)
+const invertedMask = createBinary(RASTER_WIDTH, RASTER_HEIGHT)
+for (let i = 0; i < mask.data.length; i++) invertedMask.data[i] = mask.data[i] === 0 ? 1 : 0
+const emptyMask = createBinary(RASTER_WIDTH, RASTER_HEIGHT)
+
+writeFileSync(
+  join(goldenDir, 'similarity-scoring.json'),
+  JSON.stringify({
+    correlation: {
+      selfSame:     correlation(gray, gray),
+      inverted:     correlation(gray, inverted),
+      blurred:      correlation(gray, blurredGray),
+      ink:          correlation(gray, ink),
+      warped:       correlation(gray, scoringWarp),
+      flatSecond:   correlation(gray, flat),
+      /*
+       * Cross pairs with genuinely UNEQUAL variances, because `sqrt(a * b)`
+       * and `sqrt(a) * sqrt(b)` differ on about a third of random pairs and
+       * the self-similar cases above happened to dodge every one of them.
+       */
+      inkBlurred:   correlation(ink, blurredGray),
+      invertedInk:  correlation(inverted, ink),
+      blurredWarp:  correlation(blurredGray, scoringWarp),
+      nearFlatSelf: correlation(nearFlat, nearFlat),
+      flatBoth:     correlation(flat, flat),
+      empty:        correlation(emptyGray, emptyGray),
+    },
+    intersectionOverUnion: {
+      selfSame: intersectionOverUnion(mask, mask),
+      dilated:  intersectionOverUnion(mask, dilatedMask),
+      inverted: intersectionOverUnion(mask, invertedMask),
+      empty:    intersectionOverUnion(emptyMask, emptyMask),
+      maskOnly: intersectionOverUnion(mask, emptyMask),
+    },
+    mean: {
+      gray:     mean(gray),
+      ink:      mean(ink),
+      inverted: mean(inverted),
+      flat:     mean(flat),
+      nearFlat: mean(nearFlat),
+      empty:    mean(emptyGray),
+    },
+    /* Carried so the Python can rebuild the exact second operands rather than trusting its own. */
+    operands: {
+      inverted: [...inverted.data],
+      blurred:  [...blurredGray.data],
+      warped:   [...scoringWarp.data],
+      nearFlat: [...nearFlat.data],
+      dilated:  [...dilatedMask.data],
+    },
+  }, undefined, 2) + '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'similarity-scoring.json') + '\n')

@@ -60,6 +60,7 @@ from .raster_codec import (
     is_raster,
     read_image_metadata,
 )
+from .similarity_scoring import correlation, intersection_over_union, mean
 
 __all__ = [
     "IDENTITY",
@@ -74,6 +75,7 @@ __all__ = [
     "box_blur",
     "box_blur_raster",
     "clone_raster",
+    "correlation",
     "count_pages",
     "coverage",
     "create_binary",
@@ -100,7 +102,9 @@ __all__ = [
     "invert",
     "is_plausible",
     "is_power_of_two",
+    "intersection_over_union",
     "is_raster",
+    "mean",
     "multiply",
     "next_power_of_two",
     "normalize",
