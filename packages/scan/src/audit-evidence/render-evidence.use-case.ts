@@ -2,7 +2,7 @@ import { composePanels, EXPECTED_MARGIN, IDENTIFIED, MISSING, NOT_IDENTIFIED, RE
 import { OVERLAY_DIFFERENT } from '../region-comparison'
 import type { Annotation, ExpectedResult, Panel, Rgba } from '../change-detection'
 import type { ContentResult } from '../content-search'
-import { createRaster, drawLabel, growBy, hasBleed, labelSize, resolveBleed } from '@scanmate/ink'
+import { createRaster, drawLabel, growBy, hasBleed, labelSize, resolveBleed, resolveRegionBleed } from '@scanmate/ink'
 import type { Bleed, Raster, ScanmateRect } from '@scanmate/ink'
 
 import type { AuditFinding, FindingKind } from '../finding-correlation'
@@ -66,7 +66,8 @@ const LEGEND: ReadonlyArray<readonly [Rgba, string]> = [
  * What the evidence page draws. The bleed fields - `bleed`, and a side to
  * override it - are the room drawn around each expected region, and must be the
  * same bleed the comparison measured with, or the band on the page is not the
- * band that was checked.
+ * band that was checked. A region carrying its own bleed is drawn with that,
+ * as the comparison claimed it.
  */
 export interface EvidenceOptions extends Bleed {
   /** What the original was rendered at. */
@@ -99,7 +100,11 @@ export function renderEvidence (original: Raster, aligned: Raster, options: Evid
 
   // The scan: the answers, each in the colour of that answer.
   const answers: Annotation[] = [
-    ...(hasBleed(bleed) ? expected.map(region => ({ rect: scale(growBy(region, bleed), toPixels), color: EXPECTED_MARGIN })) : []),
+    ...expected.flatMap(region => {
+      const room = resolveRegionBleed(region, bleed)
+
+      return hasBleed(room) ? [{ rect: scale(growBy(region, room), toPixels), color: EXPECTED_MARGIN }] : []
+    }),
     ...expected.map(region => ({ rect: box(region), color: region.identified ? IDENTIFIED : NOT_IDENTIFIED })),
     ...content.filter(result => result.identifiable).flatMap(result => places(result).map(rect => ({ rect: box(rect, 3), color: REFERENCE }))),
   ]

@@ -354,7 +354,7 @@ measurement.
 | `output` | `'png'` | Encoding of the evidence page. |
 | — | `1.5` pt | Slack when deciding two boxes are the same place. |
 | — | `0.3` mm² | Ink at a text difference below which the print counts as identical. A glyph of 9 pt text covers roughly 1 mm², so a changed character moves several times this; scanner grain does not. |
-| `diff.bleed` | `6` pt | How far outside a region its ink still counts - a signature leaves its box. Set per side with `diff.bleedTop`, `diff.bleedRight`, `diff.bleedBottom`, `diff.bleedLeft`. It is a pixel-comparison setting, so it is given nested: `audit({ expected, diff: { bleedBottom: 12 } })`, or `new Scanmate(a, b, { expected, diff: { bleedBottom: 12 } })` for a session. Drawn on the evidence page with the same rule. |
+| `diff.bleed` | `6` pt | How far outside a region its ink still counts - a signature leaves its box. Set per side with `diff.bleedTop`, `diff.bleedRight`, `diff.bleedBottom`, `diff.bleedLeft`. It is a pixel-comparison setting, so it is given nested: `audit({ expected, diff: { bleedBottom: 12 } })`, or `new Scanmate(a, b, { expected, diff: { bleedBottom: 12 } })` for a session. An `expected` region carrying the same fields wins over these for itself, side by side, so one box can have more room than the next. Drawn on the evidence page with the same rule. |
 
 ## What it does not do
 

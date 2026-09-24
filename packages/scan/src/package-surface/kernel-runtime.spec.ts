@@ -19,7 +19,7 @@ const CODEC = ['decodeImage', 'encodeImage', 'readImageMetadata', 'resampleRaste
 const INK = ['binarize', 'boxBlur', 'coverage', 'dilate', 'grayToRaster', 'inkMap', 'integralImage', 'otsuThreshold', 'toGrayscale'] as const
 const WARP = ['warpRaster', 'warpGray', 'boxBlurRaster', 'downscaleGray', 'resizeGray', 'sampleGrayBilinear'] as const
 const GEOMETRY = ['applyPoint', 'invert', 'multiply', 'scaling', 'similarity', 'translation', 'decompose', 'determinant', 'normalize', 'rebase', 'conjugateScale', 'isPlausible', 'mapRectCorners', 'reprojectionError'] as const
-const MEASURE = ['contentExtent', 'estimateSkew', 'profileSharpness', 'correlation', 'intersectionOverUnion', 'mean', 'growBy', 'hasBleed', 'resolveBleed'] as const
+const MEASURE = ['contentExtent', 'estimateSkew', 'profileSharpness', 'correlation', 'intersectionOverUnion', 'mean', 'growBy', 'hasBleed', 'resolveBleed', 'resolveRegionBleed'] as const
 const TEXT = ['normaliseText', 'tokenise', 'foldDiacritics', 'foldConfusables'] as const
 const SYNTHESIS = ['createSyntheticDocument', 'simulateScan', 'drawSignature', 'drawTick', 'drawLabel', 'drawLine', 'fillRect', 'strokeRect', 'labelSize'] as const
 

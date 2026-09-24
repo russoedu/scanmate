@@ -156,7 +156,7 @@ export {
 } from '@scanmate/ink'
 
 /** Measurement, bleed and text normalisation. */
-export { contentExtent, correlation, DEFAULT_BLEED, DEFAULT_NORMALISE, diacriticsMap, estimateSkew, foldConfusables, foldDiacritics, growBy, hasBleed, intersectionOverUnion, mean, normaliseText, profileSharpness, resolveBleed, tokenise } from '@scanmate/ink'
+export { contentExtent, correlation, DEFAULT_BLEED, DEFAULT_NORMALISE, diacriticsMap, estimateSkew, foldConfusables, foldDiacritics, growBy, hasBleed, intersectionOverUnion, mean, normaliseText, profileSharpness, resolveBleed, resolveRegionBleed, tokenise } from '@scanmate/ink'
 
 /**
  * Synthesis: a document, a scan of it, and the strokes to mark either.

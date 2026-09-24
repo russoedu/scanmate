@@ -10,6 +10,15 @@
  * `bleed` sets every side at once; a named side overrides it. So
  * `{ bleed: 6, bleedBottom: 14 }` is six points of room above and to either
  * side, and fourteen below - where a signature's descenders go.
+ *
+ * **Default: 6 points on every side** - about 2 mm - when nothing is set.
+ *
+ * It is given in two places, and the nearer one wins. On the options of a
+ * comparison or a marking it is the room for every region; on a region itself
+ * (`PageRegion`, so an `ExpectedChange` or a `PageMark`) it is that region's
+ * own, side by side: a region's named side, else its `bleed`, else the
+ * options' side. A signature box can have twenty points below while the date
+ * beside it keeps the six.
  */
 export interface Bleed {
   /** Every side, unless that side is given on its own. */

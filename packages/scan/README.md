@@ -18,12 +18,12 @@ import { Scanmate } from '@scanmate/scan'
 const scan = new Scanmate('fw9-issued.pdf', 'fw9-returned.pdf', {
   // The W-9's signature row, measured off the form in points from the page's top-left.
   expected: [
-    { page: 1, id: 'signature', x: 120, y: 577, width: 262, height: 22 },
+    // A signature descends past its box; the date does not. Points, from the page's top-left.
+    { page: 1, id: 'signature', x: 120, y: 577, width: 262, height: 22, bleedBottom: 20 },
     { page: 1, id: 'date',      x: 404, y: 577, width: 171, height: 22 },
   ],
-  // How far past its box a signature may go and still be the signature, in points.
-  // Default 6 on every side; a pen descends more than it climbs.
-  diff: { bleedTop: 2, bleedBottom: 12 },
+  // The room around every region that does not say otherwise. Default 6 points on each side.
+  diff: { bleedTop: 2 },
 })
 
 const report = await scan.audit()
@@ -202,6 +202,19 @@ new Scanmate(issued, returned, { expected: regions, diff: { bleedTop: 2, bleedBo
 ```
 
 For `audit()`, set it on the session - the constructor's `diff` bag is what the audit's comparison runs with. Units are always points there, whatever `diff()` was told, so the pixel and text comparisons line up. A negative bleed throws rather than shrink the region it guards.
+
+**A region can carry its own.** The same five fields on an `expected` region - or a mark - win over the options', side by side: the region's named side, else its `bleed`, else what the options say. So the signature box gets room below and the date beside it does not:
+
+```ts
+const regions = [
+  { page: 1, id: 'signature', x: 120, y: 577, width: 262, height: 22, bleedBottom: 20 },
+  { page: 1, id: 'date',      x: 404, y: 577, width: 171, height: 22 },
+]
+await Scanmate.mark(pdf, regions, { bleedTop: 2 })                 // signature: 2 above, 6 to the sides, 20 below; date: 2 / 6 / 6
+new Scanmate(issued, returned, { expected: regions, diff: { bleedTop: 2 } }).audit()   // measured with exactly those bands
+```
+
+The comparison hands each region back as it was given, its own bleed included, so the evidence page draws the band that was claimed.
 
 **Rotated and cropped pages are handled.** A mark is measured the way `Scanmate.extract` reports text - with the page's rotation and crop box already applied - and it is drawn back through pdf.js's own page transform, inverted. That is proven rather than assumed: a spec measures a line of text, marks it, renders the page again and checks the box landed on the text, at every quarter turn.
 

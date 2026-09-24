@@ -1,5 +1,5 @@
-import { encodeImage, growBy, hasBleed, resolveBleed } from '@scanmate/ink'
-import type { AlignedPage, BinaryImage, ScanmateRect } from '@scanmate/ink'
+import { encodeImage, growBy, hasBleed, resolveBleed, resolveRegionBleed } from '@scanmate/ink'
+import type { AlignedPage, BinaryImage, Bleed, ScanmateRect } from '@scanmate/ink'
 
 import { buildMasks, measureRegion, paintOverlay } from '../region-comparison'
 import type { Masks } from '../region-comparison'
@@ -103,9 +103,14 @@ export async function diffPage (
   const masks = await buildMasks(page.original.raster, page.aligned.raster, ink, tolerance, faintInk)
 
   // People sign past the box they are given, so each region claims the ink a little
-  // way outside it too; what it reports is still the region it was given.
+  // way outside it too; what it reports is still the region it was given. A
+  // region's own bleed wins over the options', side by side.
   const bleed = resolveBleed(options)
-  const regions = expected.map(e => ({ id: e.id, rect: scaleRect(e, toPixels), claim: scaleRect(growBy(e, bleed), toPixels) }))
+  const regions = expected.map(e => {
+    const room = resolveRegionBleed(e, bleed)
+
+    return { id: e.id, room, rect: scaleRect(e, toPixels), claim: scaleRect(growBy(e, room), toPixels) }
+  })
 
   const findChanges = (mask: BinaryImage, minArea: number): MergedBox[] => {
     const components = connectedComponents(mask).filter(c => c.pixels >= 2)
@@ -143,6 +148,7 @@ export async function diffPage (
       y:          expected[i].y,
       width:      expected[i].width,
       height:     expected[i].height,
+      ...ownBleed(expected[i]),
       addedInk,
       removedInk: removed * pixelArea(region.rect, masks) * mm2PerPixel,
       score:      minFillArea > 0 ? Math.min(1, addedInk / minFillArea) : 1,
@@ -176,7 +182,7 @@ export async function diffPage (
   const missing = lost.slice(0, maxChanges).map(box => toChange(box))
 
   // The band first, so a region's own outline draws over it where they meet.
-  const margins: Annotation[] = hasBleed(bleed) ? regions.map(region => ({ rect: region.claim, color: EXPECTED_MARGIN })) : []
+  const margins: Annotation[] = regions.flatMap(region => hasBleed(region.room) ? [{ rect: region.claim, color: EXPECTED_MARGIN }] : [])
   const verdicts: Annotation[] = regions.map((region, i) => ({
     rect:  pad(region.rect, 2),
     color: expectedResults[i].identified ? IDENTIFIED : NOT_IDENTIFIED,
@@ -288,4 +294,16 @@ function scaleRect (rect: ScanmateRect, factor: number): ScanmateRect {
  */
 function pad (rect: ScanmateRect, by: number): ScanmateRect {
   return { x: rect.x - by, y: rect.y - by, width: rect.width + 2 * by, height: rect.height + 2 * by }
+}
+
+/** The bleed a region was given, and only that - so a result carries what was said, not the defaults. */
+function ownBleed (region: Bleed): Bleed {
+  const own: Bleed = {}
+  if (region.bleed !== undefined) own.bleed = region.bleed
+  if (region.bleedTop !== undefined) own.bleedTop = region.bleedTop
+  if (region.bleedRight !== undefined) own.bleedRight = region.bleedRight
+  if (region.bleedBottom !== undefined) own.bleedBottom = region.bleedBottom
+  if (region.bleedLeft !== undefined) own.bleedLeft = region.bleedLeft
+
+  return own
 }

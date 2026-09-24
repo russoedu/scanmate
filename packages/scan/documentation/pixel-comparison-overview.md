@@ -54,6 +54,8 @@ The bleed can be set per side: `bleed` for all four, and `bleedTop`, `bleedRight
 
 Where the five fields go depends on who is asking. `diffPages` and `Scanmate.mark` take them as their own options. The audit runs this comparison inside itself, so there they are nested under `diff`: `auditPages(pages, { expected, diff: { bleedBottom: 12 } })`, or on the session, `new Scanmate(a, b, { expected, diff: { bleedBottom: 12 } })`.
 
+A region can also carry the five fields itself, and its own win over the options' side by side - the region's named side, else its `bleed`, else the options'. `{ id: 'signature', …, bleedBottom: 20 }` beside `{ id: 'date', … }` gives the signature twenty points below and leaves the date with the options' room. Each region is handed back as given, so the evidence page draws the band it actually claimed.
+
 Each region reports its shape too — how many separate changes, the largest, the bounds as a share of the box, how much ink touches the border — so a signature can be told from a stray line without looking at the picture.
 
 ## Checkboxes
