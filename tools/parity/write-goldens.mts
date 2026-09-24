@@ -17,6 +17,7 @@
  * diffs, so drift in the TypeScript fails CI rather than being discovered when
  * a Python test mysteriously starts failing.
  */
+import { createHash } from 'node:crypto'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -24,12 +25,18 @@ import {
   createRandom,
   createBinary,
   createGray,
+  createSyntheticDocument,
   createRaster,
   decodeImage,
   decompose,
+  drawLabel,
+  drawLine,
+  drawSignature,
+  drawTick,
   downscaleGray,
   encodeImage,
   estimateSkew,
+  fillRect,
   foldConfusables,
   foldDiacritics,
   fft1d,
@@ -39,6 +46,7 @@ import {
   hasBleed,
   invert,
   isPlausible,
+  labelSize,
   isPowerOfTwo,
   jacobiEigen,
   mapRectCorners,
@@ -53,8 +61,10 @@ import {
   resolveBleed,
   resolveRegionBleed,
   similarity,
+  simulateScan,
   smallestEigenvector,
   solve,
+  strokeRect,
   tokenise,
   binarize,
   boxBlur,
@@ -78,7 +88,7 @@ import {
   warpGray,
   warpRaster,
 } from '../../packages/ink/dist/index.esm.js'
-import type { Bleed, Matrix3 } from '../../packages/ink/dist/src/index.d.ts'
+import type { Bleed, Matrix3, Raster, ScanOptions } from '../../packages/ink/dist/src/index.d.ts'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const goldenDir = join(here, 'goldens')
@@ -1098,3 +1108,156 @@ writeFileSync(
   JSON.stringify({ interfaces, aliases }, undefined, 2) + '\n',
 )
 process.stdout.write('wrote ' + join(goldenDir, 'pipeline-contract.json') + '\n')
+
+/*
+ * The synthetic-document goldens.
+ *
+ * A default page is 850x1100, which is 3.7 MB of pixels - too much to commit
+ * and far too much to read. So the pixel dumps are of a SMALL page, and the
+ * default-sized one is pinned by a SHA-256 of its bytes instead. A hash proves
+ * the whole path without shipping it, and the small page is what a failure can
+ * actually be debugged against.
+ *
+ * `drawLine` is the risky one here and not for an obvious reason: its step
+ * count is `ceil(hypot(dx, dy)) + 1`, and `hypot` is not correctly rounded.
+ * A last-bit difference on an exact integer distance changes the number of
+ * steps by one and every stamped square after it, so the goldens include
+ * lines whose lengths are exact integers - 3/4/5 and 5/12/13 triangles - and
+ * one that is not.
+ */
+const PAGE_WIDTH = 170
+const PAGE_HEIGHT = 220
+const sha = (raster: Raster): string => createHash('sha256').update(Buffer.from(raster.data)).digest('hex')
+
+const smallDoc = createSyntheticDocument({ width: PAGE_WIDTH, height: PAGE_HEIGHT })
+const defaultDoc = createSyntheticDocument()
+const seededDoc = createSyntheticDocument({ width: PAGE_WIDTH, height: PAGE_HEIGHT, seed: 99 })
+
+const signed = createSyntheticDocument({ width: PAGE_WIDTH, height: PAGE_HEIGHT })
+drawSignature(signed.raster, signed.regions.signature)
+drawTick(signed.raster, signed.regions['tick-2'])
+
+const blank = (): Raster => ({
+  width:  40,
+  height: 30,
+  data:   new Uint8ClampedArray(40 * 30 * 4).fill(255),
+})
+
+/* Starts fully TRANSPARENT, so a `fillRect` that forgets the alpha channel shows. */
+const transparent = (): Raster => ({
+  width:  40,
+  height: 30,
+  data:   new Uint8ClampedArray(40 * 30 * 4),
+})
+
+const filled = blank()
+fillRect(filled, { x: 3.4, y: 2.6, width: 10.2, height: 8.9 }, 33)
+fillRect(filled, { x: -5, y: -5, width: 12, height: 12 }, 77)
+fillRect(filled, { x: 34, y: 24, width: 20, height: 20 }, 11)
+
+const overTransparent = transparent()
+fillRect(overTransparent, { x: 4, y: 4, width: 10, height: 8 }, 90)
+
+/*
+ * A page whose aspect ratio is NOT the nominal 850:1100. Every other page here
+ * is proportional, so `Math.min(width / 850, height / 1100)` and `Math.max` of
+ * the same two give the same number and the layout scale could be either.
+ */
+const wideDoc = createSyntheticDocument({ width: 300, height: 220 })
+
+const stroked = blank()
+strokeRect(stroked, { x: 2, y: 2, width: 20, height: 14 }, 3, 44)
+
+/* Two exact-integer distances and one irrational, for the `ceil(hypot)` cliff. */
+const LINES: Array<[number, number, number, number, number, number]> = [
+  [2, 2, 5, 6, 1, 10],
+  [1, 1, 6, 13, 2, 20],
+  [0, 0, 39, 29, 1.5, 30],
+  [5, 5, 5, 5, 3, 40],
+  [30, 5, 5, 25, 2, 50],
+]
+const lined = LINES.map(([x0, y0, x1, y1, thickness, value]) => {
+  const canvas = blank()
+  drawLine(canvas, x0, y0, x1, y1, thickness, value)
+
+  return { line: [x0, y0, x1, y1, thickness, value], steps: Math.ceil(Math.hypot(x1 - x0, y1 - y0)) + 1, data: [...canvas.data] }
+})
+
+const SCANS: Array<[string, ScanOptions]> = [
+  ['identity', {}],
+  ['rotated', { rotationDeg: 4.5 }],
+  ['scaledUp', { scale: 1.5 }],
+  ['scaledDown', { scale: 0.6 }],
+  ['translated', { translateX: 7, translateY: -4 }],
+  ['blurred', { blur: 2 }],
+  ['lit', { illumination: 0.3 }],
+  ['noisy', { noise: 0.05, seed: 2024 }],
+  ['everything', { rotationDeg: -3, scale: 1.2, translateX: 5, translateY: 6, blur: 1, illumination: 0.25, noise: 0.03, seed: 7 }],
+  ['fixedCanvas', { scale: 2, canvas: { width: 90, height: 70 } }],
+]
+const scans = Object.fromEntries(SCANS.map(([name, options]) => {
+  const result = simulateScan(smallDoc.raster, options)
+
+  return [name, {
+    options,
+    matrix: result.matrix,
+    width:  result.raster.width,
+    height: result.raster.height,
+    sha:    sha(result.raster),
+    data:   result.raster.width * result.raster.height <= 6000 ? [...result.raster.data] : null,
+  }]
+}))
+
+const LABELS = [
+  'Scanmate', 'PAGE 1/3', 'x', '', 'a-b, c: d (e) 100%', "IT'S 50/50", 'unknown éè',
+  /*
+   * Short enough to FIT the 40px canvas, unlike the one above - which is why
+   * that one never exercised the unknown-glyph fallback at all: its accented
+   * characters were clipped off the right edge before they were drawn.
+   */
+  'éx', '~=+',
+  /*
+   * Uppercases to two characters in both runtimes, so the drawn glyph count
+   * and the reported width disagree - which is the TypeScript's behaviour,
+   * since `labelSize` measures the ORIGINAL text and `drawLabel` iterates the
+   * uppercased one.
+   */
+  'ßa',
+]
+const labelled = LABELS.map(text => {
+  const canvas = blank()
+  const box = drawLabel(canvas, text, { x: 2, y: 3 })
+
+  return { text, box, size: labelSize(text), sizeAtFour: labelSize(text, { scale: 4 }), sha: sha(canvas) }
+})
+
+const labelScales = [0, 0.4, 1, 2.5, 3].map(scale => {
+  const canvas = blank()
+  const box = drawLabel(canvas, 'AB', { x: 1.6, y: 2.4 }, { scale })
+
+  return { scale, box, sha: sha(canvas) }
+})
+
+const coloured = blank()
+drawLabel(coloured, 'OK', { x: 1, y: 1 }, { scale: 2, color: [10, 200, 30, 128] })
+
+writeFileSync(
+  join(goldenDir, 'synthetic-document.json'),
+  JSON.stringify({
+    small:                   { width: PAGE_WIDTH, height: PAGE_HEIGHT, regions: smallDoc.regions, data: [...smallDoc.raster.data] },
+    wide:                    { width: 300, height: 220, regions: wideDoc.regions, sha: sha(wideDoc.raster) },
+    seeded:                  { seed: 99, regions: seededDoc.regions, sha: sha(seededDoc.raster) },
+    signed:                  { sha: sha(signed.raster) },
+    /* The real thing, pinned by hash: 3.7 MB of pixels is not a diff anyone reads. */
+    defaultSize:             { width: defaultDoc.raster.width, height: defaultDoc.raster.height, regions: defaultDoc.regions, sha: sha(defaultDoc.raster) },
+    fillRect:                [...filled.data],
+    fillRectOverTransparent: [...overTransparent.data],
+    strokeRect:              [...stroked.data],
+    drawLine:                lined,
+    simulateScan:            scans,
+    drawLabel:               labelled,
+    labelScales,
+    colouredLabel:           { sha: sha(coloured), data: [...coloured.data] },
+  }, undefined, 2) + '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'synthetic-document.json') + '\n')
