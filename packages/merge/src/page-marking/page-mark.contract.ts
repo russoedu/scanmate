@@ -7,8 +7,12 @@ import type { Bleed, ScanmateRect } from '@scanmate/ink'
  * `@scanmate/extract` reports text in, and the same shape as the pixel comparison's
  * `ExpectedChange`. So the array about to be handed to an audit can be drawn
  * as it is, and what is checked visually is exactly what will be measured.
+ *
+ * A mark's own bleed, when it has one, is drawn instead of the options' - the
+ * same rule the comparison claims by, so a signature box given more room below
+ * is shown with that room.
  */
-export interface PageMark extends ScanmateRect {
+export interface PageMark extends ScanmateRect, Bleed {
   /** One-based page number. */
   page: number
   /** Written beside the box, so a reviewer can tell which field is which. */

@@ -1,6 +1,6 @@
 import { StandardFonts, degrees, rgb } from '@cantoo/pdf-lib'
 import type { PDFFont, PDFPage } from '@cantoo/pdf-lib'
-import { growBy, hasBleed, resolveBleed } from '@scanmate/ink'
+import { growBy, hasBleed, resolveBleed, resolveRegionBleed } from '@scanmate/ink'
 import type { ScanmateBinarySource, ScanmateRect } from '@scanmate/ink'
 
 import { openPdf, readSource } from '../source-reading'
@@ -53,7 +53,8 @@ export async function markPages (pdf: ScanmateBinarySource, marks: readonly Page
       warnings.push(`${name} reaches past the edge of page ${mark.page}, which is ${round(size.width)} x ${round(size.height)} pt`)
 
     // The band first, so the region's own outline draws over it where they meet.
-    if (hasBleed(bleed)) draw(page, geometry, growBy(mark, bleed), { colour: BLEED, dashed: true })
+    const room = resolveRegionBleed(mark, bleed)
+    if (hasBleed(room)) draw(page, geometry, growBy(mark, room), { colour: BLEED, dashed: true })
     draw(page, geometry, mark, { colour: REGION, dashed: false })
     if (font !== null && mark.id !== undefined) label(page, geometry, font, mark)
     drawn++

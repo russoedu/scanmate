@@ -67,15 +67,18 @@ The other thing this package writes is marks. `markPages` draws a set of regions
 import { markPages } from '@scanmate/merge'
 
 const { pdf, drawn, warnings } = await markPages('issued.pdf', [
-  { page: 1, id: 'signature', x: 120, y: 577, width: 262, height: 22 },
-], { bleedTop: 2, bleedBottom: 12 })
+  { page: 1, id: 'signature', x: 120, y: 577, width: 262, height: 22, bleedBottom: 20 },   // its own room below
+  { page: 1, id: 'date',      x: 404, y: 577, width: 171, height: 22 },                    // the options' room
+], { bleedTop: 2 })
 ```
+
+The bleed - `bleed` for every side, `bleedTop`, `bleedRight`, `bleedBottom`, `bleedLeft` for one - defaults to 6 points on each side. On the options it is the room around every mark; on a mark it is that mark's own, and wins side by side.
 
 It exists to check that the regions a validation will measure are where the document's fields actually are - most people reach it as `Scanmate.mark` in `@scanmate/scan`, whose README has a worked example on the W-9.
 
 **Signed documents open as they are.** They usually arrive encrypted - an owner password restricting editing, none needed to read - which pdf-lib refuses by default. They are decrypted as they are read, with nothing to pass; `password` is only for a PDF that needs one to be read at all.
 
-Two things it gets right that a naive version would not. **Rotation and crop box:** a region is in points from the top-left of the page *as displayed*, which is how `@scanmate/extract` reports text, while pdf-lib draws from the bottom-left of the unrotated media box. The conversion between the two is pdf.js's own page transform, ported line for line and inverted, and its spec pins it to values read off real pdf.js for every quarter turn, with and without an offset crop box. **Bleed:** it is resolved by `resolveBleed` from `@scanmate/ink`, the same function the pixel comparison uses, so the band drawn is the band measured.
+Two things it gets right that a naive version would not. **Rotation and crop box:** a region is in points from the top-left of the page *as displayed*, which is how `@scanmate/extract` reports text, while pdf-lib draws from the bottom-left of the unrotated media box. The conversion between the two is pdf.js's own page transform, ported line for line and inverted, and its spec pins it to values read off real pdf.js for every quarter turn, with and without an offset crop box. **Bleed:** it is resolved by `resolveBleed` and `resolveRegionBleed` from `@scanmate/ink`, the same functions the pixel comparison uses, so the band drawn is the band measured - per mark, when a mark carries its own.
 
 ## How it decides
 

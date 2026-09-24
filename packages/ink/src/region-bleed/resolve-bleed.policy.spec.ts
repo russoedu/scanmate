@@ -1,4 +1,28 @@
-import { DEFAULT_BLEED, growBy, hasBleed, resolveBleed } from './resolve-bleed.policy'
+import { DEFAULT_BLEED, growBy, hasBleed, resolveBleed, resolveRegionBleed } from './resolve-bleed.policy'
+
+describe('resolveRegionBleed', () => {
+  const base = resolveBleed({ bleed: 6, bleedBottom: 14 })
+
+  it('claims exactly what the options say when the region says nothing', () => {
+    expect(resolveRegionBleed({}, base)).toEqual(base)
+  })
+
+  it("lets a region's named side override the options' side, and leaves the others alone", () => {
+    expect(resolveRegionBleed({ bleedBottom: 20 }, base)).toEqual({ top: 6, right: 6, bottom: 20, left: 6 })
+  })
+
+  it("lets a region's own `bleed` override every side, and its named side override that", () => {
+    expect(resolveRegionBleed({ bleed: 2, bleedLeft: 9 }, base)).toEqual({ top: 2, right: 2, bottom: 2, left: 9 })
+  })
+
+  it('accepts zero on a region, which is no room on that side', () => {
+    expect(resolveRegionBleed({ bleedTop: 0 }, base).top).toBe(0)
+  })
+
+  it('refuses a negative bleed on a region as it does on the options', () => {
+    expect(() => resolveRegionBleed({ bleedRight: -3 }, base)).toThrow(RangeError)
+  })
+})
 
 describe('resolveBleed', () => {
   it('gives every side the default when nothing is set, as the uniform margin always did', () => {

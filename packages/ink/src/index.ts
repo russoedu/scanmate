@@ -87,7 +87,7 @@ export { createRandom, gaussian } from './deterministic-sampling'
 // --- Pipeline contracts: what the stages hand one another ---
 
 export type { AlignedImage, AlignedPage, PageImage, PageRegion, PdfTextRun, PipelineStage, ProgressCallback, ReadablePage, ScanPage, StageEvent, TextRun } from './pipeline-contract'
-export { DEFAULT_BLEED, growBy, hasBleed, resolveBleed } from './region-bleed'
+export { DEFAULT_BLEED, growBy, hasBleed, resolveBleed, resolveRegionBleed } from './region-bleed'
 export { DEFAULT_NORMALISE, diacriticsMap, foldConfusables, foldDiacritics, normaliseText, tokenise } from './text-normalisation'
 export type { NormaliseOptions } from './text-normalisation'
 export type { Bleed, ResolvedBleed } from './region-bleed'

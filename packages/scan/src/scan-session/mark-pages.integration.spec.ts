@@ -84,6 +84,16 @@ describe('Scanmate.mark', () => {
     expect(worstEdge(box, bled)).toBeLessThanOrEqual(2)
   }, 60_000)
 
+  it("draws a mark's own bleed over the options', so one box can have more room below than the next", async () => {
+    const { pdf, text } = await measured(0)
+    const { pdf: marked } = await Scanmate.mark(pdf, [{ page: 1, ...text, bleedBottom: 20 }], { bleed: 4, labels: false })
+    const box = await drawnBox(pdf, marked)
+
+    // The options' four points above and to the sides; the mark's own twenty below.
+    const bled = { x: text.x - 4, y: text.y - 4, width: text.width + 8, height: text.height + 24 }
+    expect(worstEdge(box, bled)).toBeLessThanOrEqual(2)
+  }, 60_000)
+
   it('says when a mark is on a page the document does not have, or runs off its page', async () => {
     const { pdf, text } = await measured(0)
     const { drawn, warnings } = await Scanmate.mark(pdf, [
