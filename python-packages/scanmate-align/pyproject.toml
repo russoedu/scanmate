@@ -1,0 +1,39 @@
+[project]
+name = "scanmate-align"
+version = "0.0.1"
+description = "Put a scanned or photographed page back onto the original it came from: deskew, rescale and register, trying transform models until one is good enough."
+requires-python = ">=3.11"
+dependencies = [
+  "numpy>=2.1",
+  "scanmate-ink>=0.0.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["scanmate_align"]
+# Tests sit beside the code, so they must be kept OUT of the wheel.
+exclude = ["**/test_*.py", "**/conftest.py"]
+
+[tool.pytest.ini_options]
+testpaths = ["scanmate_align"]
+
+[tool.mypy]
+strict = true
+# Stub-less third-party packages, and ONLY those. Measured on a generated
+# project: plain strict passes out of the box, and the one thing that breaks it
+# in practice is importing a library that ships no type stubs - "import yaml"
+# fails as import-untyped on code you wrote normally and cannot fix. Disabling
+# that one code keeps every other strict check on your own code, and a module
+# that genuinely cannot be found still fails, as import-not-found.
+disable_error_code = ["import-untyped"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+# Pyflakes, pycodestyle, isort, bugbear, comprehensions, pyupgrade, naming.
+select = ["F", "E", "W", "I", "B", "C4", "UP", "N"]

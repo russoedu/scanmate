@@ -90,6 +90,16 @@ import {
   warpRaster,
 } from '../../packages/ink/dist/index.esm.js'
 import type { Bleed, Matrix3, Raster, ScanOptions } from '../../packages/ink/dist/src/index.d.ts'
+import {
+  findInliers,
+  fitAffine,
+  fitHomography,
+  fitModel,
+  fitSimilarity,
+  minimumSamples,
+  ransac,
+} from '../../packages/align/dist/index.esm.js'
+import type { Correspondence } from '../../packages/align/dist/src/index.d.ts'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const goldenDir = join(here, 'goldens')
@@ -1400,3 +1410,209 @@ writeFileSync(
   ) + '\n',
 )
 process.stdout.write('wrote ' + join(goldenDir, 'js-hypot.json') + '\n')
+
+/* ===========================================================================
+ * @scanmate/align
+ *
+ * A separate package, so a separate set of goldens and a separate surface
+ * file. The fitters are pure numerics over correspondences, which makes them
+ * the easiest thing here to pin exactly and the easiest to get subtly wrong —
+ * `fitHomography` in particular runs a Jacobi eigen solve whose iteration
+ * ORDER decides the last bits of every entry.
+ * ========================================================================= */
+
+/*
+ * Correspondence sets built from a KNOWN transform, so each fitter is asked a
+ * question it should get exactly right and a question it should refuse.
+ *
+ * Points sit on a deliberately lopsided grid rather than a symmetric one: a
+ * port that transposes a matrix, or swaps source and target, still fits a
+ * symmetric point cloud plausibly well. An asymmetric one it cannot.
+ */
+const ALIGN_GRID: readonly (readonly [number, number])[] = [
+  [10, 20], [310, 35], [120, 400], [480, 520], [55, 610],
+  [640, 90], [275, 250], [700, 700], [15, 730], [590, 305],
+]
+
+function through (m: Matrix3, x: number, y: number): { x: number, y: number } {
+  const w = m[6] * x + m[7] * y + m[8]
+
+  return { x: (m[0] * x + m[1] * y + m[2]) / w, y: (m[3] * x + m[4] * y + m[5]) / w }
+}
+
+function correspondences (m: Matrix3, count = ALIGN_GRID.length): Correspondence[] {
+  return ALIGN_GRID.slice(0, count).map(([x, y]) => ({ source: { x, y }, target: through(m, x, y) }))
+}
+
+/**
+ * A similarity: 12 degrees about the middle of the page, scaled 1.04, and the
+ * middle landed 37 across and 19 up from where it was.
+ *
+ * Built with `similarity`'s own four-argument shape (scale, angle, pivot,
+ * target) rather than composed out of translations, because that IS the shape
+ * the coarse stage hands the fitters, and a pivot away from the origin is what
+ * makes the translation column non-trivial.
+ */
+const SIMILARITY_TRUTH: Matrix3 = similarity(
+  1.04,
+  (12 * Math.PI) / 180,
+  { x: 400, y: 400 },
+  { x: 437, y: 381 },
+)
+
+/** The similarity above with one axis stretched and sheared: affine, not similarity. */
+const AFFINE_TRUTH: Matrix3 = multiply(SIMILARITY_TRUTH, [1.07, 0.031, 0, 0, 0.96, 0, 0, 0, 1])
+
+/** The affine with real perspective in both axes: a full homography. */
+const HOMOGRAPHY_TRUTH: Matrix3 = multiply(AFFINE_TRUTH, [1, 0, 0, 0, 1, 0, 0.00021, -0.00014, 1])
+
+const repeated = (count: number): Correspondence[] =>
+  Array.from({ length: count }, () => ({ source: { x: 5, y: 5 }, target: { x: 9, y: 2 } }))
+
+const alignFits: Record<string, unknown> = {
+  minimumSamples: {
+    similarity: minimumSamples('similarity'),
+    affine:     minimumSamples('affine'),
+    homography: minimumSamples('homography'),
+  },
+  // Each fitter against the transform it can represent exactly...
+  similarityExact: fitSimilarity(correspondences(SIMILARITY_TRUTH)),
+  affineExact:     fitAffine(correspondences(AFFINE_TRUTH)),
+  homographyExact: fitHomography(correspondences(HOMOGRAPHY_TRUTH)),
+  // ...and against one it cannot, where the least-squares compromise is itself
+  // a number the port has to reproduce.
+  similarityOnAffine: fitSimilarity(correspondences(AFFINE_TRUTH)),
+  affineOnHomography: fitAffine(correspondences(HOMOGRAPHY_TRUTH)),
+  // `indices` selects a subset, which is the path RANSAC actually uses. Given
+  // out of order, because the fitters must honour the order they are handed.
+  similarityFromIndices: fitSimilarity(correspondences(SIMILARITY_TRUTH), [7, 2]),
+  affineFromIndices:     fitAffine(correspondences(AFFINE_TRUTH), [9, 0, 4]),
+  homographyFromIndices: fitHomography(correspondences(HOMOGRAPHY_TRUTH), [1, 8, 3, 6]),
+  // fitModel must dispatch to exactly the same three.
+  viaFitModelSimilarity: fitModel('similarity', correspondences(SIMILARITY_TRUTH)),
+  viaFitModelAffine:     fitModel('affine', correspondences(AFFINE_TRUTH)),
+  viaFitModelHomography: fitModel('homography', correspondences(HOMOGRAPHY_TRUTH)),
+  // Refusals. Each returns null for a DIFFERENT reason, and a port that
+  // collapses them into one guard passes every happy path above and fails here.
+  tooFewForSimilarity: fitSimilarity(correspondences(SIMILARITY_TRUTH, 1)),
+  tooFewForAffine:     fitAffine(correspondences(AFFINE_TRUTH, 2)),
+  tooFewForHomography: fitHomography(correspondences(HOMOGRAPHY_TRUTH, 3)),
+  // Every source point identical: zero spread, so similarity's `norm`
+  // underflows and homography's Hartley normaliser refuses.
+  degenerateSimilarity: fitSimilarity(repeated(4)),
+  degenerateHomography: fitHomography(repeated(4)),
+  // Collinear sources: the affine normal matrix is singular, so `solve` fails.
+  collinearAffine: fitAffine(
+    [0, 1, 2, 3].map(i => ({ source: { x: i * 10, y: i * 10 }, target: { x: i * 11, y: i * 9 } })),
+  ),
+}
+
+/*
+ * RANSAC, whose entire answer is a function of the PRNG call sequence. The
+ * goldens carry `iterations` alongside the matrix for that reason: a port that
+ * draws the same numbers in a different order, or calls `random()` a different
+ * number of times per sample, lands somewhere else entirely — and the
+ * iteration count says so long before the matrix does.
+ */
+const OUTLIER_SEED = 0xBADF00D
+
+/** True correspondences, with the first `outliers` of them replaced by nonsense. */
+function withOutliers (m: Matrix3, total: number, outliers: number): Correspondence[] {
+  const random = createRandom(OUTLIER_SEED)
+  const out: Correspondence[] = []
+  for (let i = 0; i < total; i++) {
+    const x = Math.floor(random() * 800)
+    const y = Math.floor(random() * 800)
+    const honest = through(m, x, y)
+    // Both draws happen for every point, outlier or not, so the set is a pure
+    // function of the seed and the two counts — nothing depends on which
+    // branch a given index takes.
+    const dx = random() * 400 - 200
+    const dy = random() * 400 - 200
+    out.push(
+      i < outliers
+        ? { source: { x, y }, target: { x: honest.x + dx, y: honest.y + dy } }
+        : { source: { x, y }, target: honest },
+    )
+  }
+
+  return out
+}
+
+const cleanSet = withOutliers(SIMILARITY_TRUTH, 40, 0)
+const dirtySet = withOutliers(SIMILARITY_TRUTH, 40, 14)
+const hopelessSet = withOutliers(SIMILARITY_TRUTH, 40, 39)
+
+const alignRansac: Record<string, unknown> = {
+  clean: ransac(cleanSet, { model: 'similarity', threshold: 2 }),
+  dirty: ransac(dirtySet, { model: 'similarity', threshold: 2 }),
+  // Almost nothing is real, so this must REFUSE rather than return a confident
+  // fit to whichever handful of outliers happen to agree.
+  hopeless: ransac(hopelessSet, { model: 'similarity', threshold: 2 }),
+  // A different seed walks a different search, and must still land on the
+  // right answer from the same input.
+  dirtyOtherSeed: ransac(dirtySet, { model: 'similarity', threshold: 2, seed: 99 }),
+  // A tight budget cuts the search short, which pins that the port spends its
+  // iterations at the same rate rather than merely reaching the same place.
+  // 4, not 12: the unbudgeted search above finishes at 11, so a budget of 12
+  // never binds and the golden would be a duplicate of `dirty` that proves
+  // nothing. Measured rather than guessed.
+  dirtyBudgeted: ransac(dirtySet, { model: 'similarity', threshold: 2, maxIterations: 4 }),
+  // More parameters over the same dirty input: a larger minimal sample takes a
+  // different path through the PRNG, and more freedom fits more noise.
+  dirtyHomography: ransac(dirtySet, { model: 'homography', threshold: 2 }),
+  dirtyAffine:     ransac(dirtySet, { model: 'affine', threshold: 3 }),
+  // A threshold wide enough that everything is an inlier exercises the
+  // `ratio >= 1` early exit, which is its own branch.
+  everythingFits: ransac(dirtySet, { model: 'similarity', threshold: 10_000 }),
+  // Fewer matches than the model needs at all.
+  tooFew: ransac(cleanSet.slice(0, 1), { model: 'similarity', threshold: 2 }),
+  // An explicit floor the best consensus cannot clear.
+  unreachableFloor: ransac(dirtySet, { model: 'similarity', threshold: 2, minInliers: 39 }),
+  findInliers: {
+    exact: findInliers(cleanSet, SIMILARITY_TRUTH, 1e-6),
+    dirty: findInliers(dirtySet, SIMILARITY_TRUTH, 2),
+    wide:  findInliers(dirtySet, SIMILARITY_TRUTH, 10_000),
+    none:  findInliers(dirtySet, IDENTITY, 0.5),
+  },
+}
+
+writeFileSync(
+  join(goldenDir, 'align-transform-fitting.json'),
+  JSON.stringify(
+    {
+      truth: { similarity: SIMILARITY_TRUTH, affine: AFFINE_TRUTH, homography: HOMOGRAPHY_TRUTH },
+      sets:  { clean: cleanSet, dirty: dirtySet, hopeless: hopelessSet },
+      fits:  alignFits,
+      ransac: alignRansac,
+    },
+    undefined,
+    2,
+  ) + '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'align-transform-fitting.json') + '\n')
+
+/*
+ * `@scanmate/align`'s own surface, for the same reason ink has one: a whole
+ * export could go unported and every Python test would still pass.
+ *
+ * Read from `dist/src/index.d.ts`, never `dist/index.d.ts` — that one is a
+ * re-export stub with no named exports in it, and reading it collapses this
+ * golden to an empty list which then "passes" against anything at all. That is
+ * exactly what the first version of ink's surface golden did.
+ */
+const alignIndexSource = withoutComments(
+  readFileSync(join(here, '..', '..', 'packages', 'align', 'dist', 'src', 'index.d.ts'), 'utf8'),
+)
+const alignExported = new Set<string>()
+for (const match of alignIndexSource.matchAll(/export\s+(?:type\s+)?\{([^}]*)\}/gu)) {
+  for (const part of match[1].split(','))
+    if (part.trim() !== '') alignExported.add(part.trim().split(/\s+as\s+/u, 1)[0].trim())
+}
+
+writeFileSync(
+  join(goldenDir, 'align-package-surface.json'),
+  JSON.stringify({ exports: [...alignExported].sort((a, b) => a.localeCompare(b)) }, undefined, 2) +
+    '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'align-package-surface.json') + '\n')
