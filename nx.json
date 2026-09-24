@@ -13,7 +13,8 @@
     "sharedGlobals": [
       "{workspaceRoot}/eslint.config.mjs",
       "{workspaceRoot}/tsconfig.base.json",
-      "{workspaceRoot}/package.json"
+      "{workspaceRoot}/package.json",
+      "{workspaceRoot}/eslint.config.mnci.mjs"
     ]
   },
   "plugins": [
@@ -72,14 +73,12 @@
       "push": true
     },
     "version": {
-      "preVersionCommand": "npx nx run-many -t build --projects=packages/*,python-packages/*",
       "conventionalCommits": true,
       "fallbackCurrentVersionResolver": "disk",
-      "preserveMatchingDependencyRanges": false
+      "preVersionCommand": "npx nx run-many -t build --projects=packages/*,python-packages/*"
     },
     "changelog": {
       "workspaceChangelog": false,
-      "automaticFromRef": true,
       "projectChangelogs": {
         "createRelease": "github",
         "file": false

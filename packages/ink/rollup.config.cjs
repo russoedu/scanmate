@@ -52,7 +52,7 @@ module.exports = withNx(
         name: 'mnci-normalise-declaration-specifiers',
         writeBundle (outputOptions) {
           const { existsSync, readdirSync, readFileSync, writeFileSync } = require('node:fs')
-          const { dirname, join } = require('node:path')
+          const { join } = require('node:path')
           const dir = outputOptions.dir ?? './dist'
           const stub = join(dir, 'index.d.ts')
           let source
@@ -79,31 +79,32 @@ module.exports = withNx(
           }
           for (const entry of entries) {
             if (!entry.name.endsWith('.d.ts')) continue
-            const filePath = join(entry.parentPath ?? entry.path, entry.name)
+            const from = entry.parentPath ?? entry.path
+            const filePath = join(from, entry.name)
             let declaration
             try {
               declaration = readFileSync(filePath, 'utf8')
             } catch {
               continue
             }
+            // A bare specifier may name a FILE or a DIRECTORY BARREL - resolved
+            // against what rollup actually emitted next to this file, never
+            // guessed. A directory needs /index.js, not .js (a file that was
+            // never written); anything neither form matches is left alone rather
+            // than rewritten to a specifier that cannot resolve.
+            const resolveSpecifierSuffix = (specifier) => {
+              if (hasExtension.test(specifier)) return null
+              if (existsSync(join(from, specifier + '.d.ts'))) return specifier + '.js'
+              if (existsSync(join(from, specifier, 'index.d.ts'))) return specifier + '/index.js'
+
+              return null
+            }
             const withExtensions = declaration.replaceAll(
               bareRelativeSpecifier,
               (match, space, quote, specifier) => {
-                if (hasExtension.test(specifier)) return match
-                // A bare specifier may name a FILE or a DIRECTORY barrel, and the
-                // two need different extensions. Appending .js to a directory
-                // ("./raster-codec" -> "./raster-codec.js") names a file that was
-                // never emitted, leaving every consumer's import silently `any`.
-                // Resolve against what tsc actually wrote before choosing.
-                const from = dirname(filePath)
-                const suffix = existsSync(join(from, `${specifier}.d.ts`))
-                  ? '.js'
-                  : (existsSync(join(from, specifier, 'index.d.ts'))
-                      ? '/index.js'
-                      : null)
-                if (suffix === null) return match
+                const resolved = resolveSpecifierSuffix(specifier)
 
-                return `from${space}${quote}${specifier}${suffix}${quote}`
+                return resolved === null ? match : `from${space}${quote}${resolved}${quote}`
               },
             )
             if (withExtensions !== declaration) writeFileSync(filePath, withExtensions)

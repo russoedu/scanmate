@@ -1,4 +1,8 @@
-import mnci from '@mnci/eslint-config'
+// The rules live in ./eslint.config.mnci.mjs, which mnci DOES rewrite on every
+// upgrade. This file is ours and mnci never touches it once it exists, so every
+// `local/` block below survives an upgrade — which was not true before mnci
+// 4.6.1, and is the reason the two files are separate.
+import mnci from './eslint.config.mnci.mjs'
 
 export default [
   {
@@ -16,7 +20,11 @@ export default [
   // role-suffixed kebab-case files, a subfeature reached only through its
   // index, and no two subfeatures importing each other. See
   // .claude/agents/vertical-slice-architect.md for the rules behind it.
-  ...mnci({ workspaceRoot: import.meta.dirname, verticalSlices: ['packages/*/src/**/*.ts'] }),
+  // `workspaceRoot` now comes from the owned file, which resolves it against
+  // its own location — both sit at the repository root. Options still reach
+  // @mnci/eslint-config because that file exports a function rather than a
+  // resolved array.
+  ...mnci({ verticalSlices: ['packages/*/src/**/*.ts'] }),
   {
     name:  'local/image-kernels',
     files: ['packages/{ink,align,extract,merge,scan}/src/**/*.ts'],
