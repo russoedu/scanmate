@@ -21,6 +21,9 @@ const scan = new Scanmate('fw9-issued.pdf', 'fw9-returned.pdf', {
     { page: 1, id: 'signature', x: 120, y: 577, width: 262, height: 22 },
     { page: 1, id: 'date',      x: 404, y: 577, width: 171, height: 22 },
   ],
+  // How far past its box a signature may go and still be the signature, in points.
+  // Default 6 on every side; a pen descends more than it climbs.
+  diff: { bleedTop: 2, bleedBottom: 12 },
 })
 
 const report = await scan.audit()
@@ -189,7 +192,16 @@ warnings                               // anything off its page, or on a page th
 
 **A mark is the same shape as an `expected` region** - `page`, `id`, `x`, `y`, `width`, `height`, in points from the top-left of the page as displayed. The array you are about to give `diff()` or `audit()` can be drawn as it is, so what you check by eye is what will be measured.
 
-**The bleed is the one the comparison uses.** `bleed` sets every side; `bleedTop`, `bleedRight`, `bleedBottom` and `bleedLeft` each override one, so `{ bleed: 6, bleedBottom: 14 }` is six points of room above and to either side and fourteen below. The same options go to `diff` and `audit` as `expected` regions' room, resolved by the same function, so the band drawn here is the band that will be measured. Leave them unset and every side is six points, exactly as before.
+**The bleed is the one the comparison uses.** `bleed` sets every side; `bleedTop`, `bleedRight`, `bleedBottom` and `bleedLeft` each override one, so `{ bleed: 6, bleedBottom: 14 }` is six points of room above and to either side and fourteen below. Leave them unset and every side is six points. The same five fields are resolved by the same function wherever they are given, so the band drawn here is the band that will be measured - but they are given in a different place for each method, because the bleed is a *pixel comparison* setting:
+
+```ts
+await Scanmate.mark(pdf, regions, { bleedTop: 2, bleedBottom: 12 })          // mark: the options themselves
+await scan.diff(regions, { bleedTop: 2, bleedBottom: 12 })                   // diff: the options themselves
+new Scanmate(issued, returned, { expected: regions, diff: { bleedTop: 2, bleedBottom: 12 } }).audit()
+//                                                  ^ audit: nested under `diff`, on the session
+```
+
+For `audit()`, set it on the session - the constructor's `diff` bag is what the audit's comparison runs with. Units are always points there, whatever `diff()` was told, so the pixel and text comparisons line up. A negative bleed throws rather than shrink the region it guards.
 
 **Rotated and cropped pages are handled.** A mark is measured the way `Scanmate.extract` reports text - with the page's rotation and crop box already applied - and it is drawn back through pdf.js's own page transform, inverted. That is proven rather than assumed: a spec measures a line of text, marks it, renders the page again and checks the box landed on the text, at every quarter turn.
 

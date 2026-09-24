@@ -26,7 +26,11 @@ export interface AuditOptions {
   checkbox?:       Pick<CheckboxOptions, 'inset' | 'minTickArea' | 'struckFill'>
   /** Options for the full reading. The text layer, the recheck and the engine are `@scanmate/ocr`'s. */
   ocr?:            Omit<OcrOptions, 'onProgress'>
-  /** Options for the pixel comparison. Rectangles are always in points, so the two comparisons line up. */
+  /**
+   * Options for the pixel comparison. Rectangles are always in points, so the
+   * two comparisons line up. The bleed lives here - `diff: { bleedBottom: 12 }`
+   * gives a signature room below its box - because it is the comparison's rule.
+   */
   diff?:           Omit<DiffOptions, 'onProgress' | 'units' | 'output' | 'sideBySide'>
   /** How a disagreement between the reading and the pixels is settled. */
   settle?:         Omit<SettlementInput, 'differences' | 'probes' | 'original' | 'scanned' | 'engine' | 'rules'>
