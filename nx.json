@@ -76,14 +76,16 @@
     "version": {
       "conventionalCommits": true,
       "fallbackCurrentVersionResolver": "disk",
-      "preVersionCommand": "npx nx run-many -t build --projects=packages/*,python-packages/*"
+      "preVersionCommand": "npx nx run-many -t build --projects=packages/*,python-packages/*",
+      "preserveMatchingDependencyRanges": false
     },
     "changelog": {
       "workspaceChangelog": false,
       "projectChangelogs": {
         "createRelease": "github",
         "file": false
-      }
+      },
+      "automaticFromRef": true
     }
   },
   "generators": {
