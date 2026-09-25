@@ -89,8 +89,10 @@ import {
   warpGray,
   warpRaster,
 } from '../../packages/ink/dist/index.esm.js'
-import type { Bleed, GrayImage, Matrix3, Raster, ScanOptions } from '../../packages/ink/dist/src/index.d.ts'
+import type { Bleed, GrayImage, Matrix3, Raster, ScanOptions, TransformModel } from '../../packages/ink/dist/src/index.d.ts'
 import {
+  alignScan,
+  prefers,
   estimateCoarse,
   detectAndDescribe,
   hamming,
@@ -2162,6 +2164,283 @@ writeFileSync(
   JSON.stringify({ cases: coarseCases }, undefined, 2) + '\n',
 )
 process.stdout.write('wrote ' + join(goldenDir, 'align-coarse-estimation.json') + '\n')
+
+/* ---------------------------------------------------------------------------
+ * @scanmate/align: scan alignment
+ *
+ * The whole thing, end to end, and the last slice of the package. What has to
+ * agree here is a WHOLE PIPELINE's worth of decisions: which coarse strategy
+ * won, how many features each page gave up, how many matches survived, which
+ * models RANSAC could fit at all, which one the preference margin selected, and
+ * whether the sweep stopped early.
+ *
+ * `durationMs` is deliberately NOT in the golden. It is wall-clock time, so it
+ * is the one field that cannot match, and shipping it would either make the
+ * comparison fail forever or teach whoever reads the file that some fields are
+ * decorative.
+ *
+ * The encoded `image` is not either. It is PNG bytes from libvips on one side
+ * and Pillow on the other, which are different encoders writing the same
+ * pixels - and `raster` is what the pixels are. A digest of the raster is here
+ * instead; the codec is ink's business and ink's goldens cover it.
+ *
+ * Small pages and a small working size, for the reason the coarse goldens
+ * already record: this is pure-Python loops on the other side, and the point of
+ * a fixture is to discriminate rather than to be large.
+ * ------------------------------------------------------------------------- */
+
+const ALIGN_PAGE = createSyntheticDocument({ width: 200, height: 260, seed: 42 })
+
+/** Held down hard. The defaults (1400/512/1200 features) take minutes in Python. */
+const ALIGN_BASE = { workingSize: 320, coarseSize: 128, maxFeatures: 150, output: 'none' } as const
+
+const ALIGN_CASES: readonly { label: string, scan: ScanOptions, align: Record<string, unknown> }[] = [
+  // The ordinary case: a flatbed scan, slightly turned. `similarity` should win
+  // and the sweep should stop before trying the other two.
+  { label: 'flatbed', scan: { rotationDeg: 1.1, seed: 31 }, align: {} },
+  // Rescaled, which is what the coarse stage exists for.
+  { label: 'rescaled', scan: { scale: 1.4, rotationDeg: 2.3, seed: 37 }, align: {} },
+  /*
+   * `confidenceTarget: 2` is never reachable, so every model is tried and the
+   * preference margin has to do real work. Without a case like this the sweep
+   * stops at the first model every time and `prefers` is never asked a
+   * question with two answers.
+   */
+  { label: 'fullSweep', scan: { rotationDeg: 1.1, seed: 31 }, align: { confidenceTarget: 2 } },
+  // One named model, which skips the sweep entirely.
+  { label: 'homographyOnly', scan: { rotationDeg: 1.1, seed: 31 }, align: { model: 'homography' } },
+  /*
+   * A nearly blank page: few corners, so RANSAC finds no consensus and the
+   * coarse estimate has to stand alone. That is the `method: 'coarse'` path,
+   * and it is the one a real batch hits on a blank continuation sheet.
+   */
+  { label: 'coarseFallback', scan: { rotationDeg: 0.9, seed: 41 }, align: { minInliers: 500 } },
+  // A model order the default does not use, which `sweepOrder` must preserve.
+  {
+    label: 'reversedModels',
+    scan:  { rotationDeg: 1.1, seed: 31 },
+    align: { models: ['homography', 'affine', 'similarity'], confidenceTarget: 2 },
+  },
+  /*
+   * A working size SMALLER than the page, so the feature stage genuinely
+   * downscales and `prepared.scale` is not 1.
+   *
+   * Every case above runs at 320 on a 200x260 page, which `downscaleGray`
+   * leaves alone - so `conjugateScale(residual, 1)` is the identity and the
+   * step that lifts a residual back to full resolution does nothing. A
+   * mutation run found exactly that: removing the scale-back entirely changed
+   * no golden. At 160 the scale is 0.615 and the step is load-bearing.
+   *
+   * It is also the first case where the full-resolution warp MINIFIES enough
+   * for `warpRaster`'s prefilter to fire.
+   */
+  { label: 'downscaled', scan: { scale: 1.6, rotationDeg: 1.1, seed: 31 }, align: { workingSize: 160 } },
+  /*
+   * A scan twice the page, which is the first case where `warpRaster`'s
+   * prefilter does anything.
+   *
+   * It fires above `sqrt(|det|) > 1.25` and blurs by `(scale - 1) / 2` - which
+   * `Math.round`s to a radius of ZERO until the scale reaches 2. So `rescaled`
+   * at 1.4 and `downscaled` at 1.6 both trip the condition and both blur by
+   * nothing, and a mutation run duly found that turning the prefilter off
+   * changed no golden. 2.2 is also an ordinary number here: a 300 dpi scan of a
+   * 150 dpi render is about 2.
+   */
+  { label: 'prefiltered', scan: { scale: 2.2, rotationDeg: 1.1, seed: 31 }, align: {} },
+]
+
+const alignCases = await Promise.all(ALIGN_CASES.map(async ({ label, scan, align }) => {
+  const simulated = simulateScan(ALIGN_PAGE.raster, scan)
+  const result = await alignScan(ALIGN_PAGE.raster, simulated.raster, { ...ALIGN_BASE, ...align })
+
+  return {
+    label,
+    scan,
+    align,
+    truth:        simulated.matrix,
+    // A digest, not the pixels: a 200x260 RGBA raster is 208,000 bytes and
+    // there are six cases. The bytes are what `warpRaster` produced, and that
+    // is ink's own tested code.
+    rasterDigest: createHash('sha256').update(result.raster.data).digest('hex'),
+    result:       {
+      width:       result.width,
+      height:      result.height,
+      dpi:         result.dpi,
+      matrix:      result.matrix,
+      inverse:     result.inverse,
+      transform:   result.transform,
+      confidence:  result.confidence,
+      method:      result.method,
+      // Everything but `durationMs`, which is wall-clock and cannot match.
+      diagnostics: {
+        coarseScore:           result.diagnostics.coarseScore,
+        coarseStrategy:        result.diagnostics.coarseStrategy,
+        skewDeg:               result.diagnostics.skewDeg,
+        features:              result.diagnostics.features,
+        matches:               result.diagnostics.matches,
+        inliers:               result.diagnostics.inliers,
+        inlierRatio:           result.diagnostics.inlierRatio,
+        /*
+         * NaN, encoded. `JSON.stringify(NaN)` is `null`, and a golden that
+         * says `null` where it means NaN is one a port passes by returning the
+         * wrong thing - the same trap the hypot golden above hit with
+         * Infinity. A rejected attempt carries NaN here by design, and the
+         * coarse fallback carries it at the top level, so both paths need it.
+         */
+        reprojectionError:     encodeNonFinite(result.diagnostics.reprojectionError),
+        correlation:           result.diagnostics.correlation,
+        intersectionOverUnion: result.diagnostics.intersectionOverUnion,
+        selectedModel:         result.diagnostics.selectedModel,
+        attempts:              result.diagnostics.attempts.map(attempt => ({
+          ...attempt,
+          reprojectionError: encodeNonFinite(attempt.reprojectionError),
+        })),
+      },
+    },
+  }
+}))
+
+/*
+ * Two more cases that need the results of earlier ones, so they are built after
+ * the map above rather than inside it.
+ *
+ * `skewedOriginal` gives the ORIGINAL a skew of its own. Every case above uses
+ * the synthetic page unrotated, so `skewDeg.original` is exactly 0 - and 0
+ * radians is 0 degrees, which made the radians-to-degrees conversion on that
+ * field unobservable. A mutation run found it.
+ *
+ * `exactTarget` sets `confidenceTarget` to a confidence the sweep actually
+ * reaches, taken from `flatbed`'s first attempt rather than typed in. The check
+ * is `>=`, so this is the one input where `>` gives a different answer: the
+ * sweep stops after one model instead of trying a second.
+ */
+const skewedOriginalRaster = simulateScan(ALIGN_PAGE.raster, { rotationDeg: 4.5, seed: 53 }).raster
+const skewedScan = simulateScan(skewedOriginalRaster, { rotationDeg: -2.2, seed: 59 })
+const skewedResult = await alignScan(skewedOriginalRaster, skewedScan.raster, ALIGN_BASE)
+
+const flatbedFirstConfidence = alignCases.find(c => c.label === 'flatbed')
+  ?.result.diagnostics.attempts[0]?.confidence
+if (typeof flatbedFirstConfidence !== 'number')
+  throw new Error('flatbed produced no scored first attempt; the exactTarget case needs one')
+
+const exactTargetScan = simulateScan(ALIGN_PAGE.raster, { rotationDeg: 1.1, seed: 31 })
+const exactTargetResult = await alignScan(ALIGN_PAGE.raster, exactTargetScan.raster, {
+  ...ALIGN_BASE,
+  confidenceTarget: flatbedFirstConfidence,
+})
+
+/** The same shape the mapped cases have, so the Python side reads one list. */
+function shapeCase (
+  label: string,
+  scan: ScanOptions,
+  align: Record<string, unknown>,
+  truth: Matrix3,
+  result: Awaited<ReturnType<typeof alignScan>>,
+  nested?: ScanOptions,
+): unknown {
+  return {
+    label,
+    scan,
+    align,
+    truth,
+    // Present only on `skewedOriginal`: the scan is a scan OF the skewed
+    // original, so rebuilding it takes two `simulateScan` calls and the Python
+    // side needs both sets of options.
+    ...(nested !== undefined && { nested }),
+    rasterDigest: createHash('sha256').update(result.raster.data).digest('hex'),
+    result:       {
+      width:       result.width,
+      height:      result.height,
+      dpi:         result.dpi,
+      matrix:      result.matrix,
+      inverse:     result.inverse,
+      transform:   result.transform,
+      confidence:  result.confidence,
+      method:      result.method,
+      diagnostics: {
+        coarseScore:           result.diagnostics.coarseScore,
+        coarseStrategy:        result.diagnostics.coarseStrategy,
+        skewDeg:               result.diagnostics.skewDeg,
+        features:              result.diagnostics.features,
+        matches:               result.diagnostics.matches,
+        inliers:               result.diagnostics.inliers,
+        inlierRatio:           result.diagnostics.inlierRatio,
+        reprojectionError:     encodeNonFinite(result.diagnostics.reprojectionError),
+        correlation:           result.diagnostics.correlation,
+        intersectionOverUnion: result.diagnostics.intersectionOverUnion,
+        selectedModel:         result.diagnostics.selectedModel,
+        attempts:              result.diagnostics.attempts.map(attempt => ({
+          ...attempt,
+          reprojectionError: encodeNonFinite(attempt.reprojectionError),
+        })),
+      },
+    },
+  }
+}
+
+const extraCases = [
+  shapeCase(
+    'skewedOriginal',
+    { rotationDeg: 4.5, seed: 53 },
+    {},
+    skewedScan.matrix,
+    skewedResult,
+    { rotationDeg: -2.2, seed: 59 },
+  ),
+  shapeCase(
+    'exactTarget',
+    { rotationDeg: 1.1, seed: 31 },
+    { confidenceTarget: flatbedFirstConfidence },
+    exactTargetScan.matrix,
+    exactTargetResult,
+  ),
+]
+
+/*
+ * `prefers` on its own, which is the one piece of this slice that is pure and
+ * can be goldened exhaustively. Every ordering of complexity against every
+ * relationship between the two confidences, so the three branches - more
+ * complex must beat by the margin, simpler wins within it, equal simply has to
+ * win - are each exercised in both directions.
+ */
+const PREFER_MODELS: readonly TransformModel[] = ['similarity', 'affine', 'homography']
+const PREFER_CONFIDENCES = [0, 0.3, 0.5, 0.51, 0.52, 0.53, 0.9, 1]
+const preferCases: unknown[] = []
+for (const candidateModel of PREFER_MODELS)
+  for (const incumbentModel of PREFER_MODELS)
+    for (const candidateConfidence of PREFER_CONFIDENCES)
+      for (const margin of [0, 0.02, 0.5]) {
+        const candidate = { model: candidateModel, confidence: candidateConfidence }
+        const incumbent = { model: incumbentModel, confidence: 0.52 }
+        preferCases.push({
+          candidate,
+          incumbent,
+          margin,
+          prefers: prefers(candidate, incumbent, margin),
+        })
+      }
+// And the first-attempt case, which short-circuits before any comparison.
+preferCases.push({
+  candidate: { model: 'homography', confidence: 0 },
+  incumbent: null,
+  margin:    0.02,
+  prefers:   prefers({ model: 'homography', confidence: 0 }, null, 0.02),
+})
+
+writeFileSync(
+  join(goldenDir, 'align-scan-alignment.json'),
+  JSON.stringify(
+    {
+      page:    { width: 200, height: 260, seed: 42 },
+      options: ALIGN_BASE,
+      cases:   [...alignCases, ...extraCases],
+      prefers: preferCases,
+    },
+    undefined,
+    2,
+  ) + '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'align-scan-alignment.json') + '\n')
 
 /*
  * `@scanmate/align`'s own surface, for the same reason ink has one: a whole

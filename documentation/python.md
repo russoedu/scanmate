@@ -1,10 +1,20 @@
 # The Python packages
 
-`scanmate-ink` and the distributions that follow it are a **parallel port** of
-the TypeScript, not a replacement for it. The TypeScript remains the reference.
-The only useful definition of "correct" here is that the Python produces the
-same numbers, bit for bit, as the TypeScript it parallels — which is what
-`tools/parity` exists to prove.
+`scanmate-ink`, `scanmate-align` and the distributions that follow them are a
+**parallel port** of the TypeScript, not a replacement for it. The TypeScript
+remains the reference. The only useful definition of "correct" here is that the
+Python produces the same numbers, bit for bit, as the TypeScript it parallels —
+which is what `tools/parity` exists to prove.
+
+| Package | Parallels | State |
+| --- | --- | --- |
+| `scanmate-ink` | `@scanmate/ink` | complete; 13 slices |
+| `scanmate-align` | `@scanmate/align` | complete; 5 slices |
+
+For `scanmate-align` the proof is end to end: `align_scan` produces the same
+transform, the same diagnostics and a **byte-identical warped raster** on every
+golden case, across the whole pipeline — decode, ink separation, the coarse
+search, ORB, RANSAC, model selection and the final warp.
 
 ## Scaffolding a package
 
@@ -72,10 +82,16 @@ tests keep passing while the two implementations have silently diverged.
 **It runs in CI from `.github/workflows/parity.yml`, which is a separate file
 on purpose.** `ci.yml` is mnci-owned — `mnci upgrade` rewrites it wholesale —
 so a step added there would survive until the next upgrade and then vanish
-without a word. It builds `@scanmate/ink` explicitly rather than relying on
+without a word. It builds every package the writer imports explicitly rather than relying on
 `ci.yml`'s verify step, which is `nx affected` on a pull request: a PR touching
-only Python would never build ink, and the check would then fail on a missing
+only Python would never build them, and the check would then fail on a missing
 import rather than on a stale golden.
+
+Use `nx run-many -t build -p a,b` there, **not** `nx build a b`. The second form
+passes `b` as an argument to a's build *command*, which made rollup bundle
+`@scanmate/align` into ink's own output — succeeding silently on a machine where
+align's `dist` already existed, and failing only on a clean checkout. That CI
+step is the clean checkout, and it caught it.
 
 That workflow earned its keep on its first run. `package-surface.json` is
 extracted from the build's own `index.d.ts`, and `dist/index.d.ts` turns out to
@@ -103,8 +119,66 @@ one caller, because it has three:
   a loop is not `np.sum`. numpy reduces PAIRWISE, which is more accurate and a
   different number; across a 3072-pixel correlation the two disagree routinely.
 
+- `hypot_algorithm.py` — `Math.hypot`. CPython's `math.hypot` is written to be
+  *correctly rounded* and V8's computes a scaled square root, so they disagree
+  in the last bit on **16% of inputs**; `numpy.hypot` is a third algorithm again
+  and disagrees on 17%. "More accurate" is still different. This one was found
+  the hard way: six call sites in `scanmate-ink` used `math.hypot`, every
+  plane-geometry golden agreed, all 1,227 tests passed, and the divergence only
+  surfaced from `@scanmate/align`'s RANSAC goldens, where a mean over 40
+  reprojection errors came out one ULP low.
+
 Getting any of these wrong is invisible without the goldens, which is the
 reason they are asserted directly as well as through their callers.
+
+### The libm seams, and how each is pinned
+
+Three places the two runtimes genuinely disagree, none of them anybody's bug.
+Each is measured and pinned **separately**, because a tolerance covering two
+faults while claiming to cover one is worse than no tolerance:
+
+| Function | Disagreement | Consequence |
+| --- | --- | --- |
+| `sin(±π/4)` | 1 ULP, MSVC vs glibc | the FFT, and everything through it |
+| `Math.cos` | 5 of 125 Hann arguments | phase correlation's window |
+| `Math.atan2` | 18 of 107 keypoint angles | ORB's rotation bin |
+
+The `atan2` one sits in front of a **cliff** rather than a slope: the angle
+picks one of 32 rotation bins, and neighbouring bins give completely different
+descriptors, so a 1-ULP difference landing on a boundary would change 256 bits
+at once. That is measured rather than hoped about — the closest any angle comes
+to a boundary is 7.53e-4 radians, or 3.4e12 ULP — and a test fails loudly if a
+future fixture ever gets close.
+
+Where a bound is used instead of `==` it is an absolute 1e-12, the same bar
+everywhere, and each such test also asserts the measured worst case is orders
+inside it. A tolerance with no headroom is not evidence.
+
+### Mutation testing is the standard, not an extra
+
+Every slice is mutation-tested before it lands, and it has found a real gap in
+nearly every one — usually a golden that could not discriminate. A representative
+few:
+
+- The ORB fixtures could not reach `Math.round` **at all**: 32,768 pattern
+  values and not one lands on an exact half. A 161×121 page at scale factor 2
+  asks for 80.5 × 60.5 pixels, which is the only reachable place.
+- Telling phase correlation's first-maximum-wins from last-maximum-wins needs a
+  **blank page**, which is exactly the case that algorithm exists for.
+- `scan_alignment`'s working size never actually downscaled, so the step that
+  lifts a RANSAC residual back to full resolution was the identity in every
+  case.
+
+It has also killed claims of the port's own docstrings and test names — a test
+asserting `max_features` was a global cap (it is a per-level allowance, so 5
+over 2 levels really does return 6), and a comment claiming whole-pixel shifts
+would be exact on phase correlation's `dx`. Both were corrected against
+measurement.
+
+A surviving mutant is not automatically a gap. Several guards are unreachable by
+construction, and each is asserted as an **invariant** rather than left alone —
+the frame guess's pivot and target coincide exactly when it wins, `content_extent`
+never returns a zero width while its density is positive, and so on.
 
 ## Publishing
 

@@ -1,0 +1,3645 @@
+{
+  "page": {
+    "width": 200,
+    "height": 260,
+    "seed": 42
+  },
+  "options": {
+    "workingSize": 320,
+    "coarseSize": 128,
+    "maxFeatures": 150,
+    "output": "none"
+  },
+  "cases": [
+    {
+      "label": "flatbed",
+      "scan": {
+        "rotationDeg": 1.1,
+        "seed": 31
+      },
+      "align": {},
+      "truth": [
+        0.9998157121216442,
+        -0.01919744239968967,
+        2.5140962997952316,
+        0.01919744239968967,
+        0.9998157121216442,
+        -1.8957868157827136,
+        0,
+        0,
+        1
+      ],
+      "rasterDigest": "03d79b5e73a84919ec97517c1c722d470bdb6d4b49076b67407f8398d5b63cdc",
+      "result": {
+        "width": 200,
+        "height": 260,
+        "dpi": null,
+        "matrix": [
+          0.9943788551974782,
+          -0.024472787345324182,
+          3.8309793386860163,
+          0.01752189125921579,
+          0.9984534893379071,
+          -1.583925773699938,
+          0,
+          0,
+          1
+        ],
+        "inverse": [
+          1.005218765210697,
+          0.024638608947967915,
+          -3.81194659264085,
+          -0.017640615295385194,
+          1.0011165223490457,
+          1.6532750949438324,
+          0,
+          0,
+          1
+        ],
+        "transform": {
+          "model": "affine",
+          "scaleX": 0.9945332193230888,
+          "scaleY": 0.9987296833488191,
+          "rotationDeg": 1.0095010833776816,
+          "shearDeg": -0.39457706814476445,
+          "translation": {
+            "x": 3.8309793386860163,
+            "y": -1.583925773699938
+          },
+          "perspective": {
+            "x": 0,
+            "y": 0
+          }
+        },
+        "confidence": 0.9220205392910787,
+        "method": "features",
+        "diagnostics": {
+          "coarseScore": 0.7968763902655318,
+          "coarseStrategy": "deskew",
+          "skewDeg": {
+            "original": 0,
+            "scanned": 0.48000000000000004
+          },
+          "features": {
+            "original": 150,
+            "scanned": 150
+          },
+          "matches": 43,
+          "inliers": 26,
+          "inlierRatio": 0.6046511627906976,
+          "reprojectionError": 0.5708166990088906,
+          "correlation": 0.9220205392910787,
+          "intersectionOverUnion": 0.8686979931473323,
+          "selectedModel": "affine",
+          "attempts": [
+            {
+              "model": "similarity",
+              "confidence": 0.8977514472546378,
+              "inliers": 26,
+              "inlierRatio": 0.6046511627906976,
+              "reprojectionError": 0.5986921350254936,
+              "rejected": false,
+              "selected": false
+            },
+            {
+              "model": "affine",
+              "confidence": 0.9220205392910787,
+              "inliers": 26,
+              "inlierRatio": 0.6046511627906976,
+              "reprojectionError": 0.5708166990088906,
+              "rejected": false,
+              "selected": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "label": "rescaled",
+      "scan": {
+        "scale": 1.4,
+        "rotationDeg": 2.3,
+        "seed": 37
+      },
+      "align": {},
+      "truth": [
+        1.3988721531602242,
+        -0.056184509545583614,
+        7.416770924903438,
+        0.056184509545583614,
+        1.3988721531602242,
+        -5.471830865387517,
+        0,
+        0,
+        1
+      ],
+      "rasterDigest": "3ae82f04a3ea9ac05e7d0632cd184481d3d042324e1749d2a2a23433f6d83e82",
+      "result": {
+        "width": 200,
+        "height": 260,
+        "dpi": null,
+        "matrix": [
+          1.39742436919762,
+          -0.05637120911957111,
+          7.725148836341999,
+          0.05637120911957111,
+          1.39742436919762,
+          -5.107042777041116,
+          0,
+          0,
+          1
+        ],
+        "inverse": [
+          0.7144396515997893,
+          0.028820040562746067,
+          -5.371967463202691,
+          -0.028820040562746067,
+          0.7144396515997893,
+          3.871312965151102,
+          0,
+          0,
+          1
+        ],
+        "transform": {
+          "model": "similarity",
+          "scaleX": 1.3985608963663216,
+          "scaleY": 1.3985608963663214,
+          "rotationDeg": 2.310022794839128,
+          "shearDeg": 0,
+          "translation": {
+            "x": 7.725148836341999,
+            "y": -5.107042777041116
+          },
+          "perspective": {
+            "x": 0,
+            "y": 0
+          }
+        },
+        "confidence": 0.9475885041570735,
+        "method": "features",
+        "diagnostics": {
+          "coarseScore": 0.7934443287873075,
+          "coarseStrategy": "deskew",
+          "skewDeg": {
+            "original": 0,
+            "scanned": 2.56
+          },
+          "features": {
+            "original": 150,
+            "scanned": 150
+          },
+          "matches": 44,
+          "inliers": 40,
+          "inlierRatio": 0.9090909090909091,
+          "reprojectionError": 0.6665517665138277,
+          "correlation": 0.9475885041570735,
+          "intersectionOverUnion": 0.9712328767123287,
+          "selectedModel": "similarity",
+          "attempts": [
+            {
+              "model": "similarity",
+              "confidence": 0.9475885041570735,
+              "inliers": 40,
+              "inlierRatio": 0.9090909090909091,
+              "reprojectionError": 0.6665517665138277,
+              "rejected": false,
+              "selected": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "label": "fullSweep",
+      "scan": {
+        "rotationDeg": 1.1,
+        "seed": 31
+      },
+      "align": {
+        "confidenceTarget": 2
+      },
+      "truth": [
+        0.9998157121216442,
+        -0.01919744239968967,
+        2.5140962997952316,
+        0.01919744239968967,
+        0.9998157121216442,
+        -1.8957868157827136,
+        0,
+        0,
+        1
+      ],
+      "rasterDigest": "03d79b5e73a84919ec97517c1c722d470bdb6d4b49076b67407f8398d5b63cdc",
+      "result": {
+        "width": 200,
+        "height": 260,
+        "dpi": null,
+        "matrix": [
+          0.9943788551974782,
+          -0.024472787345324182,
+          3.8309793386860163,
+          0.01752189125921579,
+          0.9984534893379071,
+          -1.583925773699938,
+          0,
+          0,
+          1
+        ],
+        "inverse": [
+          1.005218765210697,
+          0.024638608947967915,
+          -3.81194659264085,
+          -0.017640615295385194,
+          1.0011165223490457,
+          1.6532750949438324,
+          0,
+          0,
+          1
+        ],
+        "transform": {
+          "model": "affine",
+          "scaleX": 0.9945332193230888,
+          "scaleY": 0.9987296833488191,
+          "rotationDeg": 1.0095010833776816,
+          "shearDeg": -0.39457706814476445,
+          "translation": {
+            "x": 3.8309793386860163,
+            "y": -1.583925773699938
+          },
+          "perspective": {
+            "x": 0,
+            "y": 0
+          }
+        },
+        "confidence": 0.9220205392910787,
+        "method": "features",
+        "diagnostics": {
+          "coarseScore": 0.7968763902655318,
+          "coarseStrategy": "deskew",
+          "skewDeg": {
+            "original": 0,
+            "scanned": 0.48000000000000004
+          },
+          "features": {
+            "original": 150,
+            "scanned": 150
+          },
+          "matches": 43,
+          "inliers": 26,
+          "inlierRatio": 0.6046511627906976,
+          "reprojectionError": 0.5708166990088906,
+          "correlation": 0.9220205392910787,
+          "intersectionOverUnion": 0.8686979931473323,
+          "selectedModel": "affine",
+          "attempts": [
+            {
+              "model": "similarity",
+              "confidence": 0.8977514472546378,
+              "inliers": 26,
+              "inlierRatio": 0.6046511627906976,
+              "reprojectionError": 0.5986921350254936,
+              "rejected": false,
+              "selected": false
+            },
+            {
+              "model": "affine",
+              "confidence": 0.9220205392910787,
+              "inliers": 26,
+              "inlierRatio": 0.6046511627906976,
+              "reprojectionError": 0.5708166990088906,
+              "rejected": false,
+              "selected": true
+            },
+            {
+              "model": "homography",
+              "confidence": 0.9000849665588736,
+              "inliers": 26,
+              "inlierRatio": 0.6046511627906976,
+              "reprojectionError": 0.5657693526594508,
+              "rejected": false,
+              "selected": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "label": "homographyOnly",
+      "scan": {
+        "rotationDeg": 1.1,
+        "seed": 31
+      },
+      "align": {
+        "model": "homography"
+      },
+      "truth": [
+        0.9998157121216442,
+        -0.01919744239968967,
+        2.5140962997952316,
+        0.01919744239968967,
+        0.9998157121216442,
+        -1.8957868157827136,
+        0,
+        0,
+        1
+      ],
+      "rasterDigest": "d8e7de09197b55682610952e7ac43cb12f3d73d910a8792da45c83ab77f481d6",
+      "result": {
+        "width": 200,
+        "height": 260,
+        "dpi": null,
+        "matrix": [
+          0.9842132511732786,
+          -0.027831855939863034,
+          4.525294217347499,
+          0.014546229185758043,
+          0.9869561197146648,
+          -0.8384161256969822,
+          -0.000030255170006879215,
+          -0.000031213464888163414,
+          1
+        ],
+        "inverse": [
+          1.0154783462773938,
+          0.028491597218044236,
+          -4.57145047369622,
+          -0.014940900018072476,
+          1.01282393708545,
+          0.9167798897980974,
+          0.000030257112746815446,
+          0.000032475762515707575,
+          0.9998903058656404
+        ],
+        "transform": {
+          "model": "homography",
+          "scaleX": 0.984320738666315,
+          "scaleY": 0.9872596418334062,
+          "rotationDeg": 0.8467442021604569,
+          "shearDeg": -0.7685508967288257,
+          "translation": {
+            "x": 4.525294217347499,
+            "y": -0.8384161256969822
+          },
+          "perspective": {
+            "x": -0.000030255170006879215,
+            "y": -0.000031213464888163414
+          }
+        },
+        "confidence": 0.9000849665588736,
+        "method": "features",
+        "diagnostics": {
+          "coarseScore": 0.7968763902655318,
+          "coarseStrategy": "deskew",
+          "skewDeg": {
+            "original": 0,
+            "scanned": 0.48000000000000004
+          },
+          "features": {
+            "original": 150,
+            "scanned": 150
+          },
+          "matches": 43,
+          "inliers": 26,
+          "inlierRatio": 0.6046511627906976,
+          "reprojectionError": 0.5657693526594508,
+          "correlation": 0.9000849665588736,
+          "intersectionOverUnion": 0.8342258717124836,
+          "selectedModel": "homography",
+          "attempts": [
+            {
+              "model": "homography",
+              "confidence": 0.9000849665588736,
+              "inliers": 26,
+              "inlierRatio": 0.6046511627906976,
+              "reprojectionError": 0.5657693526594508,
+              "rejected": false,
+              "selected": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "label": "coarseFallback",
+      "scan": {
+        "rotationDeg": 0.9,
+        "seed": 41
+      },
+      "align": {
+        "minInliers": 500
+      },
+      "truth": [
+        0.9998766324816606,
+        -0.015707317311820675,
+        2.05428800237063,
+        0.015707317311820675,
+        0.9998766324816606,
+        -1.554693953797937,
+        0,
+        0,
+        1
+      ],
+      "rasterDigest": "956a2cfc1d85b833e8ff0a6ac323ce955d02c821ee814642c0420d54f66e808a",
+      "result": {
+        "width": 200,
+        "height": 260,
+        "dpi": null,
+        "matrix": [
+          1.0048016023057484,
+          -0.013328974920374057,
+          1.5812741036266624,
+          0.013328974920374057,
+          1.0048016023057484,
+          -2.2104108483699254,
+          0,
+          0,
+          1
+        ],
+        "inverse": [
+          0.9950462469435567,
+          0.01319956739687528,
+          -1.544264395234904,
+          -0.01319956739687528,
+          0.9950462469435567,
+          2.220333152977571,
+          0,
+          0,
+          1
+        ],
+        "transform": {
+          "model": "similarity",
+          "scaleX": 1.0048900047112754,
+          "scaleY": 1.0048900047112757,
+          "rotationDeg": 0.7600000000000003,
+          "shearDeg": 0,
+          "translation": {
+            "x": 1.5812741036266624,
+            "y": -2.2104108483699254
+          },
+          "perspective": {
+            "x": 0,
+            "y": 0
+          }
+        },
+        "confidence": 0.8194978479381482,
+        "method": "coarse",
+        "diagnostics": {
+          "coarseScore": 0.8365564823279388,
+          "coarseStrategy": "deskew",
+          "skewDeg": {
+            "original": 0,
+            "scanned": 0.7600000000000002
+          },
+          "features": {
+            "original": 150,
+            "scanned": 150
+          },
+          "matches": 36,
+          "inliers": 0,
+          "inlierRatio": 0,
+          "reprojectionError": "NaN",
+          "correlation": 0.8194978479381482,
+          "intersectionOverUnion": 0.6506550218340611,
+          "selectedModel": "similarity",
+          "attempts": [
+            {
+              "model": "similarity",
+              "confidence": null,
+              "inliers": 0,
+              "inlierRatio": 0,
+              "reprojectionError": "NaN",
+              "rejected": true,
+              "selected": false
+            },
+            {
+              "model": "affine",
+              "confidence": null,
+              "inliers": 0,
+              "inlierRatio": 0,
+              "reprojectionError": "NaN",
+              "rejected": true,
+              "selected": false
+            },
+            {
+              "model": "homography",
+              "confidence": null,
+              "inliers": 0,
+              "inlierRatio": 0,
+              "reprojectionError": "NaN",
+              "rejected": true,
+              "selected": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "label": "reversedModels",
+      "scan": {
+        "rotationDeg": 1.1,
+        "seed": 31
+      },
+      "align": {
+        "models": [
+          "homography",
+          "affine",
+          "similarity"
+        ],
+        "confidenceTarget": 2
+      },
+      "truth": [
+        0.9998157121216442,
+        -0.01919744239968967,
+        2.5140962997952316,
+        0.01919744239968967,
+        0.9998157121216442,
+        -1.8957868157827136,
+        0,
+        0,
+        1
+      ],
+      "rasterDigest": "03d79b5e73a84919ec97517c1c722d470bdb6d4b49076b67407f8398d5b63cdc",
+      "result": {
+        "width": 200,
+        "height": 260,
+        "dpi": null,
+        "matrix": [
+          0.9943788551974782,
+          -0.024472787345324182,
+          3.8309793386860163,
+          0.01752189125921579,
+          0.9984534893379071,
+          -1.583925773699938,
+          0,
+          0,
+          1
+        ],
+        "inverse": [
+          1.005218765210697,
+          0.024638608947967915,
+          -3.81194659264085,
+          -0.017640615295385194,
+          1.0011165223490457,
+          1.6532750949438324,
+          0,
+          0,
+          1
+        ],
+        "transform": {
+          "model": "affine",
+          "scaleX": 0.9945332193230888,
+          "scaleY": 0.9987296833488191,
+          "rotationDeg": 1.0095010833776816,
+          "shearDeg": -0.39457706814476445,
+          "translation": {
+            "x": 3.8309793386860163,
+            "y": -1.583925773699938
+          },
+          "perspective": {
+            "x": 0,
+            "y": 0
+          }
+        },
+        "confidence": 0.9220205392910787,
+        "method": "features",
+        "diagnostics": {
+          "coarseScore": 0.7968763902655318,
+          "coarseStrategy": "deskew",
+          "skewDeg": {
+            "original": 0,
+            "scanned": 0.48000000000000004
+          },
+          "features": {
+            "original": 150,
+            "scanned": 150
+          },
+          "matches": 43,
+          "inliers": 26,
+          "inlierRatio": 0.6046511627906976,
+          "reprojectionError": 0.5708166990088906,
+          "correlation": 0.9220205392910787,
+          "intersectionOverUnion": 0.8686979931473323,
+          "selectedModel": "affine",
+          "attempts": [
+            {
+              "model": "homography",
+              "confidence": 0.9000849665588736,
+              "inliers": 26,
+              "inlierRatio": 0.6046511627906976,
+              "reprojectionError": 0.5657693526594508,
+              "rejected": false,
+              "selected": false
+            },
+            {
+              "model": "affine",
+              "confidence": 0.9220205392910787,
+              "inliers": 26,
+              "inlierRatio": 0.6046511627906976,
+              "reprojectionError": 0.5708166990088906,
+              "rejected": false,
+              "selected": true
+            },
+            {
+              "model": "similarity",
+              "confidence": 0.8977514472546378,
+              "inliers": 26,
+              "inlierRatio": 0.6046511627906976,
+              "reprojectionError": 0.5986921350254936,
+              "rejected": false,
+              "selected": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "label": "downscaled",
+      "scan": {
+        "scale": 1.6,
+        "rotationDeg": 1.1,
+        "seed": 31
+      },
+      "align": {
+        "workingSize": 160
+      },
+      "truth": [
+        1.5997051393946309,
+        -0.03071590783950347,
+        4.02255407967237,
+        0.03071590783950347,
+        1.5997051393946309,
+        -3.033258905252342,
+        0,
+        0,
+        1
+      ],
+      "rasterDigest": "f0b047ab1a7a618d7c28bc382db44a0f712e87ccd082e7bd22993172cbac78b6",
+      "result": {
+        "width": 200,
+        "height": 260,
+        "dpi": null,
+        "matrix": [
+          1.605823614126713,
+          -0.025296832385882623,
+          3.1890210348679346,
+          0.025296832385882623,
+          1.605823614126713,
+          -3.1733167163335136,
+          0,
+          0,
+          1
+        ],
+        "inverse": [
+          0.6225788997103927,
+          0.0098075990005452,
+          -1.9542945891858508,
+          -0.0098075990005452,
+          0.6225788997103927,
+          2.0069166692018032,
+          0,
+          0,
+          0.9999999999999999
+        ],
+        "transform": {
+          "model": "similarity",
+          "scaleX": 1.606022854574535,
+          "scaleY": 1.606022854574535,
+          "rotationDeg": 0.9025162166112014,
+          "shearDeg": 0,
+          "translation": {
+            "x": 3.1890210348679346,
+            "y": -3.1733167163335136
+          },
+          "perspective": {
+            "x": 0,
+            "y": 0
+          }
+        },
+        "confidence": 0.9076837537697411,
+        "method": "features",
+        "diagnostics": {
+          "coarseScore": 0.8198674814909455,
+          "coarseStrategy": "deskew",
+          "skewDeg": {
+            "original": 0,
+            "scanned": 0.6000000000000001
+          },
+          "features": {
+            "original": 150,
+            "scanned": 145
+          },
+          "matches": 46,
+          "inliers": 37,
+          "inlierRatio": 0.8043478260869565,
+          "reprojectionError": 0.5586630590297709,
+          "correlation": 0.9076837537697411,
+          "intersectionOverUnion": 0.6585365853658537,
+          "selectedModel": "similarity",
+          "attempts": [
+            {
+              "model": "similarity",
+              "confidence": 0.9076837537697411,
+              "inliers": 37,
+              "inlierRatio": 0.8043478260869565,
+              "reprojectionError": 0.5586630590297709,
+              "rejected": false,
+              "selected": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "label": "prefiltered",
+      "scan": {
+        "scale": 2.2,
+        "rotationDeg": 1.1,
+        "seed": 31
+      },
+      "align": {},
+      "truth": [
+        2.1995945666676175,
+        -0.042234373279317276,
+        5.531011859549482,
+        0.042234373279317276,
+        2.1995945666676175,
+        -4.17073099472197,
+        0,
+        0,
+        1
+      ],
+      "rasterDigest": "6b2459a38e3b23292b39fea3ab2017a6f7c752c9e191d9c744ee032ad283b598",
+      "result": {
+        "width": 200,
+        "height": 260,
+        "dpi": null,
+        "matrix": [
+          2.1961436041836095,
+          -0.037887224106253406,
+          5.337073902392779,
+          0.037887224106253406,
+          2.1961436041836095,
+          -3.1582892995195744,
+          0,
+          0,
+          1
+        ],
+        "inverse": [
+          0.4552081499966027,
+          0.007853117237442909,
+          -2.4046771213644775,
+          -0.007853117237442909,
+          0.4552081499966027,
+          1.479591696248759,
+          0,
+          0,
+          1
+        ],
+        "transform": {
+          "model": "similarity",
+          "scaleX": 2.196470389499265,
+          "scaleY": 2.196470389499265,
+          "rotationDeg": 0.9883519076018272,
+          "shearDeg": 0,
+          "translation": {
+            "x": 5.337073902392779,
+            "y": -3.1582892995195744
+          },
+          "perspective": {
+            "x": 0,
+            "y": 0
+          }
+        },
+        "confidence": 0.9500154664010162,
+        "method": "features",
+        "diagnostics": {
+          "coarseScore": 0.8207297376980691,
+          "coarseStrategy": "deskew",
+          "skewDeg": {
+            "original": 0,
+            "scanned": 0.56
+          },
+          "features": {
+            "original": 150,
+            "scanned": 150
+          },
+          "matches": 47,
+          "inliers": 38,
+          "inlierRatio": 0.8085106382978723,
+          "reprojectionError": 0.56857778440325,
+          "correlation": 0.9500154664010162,
+          "intersectionOverUnion": 0.9678377041068777,
+          "selectedModel": "similarity",
+          "attempts": [
+            {
+              "model": "similarity",
+              "confidence": 0.9500154664010162,
+              "inliers": 38,
+              "inlierRatio": 0.8085106382978723,
+              "reprojectionError": 0.56857778440325,
+              "rejected": false,
+              "selected": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "label": "skewedOriginal",
+      "scan": {
+        "rotationDeg": 4.5,
+        "seed": 53
+      },
+      "align": {},
+      "truth": [
+        0.9992629164106211,
+        0.038387809087519945,
+        -4.916706822439714,
+        -0.038387809087519945,
+        0.9992629164106211,
+        3.9346017753712488,
+        0,
+        0,
+        1
+      ],
+      "nested": {
+        "rotationDeg": -2.2,
+        "seed": 59
+      },
+      "rasterDigest": "80ff0d22d724af6b87bfd43782e2fd432e19b387fef6a44f5bd74645c56349db",
+      "result": {
+        "width": 200,
+        "height": 260,
+        "dpi": null,
+        "matrix": [
+          0.9994299032327087,
+          0.040388937391322065,
+          -5.34041471839525,
+          -0.040388937391322065,
+          0.9994299032327087,
+          3.9397139673445745,
+          0,
+          0,
+          1
+        ],
+        "inverse": [
+          0.9989390268531728,
+          -0.040369100106790325,
+          5.493791389325966,
+          0.040369100106790325,
+          0.9989390268531728,
+          -3.719946300240368,
+          0,
+          0,
+          1
+        ],
+        "transform": {
+          "model": "similarity",
+          "scaleX": 1.0002456686931176,
+          "scaleY": 1.0002456686931174,
+          "rotationDeg": -2.3141764401298666,
+          "shearDeg": 0,
+          "translation": {
+            "x": -5.34041471839525,
+            "y": 3.9397139673445745
+          },
+          "perspective": {
+            "x": 0,
+            "y": 0
+          }
+        },
+        "confidence": 0.9274190609955106,
+        "method": "features",
+        "diagnostics": {
+          "coarseScore": 0.8954500204796463,
+          "coarseStrategy": "deskew+phase",
+          "skewDeg": {
+            "original": 4.6800000000000015,
+            "scanned": 2.56
+          },
+          "features": {
+            "original": 150,
+            "scanned": 150
+          },
+          "matches": 45,
+          "inliers": 32,
+          "inlierRatio": 0.7111111111111111,
+          "reprojectionError": 0.5872421548137965,
+          "correlation": 0.9274190609955106,
+          "intersectionOverUnion": 0.7736381977135172,
+          "selectedModel": "similarity",
+          "attempts": [
+            {
+              "model": "similarity",
+              "confidence": 0.9274190609955106,
+              "inliers": 32,
+              "inlierRatio": 0.7111111111111111,
+              "reprojectionError": 0.5872421548137965,
+              "rejected": false,
+              "selected": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "label": "exactTarget",
+      "scan": {
+        "rotationDeg": 1.1,
+        "seed": 31
+      },
+      "align": {
+        "confidenceTarget": 0.8977514472546378
+      },
+      "truth": [
+        0.9998157121216442,
+        -0.01919744239968967,
+        2.5140962997952316,
+        0.01919744239968967,
+        0.9998157121216442,
+        -1.8957868157827136,
+        0,
+        0,
+        1
+      ],
+      "rasterDigest": "f1bd2b44006d1797c4f7dc5dd159b91daa973fbdd4117d1a4200da7ab110766a",
+      "result": {
+        "width": 200,
+        "height": 260,
+        "dpi": null,
+        "matrix": [
+          0.9971913895036986,
+          -0.022231960107743247,
+          3.2309639489573945,
+          0.022231960107743247,
+          0.9971913895036986,
+          -2.0187208680109814,
+          0,
+          0,
+          1
+        ],
+        "inverse": [
+          1.0023183205310904,
+          0.022346262865745252,
+          -3.193343491846336,
+          -0.022346262865745252,
+          1.0023183205310904,
+          2.09560087975898,
+          0,
+          0,
+          1
+        ],
+        "transform": {
+          "model": "similarity",
+          "scaleX": 0.9974391847879996,
+          "scaleY": 0.9974391847879998,
+          "rotationDeg": 1.2771735842976888,
+          "shearDeg": 0,
+          "translation": {
+            "x": 3.2309639489573945,
+            "y": -2.0187208680109814
+          },
+          "perspective": {
+            "x": 0,
+            "y": 0
+          }
+        },
+        "confidence": 0.8977514472546378,
+        "method": "features",
+        "diagnostics": {
+          "coarseScore": 0.7968763902655318,
+          "coarseStrategy": "deskew",
+          "skewDeg": {
+            "original": 0,
+            "scanned": 0.48000000000000004
+          },
+          "features": {
+            "original": 150,
+            "scanned": 150
+          },
+          "matches": 43,
+          "inliers": 26,
+          "inlierRatio": 0.6046511627906976,
+          "reprojectionError": 0.5986921350254936,
+          "correlation": 0.8977514472546378,
+          "intersectionOverUnion": 0.8250029540352121,
+          "selectedModel": "similarity",
+          "attempts": [
+            {
+              "model": "similarity",
+              "confidence": 0.8977514472546378,
+              "inliers": 26,
+              "inlierRatio": 0.6046511627906976,
+              "reprojectionError": 0.5986921350254936,
+              "rejected": false,
+              "selected": true
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "prefers": [
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.3
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.3
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.3
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.5
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.5
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.5
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.51
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.51
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.51
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.53
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.53
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.53
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.9
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.9
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.9
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 1
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 1
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 1
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.3
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.3
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.3
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.5
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.5
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.5
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.51
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.51
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.51
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.53
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.53
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.53
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.9
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.9
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.9
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 1
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 1
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 1
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.3
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.3
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.3
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.5
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.5
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.5
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.51
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.51
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.51
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.53
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.53
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.53
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.9
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.9
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 0.9
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 1
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 1
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "similarity",
+        "confidence": 1
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.3
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.3
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.3
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.5
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.5
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.5
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.51
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.51
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.51
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.53
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.53
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.53
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.9
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.9
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.9
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 1
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 1
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 1
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.3
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.3
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.3
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.5
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.5
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.5
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.51
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.51
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.51
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.53
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.53
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.53
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.9
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.9
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.9
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 1
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 1
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 1
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.3
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.3
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.3
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.5
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.5
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.5
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.51
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.51
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.51
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.53
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.53
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.53
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.9
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.9
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 0.9
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 1
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 1
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "affine",
+        "confidence": 1
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.3
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.3
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.3
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.5
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.5
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.5
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.51
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.51
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.51
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.53
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.53
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.53
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.9
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.9
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.9
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 1
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 1
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 1
+      },
+      "incumbent": {
+        "model": "similarity",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.3
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.3
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.3
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.5
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.5
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.5
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.51
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.51
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.51
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.53
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.53
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.53
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.9
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.9
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.9
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 1
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 1
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 1
+      },
+      "incumbent": {
+        "model": "affine",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.3
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.3
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.3
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.5
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.5
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.5
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.51
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.51
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.51
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": false
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.53
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.53
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.53
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.9
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.9
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0.9
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 1
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 1
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.02,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 1
+      },
+      "incumbent": {
+        "model": "homography",
+        "confidence": 0.52
+      },
+      "margin": 0.5,
+      "prefers": true
+    },
+    {
+      "candidate": {
+        "model": "homography",
+        "confidence": 0
+      },
+      "incumbent": null,
+      "margin": 0.02,
+      "prefers": true
+    }
+  ]
+}
