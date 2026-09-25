@@ -1,0 +1,210 @@
+{
+  "fixtures": {
+    "plain": {
+      "signed": true,
+      "unbroken": true,
+      "signatures": [
+        {
+          "name": "A Person",
+          "subFilter": "adbe.pkcs7.detached",
+          "reason": "Agreed",
+          "location": null,
+          "signedAt": "2026-09-22T12:00:00.000Z",
+          "intact": true,
+          "whole": true,
+          "uncovered": 0,
+          "signer": {
+            "subject": "CN=Test Signer",
+            "issuer": "CN=Test Signer",
+            "serialNumber": "01",
+            "notBefore": "2026-09-21T12:00:00.000Z",
+            "notAfter": "2026-09-23T12:00:00.000Z",
+            "selfSigned": true
+          },
+          "problems": []
+        }
+      ]
+    },
+    "chain": {
+      "signed": true,
+      "unbroken": true,
+      "signatures": [
+        {
+          "name": "A Person",
+          "subFilter": "adbe.pkcs7.detached",
+          "reason": "Agreed",
+          "location": null,
+          "signedAt": "2026-09-22T12:00:00.000Z",
+          "intact": true,
+          "whole": true,
+          "uncovered": 0,
+          "signer": {
+            "subject": "CN=A Signing Person",
+            "issuer": "CN=Test Authority",
+            "serialNumber": "02",
+            "notBefore": "2026-09-21T12:00:00.000Z",
+            "notAfter": "2026-09-23T12:00:00.000Z",
+            "selfSigned": false
+          },
+          "problems": []
+        }
+      ]
+    },
+    "expired": {
+      "signed": true,
+      "unbroken": true,
+      "signatures": [
+        {
+          "name": "A Person",
+          "subFilter": "adbe.pkcs7.detached",
+          "reason": "Agreed",
+          "location": null,
+          "signedAt": "2026-09-22T12:00:00.000Z",
+          "intact": true,
+          "whole": true,
+          "uncovered": 0,
+          "signer": {
+            "subject": "CN=Test Signer",
+            "issuer": "CN=Test Signer",
+            "serialNumber": "01",
+            "notBefore": "2020-01-01T00:00:00.000Z",
+            "notAfter": "2021-01-01T00:00:00.000Z",
+            "selfSigned": true
+          },
+          "problems": [
+            {
+              "kind": "certificate-expired",
+              "signedAt": "2026-09-22T12:00:00.000Z"
+            }
+          ]
+        }
+      ]
+    },
+    "tampered": {
+      "signed": true,
+      "unbroken": false,
+      "signatures": [
+        {
+          "name": "A Person",
+          "subFilter": "adbe.pkcs7.detached",
+          "reason": "Agreed",
+          "location": null,
+          "signedAt": "2026-09-22T12:00:00.000Z",
+          "intact": false,
+          "whole": true,
+          "uncovered": 0,
+          "signer": null,
+          "problems": [
+            {
+              "kind": "digest-mismatch"
+            }
+          ]
+        }
+      ]
+    },
+    "appended": {
+      "signed": true,
+      "unbroken": false,
+      "signatures": [
+        {
+          "name": "A Person",
+          "subFilter": "adbe.pkcs7.detached",
+          "reason": "Agreed",
+          "location": null,
+          "signedAt": "2026-09-22T12:00:00.000Z",
+          "intact": true,
+          "whole": false,
+          "uncovered": 29,
+          "signer": {
+            "subject": "CN=Test Signer",
+            "issuer": "CN=Test Signer",
+            "serialNumber": "01",
+            "notBefore": "2026-09-21T12:00:00.000Z",
+            "notAfter": "2026-09-23T12:00:00.000Z",
+            "selfSigned": true
+          },
+          "problems": [
+            {
+              "kind": "not-covered",
+              "bytes": 29
+            }
+          ]
+        }
+      ]
+    },
+    "wrecked": {
+      "signed": true,
+      "unbroken": false,
+      "signatures": [
+        {
+          "name": "A Person",
+          "subFilter": "adbe.pkcs7.detached",
+          "reason": "Agreed",
+          "location": null,
+          "signedAt": "2026-09-22T12:00:00.000Z",
+          "intact": false,
+          "whole": true,
+          "uncovered": 0,
+          "signer": null,
+          "problems": [
+            {
+              "kind": "digest-mismatch"
+            }
+          ]
+        }
+      ]
+    },
+    "undated": {
+      "signed": true,
+      "unbroken": true,
+      "signatures": [
+        {
+          "name": "A Person",
+          "subFilter": "adbe.pkcs7.detached",
+          "reason": "Agreed",
+          "location": null,
+          "signedAt": "2026-01-01T00:00:00.000Z",
+          "intact": true,
+          "whole": true,
+          "uncovered": 0,
+          "signer": {
+            "subject": "CN=Test Signer",
+            "issuer": "CN=Test Signer",
+            "serialNumber": "01",
+            "notBefore": "2025-12-31T00:00:00.000Z",
+            "notAfter": "2026-01-02T00:00:00.000Z",
+            "selfSigned": true
+          },
+          "problems": []
+        }
+      ]
+    },
+    "utf16-name": {
+      "signed": true,
+      "unbroken": false,
+      "signatures": [
+        {
+          "name": "A",
+          "subFilter": "adbe.pkcs7.detached",
+          "reason": "Agreed",
+          "location": null,
+          "signedAt": "2026-09-22T12:00:00.000Z",
+          "intact": false,
+          "whole": true,
+          "uncovered": 0,
+          "signer": null,
+          "problems": [
+            {
+              "kind": "digest-mismatch"
+            }
+          ]
+        }
+      ]
+    },
+    "unsigned": {
+      "signed": false,
+      "unbroken": false,
+      "signatures": []
+    }
+  }
+}

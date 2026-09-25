@@ -1,0 +1,17 @@
+# Signed PDF fixtures are BYTES, not text.
+#
+# `tools/parity/fixtures/seal/*.pdf` are the inputs the seal goldens were
+# computed over, and a PDF signature covers byte ranges of the file itself.
+# Any end-of-line conversion shifts every offset after the first newline and
+# changes the bytes the signature is over, so a converted fixture does not
+# merely differ - it makes a valid signature read as tampered.
+#
+# It would have gone unnoticed for a while: these files contain only LF, so
+# committing them is a no-op, CI checks out on Linux where nothing converts,
+# and only a Windows checkout with the default core.autocrlf would have
+# rewritten them - failing nine goldens on one developer's machine and nowhere
+# else.
+*.pdf -text
+
+# Everything else a parity fixture might hold, for the same reason.
+tools/parity/fixtures/** -text

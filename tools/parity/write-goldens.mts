@@ -108,6 +108,7 @@ import {
   ransac,
 } from '../../packages/align/dist/index.esm.js'
 import type { Correspondence } from '../../packages/align/dist/src/index.d.ts'
+import { findSignatureFields, verifySignatures } from '../../packages/seal/dist/index.esm.js'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const goldenDir = join(here, 'goldens')
@@ -2469,3 +2470,114 @@ writeFileSync(
     '\n',
 )
 process.stdout.write('wrote ' + join(goldenDir, 'align-package-surface.json') + '\n')
+
+/*
+ * ---------------------------------------------------------------------------
+ * @scanmate/seal
+ *
+ * The inputs are COMMITTED bytes, not generated here, and that is forced
+ * rather than chosen: signing needs an RSA key, key generation cannot be
+ * seeded, and `parity:check` fails on any golden that moves between runs. See
+ * `tools/parity/fixtures/make-seal-fixtures.mts`.
+ * ---------------------------------------------------------------------------
+ */
+const sealFixtureDir = join(here, 'fixtures', 'seal')
+const sealFixtures = [
+  'plain',
+  'chain',
+  'expired',
+  'tampered',
+  'appended',
+  'wrecked',
+  'undated',
+  'utf16-name',
+  'unsigned',
+]
+
+/** Bytes as lowercase hex, which is how the goldens carry every byte string. */
+const asHex = (bytes: Uint8Array): string =>
+  [...bytes].map(byte => byte.toString(16).padStart(2, '0')).join('')
+
+/** A Date as an ISO instant, or null - the two things the TypeScript returns. */
+const asInstant = (when: Date | null): string | null => (when === null ? null : when.toISOString())
+
+const sealFields: Record<string, unknown> = {}
+const sealReports: Record<string, unknown> = {}
+
+for (const name of sealFixtures) {
+  const pdf = new Uint8Array(readFileSync(join(sealFixtureDir, name + '.pdf')))
+
+  sealFields[name] = findSignatureFields(pdf).map(field => ({
+    byteRange: field.byteRange,
+    // The signature itself, in full: the Python port reads the same hex out of
+    // the same dictionary, and a reader that is off by a byte at either end
+    // still produces something that looks plausible.
+    contents:  asHex(field.contents),
+    subFilter: field.subFilter,
+    name:      field.name,
+    signedAt:  field.signedAt,
+    reason:    field.reason,
+    location:  field.location,
+    offset:    field.offset,
+  }))
+
+  const report = await verifySignatures(pdf)
+  sealReports[name] = {
+    signed:     report.signed,
+    unbroken:   report.unbroken,
+    signatures: report.signatures.map(signature => ({
+      name:      signature.name,
+      subFilter: signature.subFilter,
+      reason:    signature.reason,
+      location:  signature.location,
+      signedAt:  asInstant(signature.signedAt),
+      intact:    signature.intact,
+      whole:     signature.whole,
+      uncovered: signature.uncovered,
+      signer:    signature.signer === null
+        ? null
+        : {
+            subject:      signature.signer.subject,
+            issuer:       signature.signer.issuer,
+            serialNumber: signature.signer.serialNumber,
+            notBefore:    asInstant(signature.signer.notBefore),
+            notAfter:     asInstant(signature.signer.notAfter),
+            selfSigned:   signature.signer.selfSigned,
+          },
+      /*
+       * Every problem in full, EXCEPT an `unreadable`'s `because`. That string
+       * is pkijs's own wording for a malformed CMS structure, and no Python
+       * library will ever phrase it the same way. Recording it would write a
+       * golden the port is required to fail, so the kind is the contract and
+       * the wording is not - the one place in this package where parity stops
+       * at the verdict rather than the bytes.
+       */
+      problems: signature.problems.map(problem =>
+        problem.kind === 'unreadable'
+          ? { kind: problem.kind }
+          : problem.kind === 'certificate-expired'
+            ? { kind: problem.kind, signedAt: asInstant(problem.signedAt) }
+            : problem),
+    })),
+  }
+}
+
+writeFileSync(
+  join(goldenDir, 'seal-signature-fields.json'),
+  JSON.stringify({ fixtures: sealFields }, undefined, 2) + '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'seal-signature-fields.json') + '\n')
+
+writeFileSync(
+  join(goldenDir, 'seal-verification.json'),
+  JSON.stringify({ fixtures: sealReports }, undefined, 2) + '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'seal-verification.json') + '\n')
+
+const sealExported = new Set(Object.keys(await import('../../packages/seal/dist/index.esm.js')))
+writeFileSync(
+  join(goldenDir, 'seal-package-surface.json'),
+  JSON.stringify({ exports: [...sealExported].sort((a, b) => a.localeCompare(b)) }, undefined, 2) +
+    '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'seal-package-surface.json') + '\n')
