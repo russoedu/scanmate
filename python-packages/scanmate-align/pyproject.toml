@@ -2,11 +2,44 @@
 name = "scanmate-align"
 version = "0.0.1"
 description = "Put a scanned or photographed page back onto the original it came from: deskew, rescale and register, trying transform models until one is good enough."
+keywords = ["scan", "alignment", "image-registration", "deskew", "homography", "orb", "ransac", "document"]
+license = "MIT"
+# A COPY of the repository's LICENSE, not a path to it. A Python distribution
+# cannot reference a file outside its own root - `../../LICENSE` builds a sdist
+# whose member escapes the archive, and `python -m build` refuses it outright.
+# npm includes the root LICENSE in its tarballs automatically, so copying here
+# is what keeps the two distributions carrying the same thing.
+license-files = ["LICENSE"]
+authors = [{ name = "Eduardo Russo" }]
+readme = "README.md"
+# PyPI shows these on the sidebar and filters searches by them. Every one is a
+# fact about this package rather than decoration: the Python floor is real
+# (3.11 for the typing syntax used throughout), and "Typing :: Typed" is the
+# classifier that tells a consumer `py.typed` is there.
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Multimedia :: Graphics",
+  "Topic :: Scientific/Engineering :: Image Processing",
+  "Typing :: Typed",
+]
 requires-python = ">=3.11"
 dependencies = [
   "numpy>=2.1",
   "scanmate-ink>=0.0.1",
 ]
+
+[project.urls]
+Homepage = "https://github.com/russoedu/scanmate/tree/main/python-packages/scanmate-align#readme"
+Repository = "https://github.com/russoedu/scanmate"
+Issues = "https://github.com/russoedu/scanmate/issues"
+"Parallels (TypeScript)" = "https://github.com/russoedu/scanmate/tree/main/packages/align#readme"
 
 [build-system]
 requires = ["hatchling"]
