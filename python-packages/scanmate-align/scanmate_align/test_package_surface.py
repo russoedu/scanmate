@@ -5,17 +5,18 @@ TypeScript counterpart. None of them checks that the counterpart was ported at
 all: a whole export could be missing and the suite would stay green. This is
 the one that would notice, and it is the same guard ``scanmate-ink`` carries.
 
-THE PORT IS NOT FINISHED, AND THIS IS THE CHECKLIST
------------------------------------------------------
+THE CHECKLIST IS EMPTY, AND THAT IS THE POINT
 
-``scan_alignment`` - the orchestrator, and the package's headline API - is not
-ported yet. Rather than leave the surface unguarded until it is, the names it
-will bring are listed in :data:`_NOT_YET_PORTED`, and this file asserts they
-are **still missing**. So the table has to shrink as slices land, and a name
-that arrives without being struck off fails here rather than going unnoticed.
+While ``scan_alignment`` was unported, the eleven names it would bring were
+listed in :data:`_NOT_YET_PORTED` and this file asserted they were **still
+missing**. When the slice landed, both halves fired at once: the "every ported
+export is present" test said nothing was missing, and the "still unported" test
+said the table was stale. That is the guard working in both directions rather
+than only the reassuring one.
 
-The distinction from ``scanmate-ink``'s ``_ABSENT_BY_DESIGN`` matters: those are
-decisions, these are unfinished work. A name here is a promise, not a trade-off.
+The table stays, empty, because the next slice of this repository to be ported
+will want it - and an empty table with a docstring is a cheaper thing to find
+than the idea behind it.
 """
 
 from __future__ import annotations
@@ -32,21 +33,13 @@ _GOLDEN = json.loads(
     ).read_text(encoding="utf-8"),
 )
 
-#: Exports that arrive with the ``scan_alignment`` slice. Not decisions -
-#: unfinished work, and this file is what stops it being forgotten.
-_NOT_YET_PORTED = {
-    "alignScan": "scan_alignment: the headline API",
-    "alignPages": "scan_alignment: the multi-page wrapper",
-    "AlignOptions": "scan_alignment",
-    "AlignPagesOptions": "scan_alignment",
-    "AlignResult": "scan_alignment",
-    "AlignDiagnostics": "scan_alignment",
-    "ModelAttempt": "scan_alignment: one entry per model tried",
-    "ScoredModel": "scan_alignment: the model-selection policy",
-    "DEFAULT_MODELS": "scan_alignment: the model-selection policy",
-    "prefers": "scan_alignment: the model-selection policy",
-    "polishTranslation": "scan_alignment: the final translation refinement",
-}
+#: Exports not ported yet, each with the slice that will bring it. Not
+#: decisions - unfinished work, which is why this is separate from ink's
+#: ``_ABSENT_BY_DESIGN``: a name here is a promise, not a trade-off.
+#:
+#: Empty now. ``scan_alignment`` was the last slice, and when it landed this
+#: table went from eleven entries to none.
+_NOT_YET_PORTED: dict[str, str] = {}
 
 #: TypeScript names whose Python spelling is not a mechanical snake_case of it.
 _RENAMED = {
@@ -121,9 +114,16 @@ def test_the_barrel_exports_exactly_what_it_lists() -> None:
 def test_the_port_adds_nothing_the_typescript_does_not_have_without_saying_so() -> None:
     """Extras are allowed, and have to be explainable."""
     expected_extra = {
-        # Python-only: a dataclass cannot express TypeScript's anonymous
-        # `{ original, scanned }`, and a field needs a type to be one.
+        # Python-only, and both for the same reason: a dataclass cannot
+        # express TypeScript's anonymous `{ original, scanned }`, and a field
+        # needs a named type to be one.
+        #
+        # They are two types rather than one because they mean different
+        # things - radians from the coarse stage, degrees in the diagnostics -
+        # and giving them one name would invite the mistake the units already
+        # make easy.
         "PageSkew",
+        "SkewDegrees",
     }
     ported = {python_name(name) for name in _GOLDEN["exports"]}
     extra = set(scanmate_align.__all__) - ported

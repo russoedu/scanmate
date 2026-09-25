@@ -17,6 +17,20 @@ from .feature_matching import (
     popcount,
 )
 from .phase_correlation import PhaseCorrelationResult, phase_correlate
+from .scan_alignment import (
+    DEFAULT_MODELS,
+    AlignDiagnostics,
+    AlignOptions,
+    AlignPagesOptions,
+    AlignResult,
+    ModelAttempt,
+    ScoredModel,
+    SkewDegrees,
+    align_pages,
+    align_scan,
+    polish_translation,
+    prefers,
+)
 from .transform_fitting import (
     Correspondence,
     RansacOptions,
@@ -31,6 +45,11 @@ from .transform_fitting import (
 )
 
 __all__ = [
+    "DEFAULT_MODELS",
+    "AlignDiagnostics",
+    "AlignOptions",
+    "AlignPagesOptions",
+    "AlignResult",
     "CoarseOptions",
     "CoarseResult",
     "Correspondence",
@@ -38,10 +57,15 @@ __all__ = [
     "FeatureSet",
     "Keypoint",
     "MatchOptions",
+    "ModelAttempt",
     "PageSkew",
     "PhaseCorrelationResult",
     "RansacOptions",
     "RansacResult",
+    "ScoredModel",
+    "SkewDegrees",
+    "align_pages",
+    "align_scan",
     "detect_and_describe",
     "estimate_coarse",
     "find_inliers",
@@ -53,6 +77,8 @@ __all__ = [
     "match_features",
     "minimum_samples",
     "phase_correlate",
+    "polish_translation",
     "popcount",
+    "prefers",
     "ransac",
 ]
