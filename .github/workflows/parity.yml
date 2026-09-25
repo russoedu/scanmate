@@ -64,7 +64,11 @@ jobs:
       # `@scanmate/align` into ink's own output, which succeeds silently on a
       # machine where align's dist already exists and fails only on a clean
       # checkout. This step is that clean checkout, and it caught it.
-      - run: npx nx run-many -t build -p @scanmate/ink,@scanmate/align
+      # This list is the writer's import list, and it goes stale silently: a
+      # package added to `write-goldens.mts` and not added here fails with a
+      # missing `dist` rather than with anything about goldens. It has already
+      # done so once, for seal.
+      - run: npx nx run-many -t build -p @scanmate/ink,@scanmate/align,@scanmate/seal
         name: Build the TypeScript the goldens are generated from
 
       - run: npm run parity:check
