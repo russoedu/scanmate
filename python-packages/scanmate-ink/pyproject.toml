@@ -1,7 +1,34 @@
 [project]
 name = "scanmate-ink"
 version = "0.0.1"
-description = ""
+description = "The pixel and geometry kernel behind ScanMate: raster codec, ink separation, warps, homographies, FFT and the pipeline contracts."
+keywords = ["scan", "image-processing", "raster", "homography", "fft", "document"]
+license = "MIT"
+# A COPY of the repository's LICENSE, not a path to it. A Python distribution
+# cannot reference a file outside its own root - `../../LICENSE` builds a sdist
+# whose member escapes the archive, and `python -m build` refuses it outright.
+# npm includes the root LICENSE in its tarballs automatically, so copying here
+# is what keeps the two distributions carrying the same thing.
+license-files = ["LICENSE"]
+authors = [{ name = "Eduardo Russo" }]
+readme = "README.md"
+# PyPI shows these on the sidebar and filters searches by them. Every one is a
+# fact about this package rather than decoration: the Python floor is real
+# (3.11 for the typing syntax used throughout), and "Typing :: Typed" is the
+# classifier that tells a consumer `py.typed` is there.
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Multimedia :: Graphics",
+  "Topic :: Scientific/Engineering :: Image Processing",
+  "Typing :: Typed",
+]
 requires-python = ">=3.11"
 dependencies = [
   "numpy>=2.1",
@@ -13,6 +40,12 @@ dependencies = [
 # what the homography model is for - but the decoder is a separate wheel, so it
 # is opt-in rather than a hard dependency of the numeric core.
 heif = ["pillow-heif>=0.18"]
+
+[project.urls]
+Homepage = "https://github.com/russoedu/scanmate/tree/main/python-packages/scanmate-ink#readme"
+Repository = "https://github.com/russoedu/scanmate"
+Issues = "https://github.com/russoedu/scanmate/issues"
+"Parallels (TypeScript)" = "https://github.com/russoedu/scanmate/tree/main/packages/ink#readme"
 
 [build-system]
 requires = ["hatchling"]
