@@ -91,6 +91,7 @@ import {
 } from '../../packages/ink/dist/index.esm.js'
 import type { Bleed, GrayImage, Matrix3, Raster, ScanOptions } from '../../packages/ink/dist/src/index.d.ts'
 import {
+  estimateCoarse,
   detectAndDescribe,
   hamming,
   matchFeatures,
@@ -2026,6 +2027,141 @@ writeFileSync(
   ) + '\n',
 )
 process.stdout.write('wrote ' + join(goldenDir, 'align-feature-matching.json') + '\n')
+
+/* ---------------------------------------------------------------------------
+ * @scanmate/align: coarse estimation
+ *
+ * The first slice that is a USE CASE rather than an algorithm: it guesses three
+ * ways, nudges each with phase correlation, warps all of them and keeps
+ * whichever scores best. So what has to agree is not one number but a
+ * decision — which strategy wins — and the matrix that comes with it.
+ *
+ * It inherits everything phase correlation inherits, since it calls it. The
+ * inheritance is narrower than it looks, though, and the Python tests say so:
+ * the seam reaches the POLISHED candidates' matrices and their scores, but the
+ * gap between the winning score and the runner-up is enormous compared to a
+ * ULP, so `strategy` is exact.
+ *
+ * The cases are built from `createSyntheticDocument` + `simulateScan`, which is
+ * what the real pipeline does, and each one is a different reason the coarse
+ * stage exists:
+ *
+ *   - `clean`      a scan at the same size, barely rotated. The easy case.
+ *   - `rescaled`   1.5x, which is roughly 300 dpi against a 200 dpi render —
+ *                  the exact blind spot BRIEF has and this stage exists to fix.
+ *   - `rotated`    a real skew, so `deskew` has something to beat `content` with.
+ *   - `margins`    a bigger canvas with the page shifted inside it, which is
+ *                  what makes `frame` wrong and `content` right. Without it,
+ *                  every strategy agrees and the choice between them is untested.
+ *   - `noisy`      sensor noise and an illumination ramp on top of a rescale.
+ * ------------------------------------------------------------------------- */
+
+/** sha256 of a grey image's raw float32 bytes, so a fixture drift is legible. */
+function digestOf (image: GrayImage): string {
+  return createHash('sha256').update(new Uint8Array(image.data.buffer, image.data.byteOffset, image.data.byteLength)).digest('hex')
+}
+
+/*
+ * 170 x 220 at a working size of 128, not 425 x 550 at the default 512.
+ *
+ * The size is a test-runtime decision, measured rather than guessed: the first
+ * version ran the Python side in 6m16s, because phase correlation at a 512
+ * working size is three 512x512 transforms of pure-Python loops per candidate.
+ * At 128 the same five cases still pick three different strategies and still
+ * exercise both the polished and unpolished paths, which is everything this
+ * golden is for.
+ */
+const COARSE_PAGE = createSyntheticDocument({ width: 170, height: 220, seed: 42 })
+const COARSE_OPTIONS = { workingSize: 128 }
+
+const COARSE_CASES: readonly { label: string, scan: ScanOptions }[] = [
+  { label: 'clean', scan: { rotationDeg: 0.4, seed: 7 } },
+  { label: 'rescaled', scan: { scale: 1.5, rotationDeg: 0.8, seed: 11 } },
+  { label: 'rotated', scan: { rotationDeg: 6.5, seed: 13 } },
+  {
+    label: 'margins',
+    scan:  {
+      scale:       0.72,
+      rotationDeg: 1.2,
+      translateX:  40,
+      translateY:  55,
+      canvas:      { width: 425, height: 550 },
+      seed:        17,
+    },
+  },
+  {
+    label: 'noisy',
+    scan:  { scale: 1.35, rotationDeg: 2.2, noise: 0.05, illumination: 0.25, seed: 23 },
+  },
+  /*
+   * A canvas with a DIFFERENT ASPECT RATIO to the page, which is the only way
+   * the frame guess's pivot and target are ever different points.
+   *
+   * Everywhere else they are the same point, and not by accident: `simulateScan`
+   * defaults its canvas to the page scaled, so both images have the same shape
+   * and `downscaleGray` takes both to the same working size. A mutation run
+   * used that - swapping the frame candidate's pivot and target changed
+   * nothing on any of the five cases above, because the swap was a no-op every
+   * time. A scan on a wider platen is an ordinary thing and this is it.
+   */
+  {
+    label: 'wideCanvas',
+    scan:  {
+      scale:       1.1,
+      rotationDeg: 1.6,
+      translateX:  55,
+      translateY:  10,
+      canvas:      { width: 300, height: 220 },
+      seed:        29,
+    },
+  },
+]
+
+const coarseCases = COARSE_CASES.map(({ label, scan }) => {
+  const simulated = simulateScan(COARSE_PAGE.raster, scan)
+  // `inkMap` takes grey, not colour, so the greyscale step is part of the
+  // fixture rather than something the Python side has to reproduce.
+  const originalInk = inkMap(toGrayscale(COARSE_PAGE.raster))
+  const scannedInk = inkMap(toGrayscale(simulated.raster))
+  const result = estimateCoarse(originalInk, scannedInk, COARSE_OPTIONS)
+
+  return {
+    label,
+    scan,
+    options:   COARSE_OPTIONS,
+    truth:     simulated.matrix,
+    /*
+     * A HASH of each ink map, not the pixels.
+     *
+     * The first version of this shipped both maps for all five cases and came
+     * to 43 MB, which is not a file to put in a repository. The Python side
+     * rebuilds them instead, from the same synthetic document and the same
+     * scan options - every step of which (`createSyntheticDocument`,
+     * `simulateScan`, `toGrayscale`, `inkMap`) is already pinned by the ink
+     * goldens, so rebuilding proves more than shipping would: it shows the
+     * whole chain agrees, not just that two arrays were copied correctly.
+     *
+     * The hash is what keeps a fixture divergence legible. Without it, an ink
+     * map that drifted would surface as a coarse-estimation failure, and the
+     * search for the cause would start in the wrong slice.
+     */
+    inkDigest: {
+      original: digestOf(originalInk),
+      scanned:  digestOf(scannedInk),
+    },
+    size: {
+      original: { width: originalInk.width, height: originalInk.height },
+      scanned:  { width: scannedInk.width, height: scannedInk.height },
+    },
+    result,
+  }
+})
+
+writeFileSync(
+  join(goldenDir, 'align-coarse-estimation.json'),
+  JSON.stringify({ cases: coarseCases }, undefined, 2) + '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'align-coarse-estimation.json') + '\n')
 
 /*
  * `@scanmate/align`'s own surface, for the same reason ink has one: a whole
