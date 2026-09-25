@@ -151,6 +151,23 @@ def test_the_port_adds_nothing_the_typescript_does_not_have_without_saying_so() 
         # second thing to keep in step.
         "hypot",
         "hypot2",
+        # The rest of `js_semantics`, for the same reason and as one unit.
+        # None of these is a port of anything: JavaScript gives them away in
+        # the language, and Python does not.
+        #
+        # `Math.round` rounds a half UP where Python's `round` rounds to even;
+        # `^`, `>>` and `Math.imul` all coerce to signed 32-bit; and `+=` over
+        # a float array accumulates in an order `numpy.sum` does not reproduce.
+        # `@scanmate/align`'s ORB descriptor needs `js_round`, `imul` and
+        # `to_int32` on its own, which is what moved these from private to
+        # exported.
+        "imul",
+        "js_round",
+        "sequential_sum",
+        "sequential_total",
+        "to_int32",
+        "to_uint32",
+        "ushr",
         # Python-only: named because a dataclass cannot express an anonymous
         # nested optional object, and a tuple return needs a name to be read.
         "OriginalMetadata",

@@ -89,8 +89,13 @@ import {
   warpGray,
   warpRaster,
 } from '../../packages/ink/dist/index.esm.js'
-import type { Bleed, Matrix3, Raster, ScanOptions } from '../../packages/ink/dist/src/index.d.ts'
+import type { Bleed, GrayImage, Matrix3, Raster, ScanOptions } from '../../packages/ink/dist/src/index.d.ts'
 import {
+  detectAndDescribe,
+  hamming,
+  matchFeatures,
+  popcount,
+  phaseCorrelate,
   findInliers,
   fitAffine,
   fitHomography,
@@ -1591,6 +1596,436 @@ writeFileSync(
   ) + '\n',
 )
 process.stdout.write('wrote ' + join(goldenDir, 'align-transform-fitting.json') + '\n')
+
+/* ---------------------------------------------------------------------------
+ * @scanmate/align: phase correlation
+ *
+ * This one CANNOT be held to `==` throughout, and the reason is already
+ * written down in `packages/ink/src/frequency-analysis`: `sin(±π/4)` differs
+ * by one unit in the last place between MSVC's libm (correctly rounded) and
+ * glibc's (which agrees with V8), and every transform of eight or more points
+ * carries that bit forward through repeated twiddle multiplication. Phase
+ * correlation runs two forward transforms and one inverse, so `dx`, `dy` and
+ * `peak` all sit on that seam.
+ *
+ * The golden therefore separates what can be exact from what cannot, and the
+ * Python tests treat the two differently. A single loose tolerance over
+ * everything would also pass a port that had genuinely lost the plot.
+ *
+ *   - `cos` below pins the libm seam ON ITS OWN, at exactly the arguments the
+ *     Hann window uses. Without it, a `Math.cos` disagreement would be
+ *     indistinguishable from the FFT's, and the tolerance would quietly be
+ *     covering two faults instead of one.
+ *   - Which PIXEL the spike lands on is held to `==` for every case. The
+ *     surface only wobbles by a fraction of an ULP, which cannot move which
+ *     sample is largest - and if it ever did, the answer would be a whole
+ *     pixel out, which no tolerance should ever absorb.
+ *   - `dx`, `dy` and `peak` are held to an absolute 1e-12, the same bar the
+ *     FFT's own tests use. Measured worst case on Windows: 2.22e-16, one ULP
+ *     at this magnitude.
+ *
+ * An earlier draft of this claimed whole-pixel shifts would be exact on `dx`
+ * and `dy`. They are not: the parabolic vertex fires for them too - the
+ * windowed, noisy surface is not symmetric about the peak - so `dx` for a
+ * requested shift of 7 comes out 7.003108, and carries the seam like
+ * everything else. Measured, then corrected.
+ * ------------------------------------------------------------------------- */
+
+/** Shifts chosen to cover both regimes, and both signs. */
+const PHASE_SHIFTS: readonly { label: string, dx: number, dy: number }[] = [
+  { label: 'still', dx: 0, dy: 0 },
+  { label: 'right', dx: 7, dy: 0 },
+  { label: 'down', dx: 0, dy: 5 },
+  { label: 'diagonal', dx: 6, dy: 9 },
+  // Negative, which exercises `wrap`: the spike comes back near the far edge
+  // and has to be read as a negative shift rather than a large positive one.
+  { label: 'back', dx: -4, dy: -3 },
+  // Sub-pixel, so the parabolic vertex is doing real work rather than
+  // returning 0.
+  { label: 'subPixel', dx: 3.4, dy: -2.7 },
+  /*
+   * NOT included: a shift of exactly half the padded width, which is the one
+   * input where `wrap`'s `>` and `>=` differ. It was tried, and this texture
+   * repeats every 16 pixels, so a 32-pixel shift aliases onto nothing
+   * findable - peak 0.166, answer (8.08, -8.05). A golden that records a
+   * meaningless number is worse than no golden. That boundary is pinned by a
+   * contract test on `wrap` instead; see the Python side.
+   */
+]
+
+const PHASE_WIDTH = 64
+const PHASE_HEIGHT = 48
+
+/** A page with enough structure that the correlation has a real peak to find. */
+function phaseSource (width: number, height: number): GrayImage {
+  const image = createGray(width, height)
+  const random = createRandom(4_242)
+  for (let y = 0; y < height; y++)
+    for (let x = 0; x < width; x++) {
+      // Blocky texture plus a little noise: structured enough to correlate,
+      // and the noise breaks the ties a purely periodic pattern would leave
+      // all over the correlation surface.
+      const block = ((x >> 3) + (y >> 3)) % 2 === 0 ? 0.82 : 0.18
+      image.data[y * width + x] = Math.min(1, Math.max(0, block + (random() - 0.5) * 0.2))
+    }
+
+  return image
+}
+
+/** `source` shifted by (dx, dy), sampled bilinearly so a fractional shift is real. */
+function phaseShifted (source: GrayImage, dx: number, dy: number): GrayImage {
+  const out = createGray(source.width, source.height)
+  for (let y = 0; y < source.height; y++)
+    for (let x = 0; x < source.width; x++)
+      out.data[y * source.width + x] = sampleGrayBilinear(source, x - dx, y - dy)
+
+  return out
+}
+
+const phaseBase = phaseSource(PHASE_WIDTH, PHASE_HEIGHT)
+
+/*
+ * Two degenerate pages, correlated with themselves. Both are the case this
+ * algorithm exists FOR - a mostly blank form is precisely where feature
+ * matching has nothing to work with - and both reach branches no textured
+ * image does:
+ *
+ *   - a uniform grey page drives the cross-power magnitude below 1e-12 on
+ *     1,495 of 4,096 bins, which is the guard that zeroes them;
+ *   - an all-zero page does it on ALL 4,096, and leaves a correlation surface
+ *     where every one of the 4,096 samples ties for largest. That is the only
+ *     input here that can tell "first maximum wins" from "last maximum wins",
+ *     and the two answers are a whole page apart.
+ *
+ * Both were added after a mutation run: with only the textured cases, a port
+ * that dropped the guard or took the last maximum passed everything.
+ */
+const phaseDegenerate = [
+  { label: 'uniform', fill: 0.5 },
+  { label: 'empty', fill: 0 },
+].map(({ label, fill }) => {
+  const image = createGray(PHASE_WIDTH, PHASE_HEIGHT)
+  image.data.fill(fill)
+
+  return { label, pixels: [...image.data], result: phaseCorrelate(image, image) }
+})
+
+const phaseCases = PHASE_SHIFTS.map(({ label, dx, dy }) => {
+  const shifted = phaseShifted(phaseBase, dx, dy)
+
+  return {
+    label,
+    requested: { dx, dy },
+    // Whether the requested shift was a whole number of pixels. Recorded
+    // rather than re-derived in the test, so the two cannot disagree.
+    integer:   Number.isSafeInteger(dx) && Number.isSafeInteger(dy),
+    shifted:   [...shifted.data],
+    result:    phaseCorrelate(phaseBase, shifted),
+  }
+})
+
+/*
+ * `Math.cos` at exactly the Hann window's arguments, for every length these
+ * cases use, plus the two that are special: 1 (where the window is [1] and
+ * `n - 1` is never divided by) and 2 (where the whole window is [0, 0],
+ * because cos(0) and cos(2π) are both 1 — a port that "helpfully" avoided the
+ * zero would fail against it).
+ *
+ * The window itself is private to the algorithm, so goldening it would mean
+ * restating it here — and a golden written by hand only proves that two copies
+ * of the same misunderstanding agree. Its inputs are not private: they are
+ * `Math.cos` of a number, and that is what gets pinned.
+ */
+const HANN_LENGTHS = [1, 2, 3, 8, PHASE_HEIGHT, PHASE_WIDTH]
+const hannCos = Object.fromEntries(
+  HANN_LENGTHS.filter(n => n > 1).map(n => [
+    String(n),
+    Array.from({ length: n }, (_, i) => Math.cos((2 * Math.PI * i) / (n - 1))),
+  ]),
+)
+
+writeFileSync(
+  join(goldenDir, 'align-phase-correlation.json'),
+  JSON.stringify(
+    {
+      size:       { width: PHASE_WIDTH, height: PHASE_HEIGHT },
+      // The input pixels themselves, so a Python failure means the
+      // CORRELATION diverged rather than the fixture. Float32 on both sides.
+      base:       [...phaseBase.data],
+      cases:      phaseCases,
+      degenerate: phaseDegenerate,
+      cos:        hannCos,
+    },
+    undefined,
+    2,
+  ) + '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'align-phase-correlation.json') + '\n')
+
+/* ---------------------------------------------------------------------------
+ * @scanmate/align: feature matching
+ *
+ * The densest slice in the port for JavaScript semantics, as opposed to
+ * arithmetic — four of them, and each changes the ANSWER rather than its last
+ * bit. So the goldens are layered, smallest unit first, because a failure in
+ * `detectAndDescribe` alone would say almost nothing about which of the four
+ * moved:
+ *
+ *   1. `popcount` over values chosen to include negatives, because `^` and
+ *      `>>` in JavaScript coerce to SIGNED 32-bit and a descriptor word with
+ *      its top bit set arrives there negative.
+ *   2. `hamming` over whole descriptors, including the all-ones word that
+ *      `1 << 31` produces.
+ *   3. `detectAndDescribe` end to end, whose per-keypoint `score` and `angle`
+ *      keep FAST's float32 score array and the centroid's `atan2`
+ *      distinguishable even though neither can be goldened on its own.
+ *   4. `matchFeatures` over the descriptors that produces.
+ *
+ * The whole-descriptor goldens are the ones that would catch `Math.round`
+ * rounding a half the wrong way: it decides the sampling pattern's integer
+ * offsets, so a single half-value rounded to even instead of up moves one
+ * sample point and flips bits that no smaller test would see.
+ * ------------------------------------------------------------------------- */
+
+/*
+ * Values covering both signs, both ends of the 32-bit range, and the patterns
+ * SWAR is most likely to be transcribed wrongly for: alternating bits, nibble
+ * boundaries, and the sign bit on its own.
+ */
+const POPCOUNT_INPUTS = [
+  0, 1, 2, 3, 255, 256, 0x0F0F0F0F, 0x55555555, 0x33333333, 0xAAAAAAAA,
+  0xFFFFFFFF, 0x80000000, 0x7FFFFFFF, 0xFFFF0000, 0x0000FFFF, 123_456_789,
+  -1, -2, -2_147_483_648, 2_147_483_647,
+]
+
+const featureGoldens: Record<string, unknown> = {
+  popcount: POPCOUNT_INPUTS.map(value => ({ value, bits: popcount(value) })),
+}
+
+/*
+ * `hamming` over descriptors built by hand, so the distances are known
+ * independently of any detector: identical, complementary (256 bits apart),
+ * one bit apart, and a word whose top bit is set — which is the one `1 << 31`
+ * produces and the one a port is most likely to lose.
+ */
+const emptyDescriptor = new Uint32Array(8)
+const fullDescriptor = new Uint32Array(8).fill(0xFFFFFFFF)
+const singleBitDescriptor = new Uint32Array(8)
+singleBitDescriptor[0] = 1
+const topBitDescriptor = new Uint32Array(8)
+topBitDescriptor[7] = 0x80000000
+const mixedDescriptor = Uint32Array.from([1, 2, 4, 8, 0x80000000, 0xFFFFFFFF, 0x0F0F0F0F, 0xAAAAAAAA])
+
+const hammingPairs: [string, Uint32Array, Uint32Array][] = [
+  ['identical', emptyDescriptor, emptyDescriptor],
+  ['complementary', emptyDescriptor, fullDescriptor],
+  ['singleBitDescriptor', emptyDescriptor, singleBitDescriptor],
+  ['topBitDescriptor', emptyDescriptor, topBitDescriptor],
+  ['mixedAgainstOnes', mixedDescriptor, fullDescriptor],
+  ['mixedAgainstItself', mixedDescriptor, mixedDescriptor],
+]
+featureGoldens.hamming = hammingPairs.map(([label, a, b]) => ({
+  label,
+  a:        [...a],
+  b:        [...b],
+  distance: hamming(a, 0, b, 0),
+}))
+
+/*
+ * A page with the kind of structure FAST actually fires on: filled rectangles
+ * (whose corners are the case the COMPASS_MINIMUM comment in the detector is
+ * about), rules, and text-like blocks. Deterministic, and small enough that
+ * the golden stays readable.
+ */
+const FEATURE_WIDTH = 160
+const FEATURE_HEIGHT = 120
+
+function featurePage (): GrayImage {
+  const page = createGray(FEATURE_WIDTH, FEATURE_HEIGHT)
+  page.data.fill(0.05)
+  const random = createRandom(9_137)
+
+  const put = (x0: number, y0: number, w: number, h: number, value: number): void => {
+    for (let y = y0; y < y0 + h; y++)
+      for (let x = x0; x < x0 + w; x++)
+        if (x >= 0 && y >= 0 && x < FEATURE_WIDTH && y < FEATURE_HEIGHT)
+          page.data[y * FEATURE_WIDTH + x] = value
+  }
+
+  // Two filled boxes and a rule: corners with unambiguous orientation.
+  put(20, 18, 34, 26, 0.9)
+  put(96, 60, 28, 30, 0.85)
+  put(12, 96, 136, 3, 0.8)
+  // Text-like runs, which is what most of a real page's corners come from.
+  for (let row = 0; row < 5; row++)
+    for (let word = 0; word < 7; word++) {
+      const x = 16 + word * 20
+      const y = 54 + row * 7
+      put(x, y, 4 + Math.floor(random() * 9), 4, 0.75)
+    }
+  // A little noise, so no two scores are exactly equal by construction — ties
+  // are covered deliberately elsewhere rather than by accident here.
+  for (let i = 0; i < page.data.length; i++)
+    page.data[i] = Math.min(1, Math.max(0, page.data[i] + (random() - 0.5) * 0.03))
+
+  return page
+}
+
+const featureBase = featurePage()
+
+/*
+ * NOT goldened separately: `detectFast` and `orientation`. Both are exported
+ * from their own module but not from the package, so this writer cannot reach
+ * them through the built bundle — and reimplementing them here to get a golden
+ * would only prove that two copies of the same misunderstanding agree.
+ *
+ * They are covered through `detectAndDescribe`, which is the honest position
+ * but a weaker one: a failure there does not say whether FAST's float32 score
+ * array or the centroid's `atan2` moved. The keypoint goldens below carry
+ * `score` and `angle` per keypoint for exactly that reason, so the two can
+ * still be told apart by eye.
+ */
+
+/*
+ * The whole detector, and then the matcher against a shifted copy of the same
+ * page. `maxFeatures` is held down so the golden stays a readable size while
+ * still crossing every pyramid level.
+ */
+const FEATURE_OPTIONS = { maxFeatures: 120, levels: 2, gridSize: 4 }
+const featureShifted = createGray(FEATURE_WIDTH, FEATURE_HEIGHT)
+for (let y = 0; y < FEATURE_HEIGHT; y++)
+  for (let x = 0; x < FEATURE_WIDTH; x++)
+    featureShifted.data[y * FEATURE_WIDTH + x] = sampleGrayBilinear(featureBase, x - 5, y - 3)
+
+const detectedBase = detectAndDescribe(featureBase, FEATURE_OPTIONS)
+const detectedShifted = detectAndDescribe(featureShifted, FEATURE_OPTIONS)
+
+featureGoldens.detectAndDescribe = {
+  options:     FEATURE_OPTIONS,
+  keypoints:   detectedBase.keypoints,
+  descriptors: [...detectedBase.descriptors],
+}
+
+/*
+ * Two more detector fixtures, both added after a mutation run showed the page
+ * above could not reach the branch they cover.
+ *
+ * `oddWidth` is 161 pixels across with a scale factor of exactly 2, so level 1
+ * asks for `161 / 2 = 80.5` pixels. `Math.round` gives 81 and Python's `round`
+ * gives 80, and that one pixel changes every corner found at that level. It is
+ * the only place in this slice where JavaScript's round-half-up is reachable
+ * at all: the sampling pattern rounds 32,768 values and not one of them lands
+ * on an exact half.
+ *
+ * `rule` is a page whose feature is a one-pixel horizontal line. Every
+ * interior pixel along it sees an identical ring, so their FAST scores are
+ * exactly equal - which is the only way to tell the non-maximum suppression's
+ * `>` from a `>=`. With `>` the whole run survives; with `>=` none of it does.
+ * A rule is also what half the corners on a real form come from, so this is
+ * not a contrived page.
+ */
+const ODD_WIDTH = 161
+/* Odd in BOTH axes, so `height / 2` is a half too. A mutation run caught the
+ * first version of this: 161 x 120 pins the rounding of the width and leaves
+ * the height's own `Math.round` free to be wrong. */
+const ODD_HEIGHT = 121
+
+function oddWidthPage (): GrayImage {
+  const page = createGray(ODD_WIDTH, ODD_HEIGHT)
+  for (let y = 0; y < ODD_HEIGHT; y++)
+    for (let x = 0; x < ODD_WIDTH; x++)
+      page.data[y * ODD_WIDTH + x] =
+        featureBase.data[Math.min(y, FEATURE_HEIGHT - 1) * FEATURE_WIDTH +
+          Math.min(x, FEATURE_WIDTH - 1)]
+
+  return page
+}
+
+function rulePage (): GrayImage {
+  const page = createGray(FEATURE_WIDTH, FEATURE_HEIGHT)
+  page.data.fill(0.05)
+  for (let x = 30; x < 130; x++) page.data[60 * FEATURE_WIDTH + x] = 0.9
+
+  return page
+}
+
+featureGoldens.moreDetectors = [
+  {
+    label:   'oddWidth',
+    width:   ODD_WIDTH,
+    height:  ODD_HEIGHT,
+    options: { maxFeatures: 60, levels: 2, gridSize: 4, scaleFactor: 2 },
+    pixels:  [...oddWidthPage().data],
+  },
+  {
+    label:   'rule',
+    width:   FEATURE_WIDTH,
+    height:  FEATURE_HEIGHT,
+    options: { maxFeatures: 60, levels: 1, gridSize: 4 },
+    pixels:  [...rulePage().data],
+  },
+  /*
+   * A budget that does not divide by the level count. `perLevel` is
+   * `Math.ceil(maxFeatures / levels)`, so 5 over 2 levels is 3 each and the
+   * total can come to 6 — `maxFeatures` is a per-level allowance here, not a
+   * global cap, and reproducing that means reproducing the ceiling. Every
+   * other case uses a budget that divides exactly, where a floor would give
+   * the same answer; a mutation run is what noticed.
+   */
+  {
+    label:   'indivisibleBudget',
+    width:   FEATURE_WIDTH,
+    height:  FEATURE_HEIGHT,
+    options: { maxFeatures: 5, levels: 2, gridSize: 4 },
+    pixels:  [...featureBase.data],
+  },
+].map(({ label, width, height, options, pixels }) => {
+  const image = createGray(width, height)
+  image.data.set(pixels)
+  const detected = detectAndDescribe(image, options)
+
+  return {
+    label,
+    width,
+    height,
+    options,
+    pixels,
+    keypoints:   detected.keypoints,
+    descriptors: [...detected.descriptors],
+  }
+})
+
+featureGoldens.matchFeatures = [
+  { label: 'defaults', options: {} },
+  // Cross-check off keeps the asymmetric bests, which is a different set.
+  { label: 'noCrossCheck', options: { crossCheck: false } },
+  // A ratio this strict rejects almost everything on a page of repeated
+  // letterforms, which is the case the ratio test exists for.
+  { label: 'strictRatio', options: { ratio: 0.5 } },
+  // The displacement gate, set just above and just below the real shift of
+  // (5, 3) — about 5.83 pixels.
+  { label: 'gateAbove', options: { maxDisplacement: 12 } },
+  { label: 'gateBelow', options: { maxDisplacement: 3 } },
+].map(({ label, options }) => ({
+  label,
+  options,
+  matches: matchFeatures(detectedBase, detectedShifted, options),
+}))
+
+writeFileSync(
+  join(goldenDir, 'align-feature-matching.json'),
+  JSON.stringify(
+    {
+      size:    { width: FEATURE_WIDTH, height: FEATURE_HEIGHT },
+      base:    [...featureBase.data],
+      shifted: [...featureShifted.data],
+      ...featureGoldens,
+    },
+    undefined,
+    2,
+  ) + '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'align-feature-matching.json') + '\n')
 
 /*
  * `@scanmate/align`'s own surface, for the same reason ink has one: a whole
