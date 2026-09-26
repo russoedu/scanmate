@@ -1,0 +1,6 @@
+{
+  "exports": [
+    "findSignatureFields",
+    "verifySignatures"
+  ]
+}

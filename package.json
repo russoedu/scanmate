@@ -33,14 +33,16 @@
     "seal:qa": "nx run seal:lint && nx run seal:test",
     "seal:build": "nx run seal:build",
     "scanmate-ink:qa": "nx run scanmate-ink:lint && nx run scanmate-ink:test",
-    "scanmate-ink:build": "nx run scanmate-ink:build"
+    "scanmate-ink:build": "nx run scanmate-ink:build",
+    "scanmate-seal:qa": "nx run scanmate-seal:lint && nx run scanmate-seal:test",
+    "scanmate-seal:build": "nx run scanmate-seal:build"
   },
   "private": true,
   "devDependencies": {
     "@commitlint/cli": "^21.2.2",
     "@commitlint/config-conventional": "^21.2.2",
     "@mnci/eslint-config": ">=0.1.0 <1.0.0",
-    "@mnci/nx-python-pip": "^0.2.8",
+    "@mnci/nx-python-pip": "^0.2.9",
     "@nx/esbuild": "23.2.0",
     "@nx/eslint": "23.2.0",
     "@nx/eslint-plugin": "23.2.0",

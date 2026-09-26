@@ -1,0 +1,39 @@
+{
+  "name": "scanmate-seal",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "python-packages/scanmate-seal",
+  "targets": {
+    "lint": {
+      "executor": "@mnci/nx-python-pip:lint",
+      "options": {}
+    },
+    "typecheck": {
+      "executor": "@mnci/nx-python-pip:typecheck",
+      "options": {}
+    },
+    "test": {
+      "executor": "@mnci/nx-python-pip:test",
+      "options": {}
+    },
+    "build": {
+      "executor": "@mnci/nx-python-pip:build",
+      "outputs": [
+        "{projectRoot}/dist"
+      ],
+      "options": {}
+    },
+    "nx-release-publish": {
+      "executor": "@mnci/nx-python-pip:publish",
+      "dependsOn": [
+        "build"
+      ],
+      "options": {}
+    }
+  },
+  "release": {
+    "version": {
+      "versionActions": "@mnci/nx-python-pip/release/version-actions"
+    }
+  }
+}
