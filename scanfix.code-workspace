@@ -242,6 +242,20 @@
         "script": "scanmate-merge:build",
         "problemMatcher": [],
         "group": "build"
+      },
+      {
+        "label": "scanmate-extract: qa",
+        "type": "npm",
+        "script": "scanmate-extract:qa",
+        "problemMatcher": [],
+        "group": "qa"
+      },
+      {
+        "label": "scanmate-extract: build",
+        "type": "npm",
+        "script": "scanmate-extract:build",
+        "problemMatcher": [],
+        "group": "build"
       }
     ]
   },
