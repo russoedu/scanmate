@@ -27,7 +27,13 @@ requires-python = ">=3.11"
 dependencies = [
   "numpy>=2.1",
   "pypdf>=5.1",
-  "scanmate-ink>=0.24.1",
+  # >=0.0.1, not the real floor, and deliberately: a release never commits its
+  # version bump, so every manifest on disk stays at the scaffold version
+  # forever, and a real floor here makes the workspace-wide editable install
+  # unresolvable. `nx release` rewrites this to the true version as it
+  # publishes - "scanmate-ink>=0.0.1" becomes "scanmate-ink>=0.24.1" in the
+  # wheel. The same declaration scanmate-align carries.
+  "scanmate-ink>=0.0.1",
 ]
 
 [project.urls]
