@@ -109,6 +109,7 @@ import {
 } from '../../packages/align/dist/index.esm.js'
 import type { Correspondence } from '../../packages/align/dist/src/index.d.ts'
 import { findSignatureFields, verifySignatures } from '../../packages/seal/dist/index.esm.js'
+import type { SignatureProblem as SealProblem } from '../../packages/seal/dist/src/index.d.ts'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const goldenDir = join(here, 'goldens')
@@ -2501,6 +2502,23 @@ const asHex = (bytes: Uint8Array): string =>
 /** A Date as an ISO instant, or null - the two things the TypeScript returns. */
 const asInstant = (when: Date | null): string | null => (when === null ? null : when.toISOString())
 
+/**
+ * One problem, with its Dates flattened.
+ *
+ * `unreadable` keeps its kind and loses its `because`: that string is pkijs's
+ * own wording for a malformed CMS structure, and no Python library will ever
+ * phrase it the same way. Recording it would write a golden the port is
+ * required to fail, so the kind is the contract and the wording is not - the
+ * one place in this package where parity stops at the verdict.
+ */
+function sealProblem (problem: SealProblem): Record<string, unknown> {
+  if (problem.kind === 'unreadable') return { kind: problem.kind }
+  if (problem.kind === 'certificate-expired')
+    return { kind: problem.kind, signedAt: asInstant(problem.signedAt) }
+
+  return { ...problem }
+}
+
 const sealFields: Record<string, unknown> = {}
 const sealReports: Record<string, unknown> = {}
 
@@ -2544,20 +2562,8 @@ for (const name of sealFixtures) {
             notAfter:     asInstant(signature.signer.notAfter),
             selfSigned:   signature.signer.selfSigned,
           },
-      /*
-       * Every problem in full, EXCEPT an `unreadable`'s `because`. That string
-       * is pkijs's own wording for a malformed CMS structure, and no Python
-       * library will ever phrase it the same way. Recording it would write a
-       * golden the port is required to fail, so the kind is the contract and
-       * the wording is not - the one place in this package where parity stops
-       * at the verdict rather than the bytes.
-       */
-      problems: signature.problems.map(problem =>
-        problem.kind === 'unreadable'
-          ? { kind: problem.kind }
-          : problem.kind === 'certificate-expired'
-            ? { kind: problem.kind, signedAt: asInstant(problem.signedAt) }
-            : problem),
+      /* Every problem in full, EXCEPT an `unreadable`'s `because` - see sealProblem. */
+      problems: signature.problems.map(problem => sealProblem(problem)),
     })),
   }
 }
