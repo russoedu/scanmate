@@ -20,17 +20,41 @@ from .approximate_search import (
     best_match,
     word_span,
 )
+from .illumination_correction import (
+    DEFAULT_ENHANCE_OPTIONS,
+    AppliedEnhancement,
+    ContrastPoint,
+    ContrastPoints,
+    DespeckleChoice,
+    EnhancedRaster,
+    EnhanceOptions,
+    SharpenOptions,
+    enhance_raster,
+    estimate_contrast_points,
+    resolve_contrast_points,
+)
 from .noise_reduction import despeckle, estimate_noise_sigma
 from .stage_caching import fingerprint
 
 __all__ = [
+    "DEFAULT_ENHANCE_OPTIONS",
+    "AppliedEnhancement",
     "ApproximateMatch",
+    "ContrastPoint",
+    "ContrastPoints",
+    "DespeckleChoice",
+    "EnhanceOptions",
+    "EnhancedRaster",
     "SearchOptions",
+    "SharpenOptions",
     "Span",
     "approximate_search",
     "best_match",
     "despeckle",
+    "enhance_raster",
+    "estimate_contrast_points",
     "estimate_noise_sigma",
     "fingerprint",
+    "resolve_contrast_points",
     "word_span",
 ]

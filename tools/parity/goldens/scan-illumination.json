@@ -1,0 +1,1103 @@
+{
+  "pages": {
+    "small": {
+      "width": 120,
+      "height": 90,
+      "seed": 4
+    },
+    "wide": {
+      "width": 200,
+      "height": 80,
+      "seed": 9
+    }
+  },
+  "builtPages": {
+    "uniform-200": {
+      "width": 24,
+      "height": 24,
+      "grey": 200,
+      "rectValue": 0
+    },
+    "a-small-mark": {
+      "width": 32,
+      "height": 24,
+      "grey": 230,
+      "rect": [
+        6,
+        6,
+        8,
+        8
+      ],
+      "rectValue": 20
+    },
+    "a-medium-mark": {
+      "width": 40,
+      "height": 40,
+      "grey": 230,
+      "rect": [
+        10,
+        10,
+        12,
+        12
+      ],
+      "rectValue": 20
+    },
+    "one-lit-on-black": {
+      "width": 32,
+      "height": 32,
+      "grey": 0,
+      "rect": [
+        16,
+        16,
+        1,
+        1
+      ],
+      "rectValue": 1
+    }
+  },
+  "defaultOptions": {
+    "sharpen": false,
+    "backgroundFraction": 0.0625,
+    "whitePoint": "auto",
+    "blackPoint": "auto",
+    "mode": "color",
+    "despeckle": "auto",
+    "despeckleThreshold": 0.01,
+    "despeckleRadius": 1
+  },
+  "enhanceRaster": {
+    "defaults": {
+      "applied": {
+        "whitePoint": 1.1,
+        "blackPoint": 0.11764705882352941,
+        "mode": "color",
+        "despeckled": true,
+        "noiseSigma": 0.048178951530111924,
+        "sharpened": false
+      },
+      "sha256": "bf6ca2046c70f1a990cdb883fd70c5d07843471aea8dca9cc9b1146259ad4f0b",
+      "samples": [
+        [
+          229,
+          229,
+          229,
+          255
+        ],
+        [
+          233,
+          233,
+          233,
+          255
+        ],
+        [
+          233,
+          233,
+          233,
+          255
+        ],
+        [
+          229,
+          229,
+          229,
+          255
+        ]
+      ]
+    },
+    "grayscale": {
+      "applied": {
+        "whitePoint": 1.1,
+        "blackPoint": 0.11764705882352941,
+        "mode": "grayscale",
+        "despeckled": true,
+        "noiseSigma": 0.048178951530111924,
+        "sharpened": false
+      },
+      "sha256": "bf6ca2046c70f1a990cdb883fd70c5d07843471aea8dca9cc9b1146259ad4f0b",
+      "samples": [
+        [
+          229,
+          229,
+          229,
+          255
+        ],
+        [
+          233,
+          233,
+          233,
+          255
+        ],
+        [
+          233,
+          233,
+          233,
+          255
+        ],
+        [
+          229,
+          229,
+          229,
+          255
+        ]
+      ]
+    },
+    "fixed-points": {
+      "applied": {
+        "whitePoint": 0.95,
+        "blackPoint": 0.2,
+        "mode": "color",
+        "despeckled": true,
+        "noiseSigma": 0.048178951530111924,
+        "sharpened": false
+      },
+      "sha256": "03386f2959b0abd9171675002b0b6e11e8037c2519ecf948c385edbcbb0cd96b",
+      "samples": [
+        [
+          255,
+          255,
+          255,
+          255
+        ],
+        [
+          255,
+          255,
+          255,
+          255
+        ],
+        [
+          255,
+          255,
+          255,
+          255
+        ],
+        [
+          255,
+          255,
+          255,
+          255
+        ]
+      ]
+    },
+    "one-auto-point": {
+      "applied": {
+        "whitePoint": 0.95,
+        "blackPoint": 0.11764705882352941,
+        "mode": "color",
+        "despeckled": true,
+        "noiseSigma": 0.048178951530111924,
+        "sharpened": false
+      },
+      "sha256": "f71885c5b43ce35c1ef2fdae31341561473765c2c5173f8afad48a5dba95f4b9",
+      "samples": [
+        [
+          255,
+          255,
+          255,
+          255
+        ],
+        [
+          255,
+          255,
+          255,
+          255
+        ],
+        [
+          255,
+          255,
+          255,
+          255
+        ],
+        [
+          255,
+          255,
+          255,
+          255
+        ]
+      ]
+    },
+    "no-despeckle": {
+      "applied": {
+        "whitePoint": 1.1,
+        "blackPoint": 0.12352941176470589,
+        "mode": "color",
+        "despeckled": false,
+        "noiseSigma": null,
+        "sharpened": false
+      },
+      "sha256": "769df9ac34f7a71f7cb4e80204cee732cac68f7d6f5ecc054b3afb953ac8a740",
+      "samples": [
+        [
+          234,
+          234,
+          234,
+          255
+        ],
+        [
+          238,
+          238,
+          238,
+          255
+        ],
+        [
+          238,
+          238,
+          238,
+          255
+        ],
+        [
+          237,
+          237,
+          237,
+          255
+        ]
+      ]
+    },
+    "forced-despeckle": {
+      "applied": {
+        "whitePoint": 1.1,
+        "blackPoint": 0.11764705882352941,
+        "mode": "color",
+        "despeckled": true,
+        "noiseSigma": null,
+        "sharpened": false
+      },
+      "sha256": "bf6ca2046c70f1a990cdb883fd70c5d07843471aea8dca9cc9b1146259ad4f0b",
+      "samples": [
+        [
+          229,
+          229,
+          229,
+          255
+        ],
+        [
+          233,
+          233,
+          233,
+          255
+        ],
+        [
+          233,
+          233,
+          233,
+          255
+        ],
+        [
+          229,
+          229,
+          229,
+          255
+        ]
+      ]
+    },
+    "a-wider-background": {
+      "applied": {
+        "whitePoint": 1.1,
+        "blackPoint": 0.1,
+        "mode": "color",
+        "despeckled": true,
+        "noiseSigma": 0.048178951530111924,
+        "sharpened": false
+      },
+      "sha256": "7f73f9ffacef47833873808d1a3e110d1add5b0db782ba47c2135b007b9d6899",
+      "samples": [
+        [
+          255,
+          255,
+          255,
+          255
+        ],
+        [
+          255,
+          255,
+          255,
+          255
+        ],
+        [
+          255,
+          255,
+          255,
+          255
+        ],
+        [
+          255,
+          255,
+          255,
+          255
+        ]
+      ]
+    },
+    "sharpened": {
+      "applied": {
+        "whitePoint": 1.1,
+        "blackPoint": 0.11764705882352941,
+        "mode": "color",
+        "despeckled": true,
+        "noiseSigma": 0.048178951530111924,
+        "sharpened": {
+          "sigma": 2
+        }
+      },
+      "sha256": "d8432eff19e9b07c3f6d312660291671edeaa0d528124dc0fab08749039d8966",
+      "samples": [
+        [
+          206,
+          206,
+          206,
+          255
+        ],
+        [
+          215,
+          215,
+          215,
+          255
+        ],
+        [
+          216,
+          216,
+          216,
+          255
+        ],
+        [
+          217,
+          217,
+          217,
+          255
+        ]
+      ]
+    },
+    "sharpen-rounds-up": {
+      "applied": {
+        "whitePoint": 1.1,
+        "blackPoint": 0.11764705882352941,
+        "mode": "color",
+        "despeckled": true,
+        "noiseSigma": 0.048178951530111924,
+        "sharpened": {
+          "sigma": 1.6
+        }
+      },
+      "sha256": "d8432eff19e9b07c3f6d312660291671edeaa0d528124dc0fab08749039d8966",
+      "samples": [
+        [
+          206,
+          206,
+          206,
+          255
+        ],
+        [
+          215,
+          215,
+          215,
+          255
+        ],
+        [
+          216,
+          216,
+          216,
+          255
+        ],
+        [
+          217,
+          217,
+          217,
+          255
+        ]
+      ]
+    },
+    "sharpen-rounds-down": {
+      "applied": {
+        "whitePoint": 1.1,
+        "blackPoint": 0.11764705882352941,
+        "mode": "color",
+        "despeckled": true,
+        "noiseSigma": 0.048178951530111924,
+        "sharpened": {
+          "sigma": 1.4
+        }
+      },
+      "sha256": "69d47f50f3e87c72d837dd833ed0912032148fb17db68d54c58b4ac9f4e74f2f",
+      "samples": [
+        [
+          216,
+          216,
+          216,
+          255
+        ],
+        [
+          222,
+          222,
+          222,
+          255
+        ],
+        [
+          226,
+          226,
+          226,
+          255
+        ],
+        [
+          222,
+          222,
+          222,
+          255
+        ]
+      ]
+    },
+    "sharpen-off-by-sigma": {
+      "applied": {
+        "whitePoint": 1.1,
+        "blackPoint": 0.11764705882352941,
+        "mode": "color",
+        "despeckled": true,
+        "noiseSigma": 0.048178951530111924,
+        "sharpened": {
+          "sigma": 0
+        }
+      },
+      "sha256": "bf6ca2046c70f1a990cdb883fd70c5d07843471aea8dca9cc9b1146259ad4f0b",
+      "samples": [
+        [
+          229,
+          229,
+          229,
+          255
+        ],
+        [
+          233,
+          233,
+          233,
+          255
+        ],
+        [
+          233,
+          233,
+          233,
+          255
+        ],
+        [
+          229,
+          229,
+          229,
+          255
+        ]
+      ]
+    },
+    "sharpen-off-by-amount": {
+      "applied": {
+        "whitePoint": 1.1,
+        "blackPoint": 0.11764705882352941,
+        "mode": "color",
+        "despeckled": true,
+        "noiseSigma": 0.048178951530111924,
+        "sharpened": {
+          "sigma": 2,
+          "amount": 0
+        }
+      },
+      "sha256": "bf6ca2046c70f1a990cdb883fd70c5d07843471aea8dca9cc9b1146259ad4f0b",
+      "samples": [
+        [
+          229,
+          229,
+          229,
+          255
+        ],
+        [
+          233,
+          233,
+          233,
+          255
+        ],
+        [
+          233,
+          233,
+          233,
+          255
+        ],
+        [
+          229,
+          229,
+          229,
+          255
+        ]
+      ]
+    },
+    "a-wide-page": {
+      "applied": {
+        "whitePoint": 1.1,
+        "blackPoint": 0.12352941176470589,
+        "mode": "color",
+        "despeckled": true,
+        "noiseSigma": 0.05032537842093183,
+        "sharpened": false
+      },
+      "sha256": "3a63c01a72d3726e0c41030e344894c79afbeeac42b3e299b7327cb24bf0217d",
+      "samples": [
+        [
+          229,
+          229,
+          229,
+          255
+        ],
+        [
+          229,
+          229,
+          229,
+          255
+        ],
+        [
+          229,
+          229,
+          229,
+          255
+        ],
+        [
+          229,
+          229,
+          229,
+          255
+        ]
+      ]
+    },
+    "stretch-half-up": {
+      "applied": {
+        "whitePoint": 6,
+        "blackPoint": 0,
+        "mode": "grayscale",
+        "despeckled": false,
+        "noiseSigma": null,
+        "sharpened": false
+      },
+      "sha256": "08e44b80e7c85713d0dc198fe3cd48bc2444c7ed34802342a28ac5f4f4ca2e53",
+      "samples": [
+        [
+          43,
+          43,
+          43,
+          255
+        ],
+        [
+          43,
+          43,
+          43,
+          255
+        ],
+        [
+          43,
+          43,
+          43,
+          255
+        ],
+        [
+          43,
+          43,
+          43,
+          255
+        ]
+      ]
+    },
+    "inverted-points": {
+      "applied": {
+        "whitePoint": 0.2,
+        "blackPoint": 0.5,
+        "mode": "grayscale",
+        "despeckled": false,
+        "noiseSigma": null,
+        "sharpened": false
+      },
+      "sha256": "adea5e0a9361c2700525b2452f81230a0f5c1fb310669e1a5b1d779143b9e297",
+      "samples": [
+        [
+          255,
+          255,
+          255,
+          255
+        ],
+        [
+          255,
+          255,
+          255,
+          255
+        ],
+        [
+          255,
+          255,
+          255,
+          255
+        ],
+        [
+          255,
+          255,
+          255,
+          255
+        ]
+      ]
+    },
+    "a-tiny-page": {
+      "applied": {
+        "whitePoint": 1.1,
+        "blackPoint": 0.12941176470588234,
+        "mode": "color",
+        "despeckled": false,
+        "noiseSigma": null,
+        "sharpened": false
+      },
+      "sha256": "2b9e90a767256840584f90fa3ba48acd9170df9c86d1c0f48e9fb78f793cad37",
+      "samples": [
+        [
+          229,
+          229,
+          229,
+          255
+        ],
+        [
+          229,
+          229,
+          229,
+          255
+        ],
+        [
+          229,
+          229,
+          229,
+          255
+        ],
+        [
+          229,
+          229,
+          229,
+          255
+        ]
+      ]
+    },
+    "sub-half-sigma": {
+      "applied": {
+        "whitePoint": 1.1,
+        "blackPoint": 0.1411764705882353,
+        "mode": "color",
+        "despeckled": false,
+        "noiseSigma": null,
+        "sharpened": {
+          "sigma": 0.4
+        }
+      },
+      "sha256": "24621cc1bdde533059399ffe54d54da39b76d2715f841f81471393e45982c58e",
+      "samples": [
+        [
+          228,
+          228,
+          228,
+          255
+        ],
+        [
+          228,
+          228,
+          228,
+          255
+        ],
+        [
+          228,
+          228,
+          228,
+          255
+        ],
+        [
+          228,
+          228,
+          228,
+          255
+        ]
+      ]
+    },
+    "one-lit-pixel": {
+      "applied": {
+        "whitePoint": 1,
+        "blackPoint": 0,
+        "mode": "color",
+        "despeckled": false,
+        "noiseSigma": null,
+        "sharpened": false
+      },
+      "sha256": "a580f31c7f69a17f18b7b02dd460d3f6398a806279d388f805c566770ee99b8a",
+      "samples": [
+        [
+          0,
+          0,
+          0,
+          255
+        ],
+        [
+          0,
+          0,
+          0,
+          255
+        ],
+        [
+          0,
+          0,
+          0,
+          255
+        ],
+        [
+          0,
+          0,
+          0,
+          255
+        ]
+      ]
+    },
+    "one-lit-pixel-in-grey": {
+      "applied": {
+        "whitePoint": 1,
+        "blackPoint": 0,
+        "mode": "grayscale",
+        "despeckled": false,
+        "noiseSigma": null,
+        "sharpened": false
+      },
+      "sha256": "a580f31c7f69a17f18b7b02dd460d3f6398a806279d388f805c566770ee99b8a",
+      "samples": [
+        [
+          0,
+          0,
+          0,
+          255
+        ],
+        [
+          0,
+          0,
+          0,
+          255
+        ],
+        [
+          0,
+          0,
+          0,
+          255
+        ],
+        [
+          0,
+          0,
+          0,
+          255
+        ]
+      ]
+    },
+    "one-lit-pixel-wide-span": {
+      "applied": {
+        "whitePoint": 100,
+        "blackPoint": 0,
+        "mode": "color",
+        "despeckled": false,
+        "noiseSigma": null,
+        "sharpened": false
+      },
+      "sha256": "50c0b7d3a772a1b095c26b9b35b2757384a636968b431fed21ce5a68c90a7a6f",
+      "samples": [
+        [
+          0,
+          0,
+          0,
+          255
+        ],
+        [
+          0,
+          0,
+          0,
+          255
+        ],
+        [
+          0,
+          0,
+          0,
+          255
+        ],
+        [
+          0,
+          0,
+          0,
+          255
+        ]
+      ]
+    }
+  },
+  "contrastPoints": {
+    "small": {
+      "estimated": {
+        "blackPoint": 0.11176470588235293,
+        "whitePoint": 1.1
+      },
+      "resolved": {
+        "whitePoint": 0.9,
+        "blackPoint": 0.11176470588235293
+      },
+      "bothFixed": {
+        "whitePoint": 0.9,
+        "blackPoint": 0.2
+      }
+    },
+    "wide": {
+      "estimated": {
+        "blackPoint": 0.11764705882352941,
+        "whitePoint": 1.1
+      },
+      "resolved": {
+        "whitePoint": 0.9,
+        "blackPoint": 0.11764705882352941
+      },
+      "bothFixed": {
+        "whitePoint": 0.9,
+        "blackPoint": 0.2
+      }
+    }
+  },
+  "histogramFixtures": {
+    "a-half-bin-and-two-percentiles": {
+      "width": 10,
+      "height": 10,
+      "background": 0.5,
+      "greys": [
+        0.125,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.425,
+        0.45,
+        0.5
+      ]
+    },
+    "a-clamped-black-point": {
+      "width": 10,
+      "height": 10,
+      "background": 0.5,
+      "greys": [
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.5
+      ]
+    }
+  },
+  "histogramPoints": {
+    "a-half-bin-and-two-percentiles": {
+      "estimated": {
+        "blackPoint": 0.2529411764705882,
+        "whitePoint": 0.8999999999999999
+      },
+      "resolved": {
+        "whitePoint": 0.9,
+        "blackPoint": 0.2529411764705882
+      }
+    },
+    "a-clamped-black-point": {
+      "estimated": {
+        "blackPoint": 0.4,
+        "whitePoint": 0.8
+      },
+      "resolved": {
+        "whitePoint": 0.9,
+        "blackPoint": 0.4
+      }
+    }
+  },
+  "noiseThresholdBoundary": {
+    "page": "a-medium-mark",
+    "threshold": 0.001906077669630376,
+    "applied": {
+      "whitePoint": 1.1,
+      "blackPoint": 0.1411764705882353,
+      "mode": "color",
+      "despeckled": false,
+      "noiseSigma": 0.001906077669630376,
+      "sharpened": false
+    }
+  }
+}

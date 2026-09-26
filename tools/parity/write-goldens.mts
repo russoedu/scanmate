@@ -112,10 +112,15 @@ import { findSignatureFields, verifySignatures } from '../../packages/seal/dist/
 import {
   approximateSearch,
   bestMatch,
+  DEFAULT_ENHANCE_OPTIONS,
   despeckle,
+  enhanceRaster,
+  estimateContrastPoints,
   estimateNoiseSigma,
+  resolveContrastPoints,
   wordSpan,
 } from '../../packages/scan/dist/index.esm.js'
+import type { EnhanceOptions } from '../../packages/scan/dist/src/index.d.ts'
 import {
   FIGURE_CHARACTERS,
   TEXT_CHARACTERS,
@@ -3640,3 +3645,201 @@ writeFileSync(
   }, undefined, 2) + '\n',
 )
 process.stdout.write('wrote ' + join(goldenDir, 'scan-noise-reduction.json') + '\n')
+
+/* `@scanmate/scan`'s illumination correction. */
+const enhancePages = {
+  small: createSyntheticDocument({ width: 120, height: 90, seed: 4 }),
+  wide:  createSyntheticDocument({ width: 200, height: 80, seed: 9 }),
+} as const
+
+/*
+ * Pages built by hand rather than generated, because a random document never
+ * lands on the values these cases exist to pin: an exactly-half rounding, a
+ * page too small for the background window's own floor, a background mean
+ * below one. Each is a recipe the Python side follows to the letter.
+ */
+const BUILT_PAGES = {
+  'uniform-200':      { width: 24, height: 24, grey: 200, rect: undefined, rectValue: 0 },
+  'a-small-mark':     { width: 32, height: 24, grey: 230, rect: [6, 6, 8, 8], rectValue: 20 },
+  'a-medium-mark':    { width: 40, height: 40, grey: 230, rect: [10, 10, 12, 12], rectValue: 20 },
+  'one-lit-on-black': { width: 32, height: 32, grey: 0, rect: [16, 16, 1, 1], rectValue: 1 },
+} as const
+
+function buildPage (spec: typeof BUILT_PAGES[keyof typeof BUILT_PAGES]): Raster {
+  const page = createRaster(spec.width, spec.height, [spec.grey, spec.grey, spec.grey, 255])
+  if (spec.rect !== undefined) {
+    const [x, y, width, height] = spec.rect
+    fillRect(page, { x, y, width, height }, spec.rectValue)
+  }
+
+  return page
+}
+
+const builtPages = Object.fromEntries(
+  Object.entries(BUILT_PAGES).map(([name, spec]) => [name, buildPage(spec)]),
+) as Record<keyof typeof BUILT_PAGES, Raster>
+
+const enhanceCases: Array<[string, Raster, EnhanceOptions]> = [
+  ['defaults', enhancePages.small.raster, {}],
+  ['grayscale', enhancePages.small.raster, { mode: 'grayscale' }],
+  ['fixed-points', enhancePages.small.raster, { whitePoint: 0.95, blackPoint: 0.2 }],
+  ['one-auto-point', enhancePages.small.raster, { whitePoint: 0.95 }],
+  ['no-despeckle', enhancePages.small.raster, { despeckle: false }],
+  ['forced-despeckle', enhancePages.small.raster, { despeckle: true }],
+  ['a-wider-background', enhancePages.small.raster, { backgroundFraction: 1 / 4 }],
+  ['sharpened', enhancePages.small.raster, { sharpen: { sigma: 2 } }],
+  /* A sigma that rounds UP to a radius of 2, and one that rounds down. */
+  ['sharpen-rounds-up', enhancePages.small.raster, { sharpen: { sigma: 1.6 } }],
+  ['sharpen-rounds-down', enhancePages.small.raster, { sharpen: { sigma: 1.4 } }],
+  ['sharpen-off-by-sigma', enhancePages.small.raster, { sharpen: { sigma: 0 } }],
+  ['sharpen-off-by-amount', enhancePages.small.raster, { sharpen: { sigma: 2, amount: 0 } }],
+  ['a-wide-page', enhancePages.wide.raster, {}],
+  /*
+   * On a uniform page the background mean IS the page, so every ratio is
+   * exactly 1 and the stretch lands on exactly 255/6 = 42.5. `Math.round`
+   * takes that UP to 43; the half-to-even rule a Uint8ClampedArray would
+   * apply takes it to 42. Nothing in a generated document lands on a half,
+   * which is why a port that used one rounding rule for both places passes
+   * every other case here.
+   */
+  ['stretch-half-up', builtPages['uniform-200'], {
+    mode: 'grayscale', whitePoint: 6, blackPoint: 0, despeckle: false,
+  }],
+  /*
+   * A white point BELOW the black point: the span is negative, and the floor
+   * of 1e-4 is what keeps the page white instead of inverting it.
+   */
+  ['inverted-points', builtPages['uniform-200'], {
+    mode: 'grayscale', whitePoint: 0.2, blackPoint: 0.5, despeckle: false,
+  }],
+  /* 24/16 rounds to 2, so the background window here is the floor of 4, not the fraction. */
+  ['a-tiny-page', builtPages['a-small-mark'], { despeckle: false }],
+  /* 0.4 rounds to 0, so the radius floor of 1 is what makes this sharpen at all. */
+  ['sub-half-sigma', builtPages['a-medium-mark'], {
+    despeckle: false, sharpen: { sigma: 0.4 },
+  }],
+  /*
+   * One pixel of 1 in a field of 0. The background mean around it is a small
+   * fraction of one, so what that pixel becomes depends entirely on the
+   * divisor's floor - 1 in colour mode, 1e-3 in grey.
+   */
+  ['one-lit-pixel', builtPages['one-lit-on-black'], {
+    despeckle: false, whitePoint: 1, blackPoint: 0,
+  }],
+  ['one-lit-pixel-in-grey', builtPages['one-lit-on-black'], {
+    mode: 'grayscale', despeckle: false, whitePoint: 1, blackPoint: 0,
+  }],
+  /*
+   * The same page with room above ratio 1, so the lit pixel's ratio is
+   * REPORTED rather than clipped away at 255 - which is what makes the colour
+   * divisor's floor of 1 visible at all. Its background mean is 1/81, so the
+   * floor is the whole answer: 1 with it, eighty-one times larger without.
+   */
+  ['one-lit-pixel-wide-span', builtPages['one-lit-on-black'], {
+    despeckle: false, whitePoint: 100, blackPoint: 0,
+  }],
+]
+
+const enhanced = enhanceCases.map(([name, raster, options]) => {
+  const result = enhanceRaster(raster, options)
+  const out = result.raster.data
+
+  return [name, {
+    applied: result.applied,
+    sha256:  createHash('sha256').update(Buffer.from(out.buffer, out.byteOffset, out.byteLength)).digest('hex'),
+    samples: [0, 1, raster.width, raster.width * raster.height - 1]
+      .map(p => [out[p * 4], out[p * 4 + 1], out[p * 4 + 2], out[p * 4 + 3]]),
+  }] as const
+})
+
+/*
+ * Grey pages with a histogram CHOSEN rather than measured, so each percentile
+ * bound, the bin rounding and the clamps are each pinned by a case that moves
+ * when they do. A generated page pins none of them: its percentiles land in
+ * the middle of a wide block of near-identical ratios, where nudging a bound
+ * by one changes nothing.
+ *
+ * The background is 0.5 throughout, so a ratio is just twice the grey. 0.125
+ * gives a ratio of 0.25, whose histogram position is exactly 42.5 - the one
+ * value where rounding a half up (bin 43) and to even (bin 42) disagree.
+ */
+const HISTOGRAM_FIXTURES = {
+  /*
+   * Ratios, in ascending order of bin: 0.25 once (bin 43), 0.8 ninety-six
+   * times (136), then 0.85 (145), 0.9 (153) and 1.0 (170) once each. The
+   * darkest 1% is that single 0.25, so the black point reads the half-bin
+   * and stays below its 0.4 bound; the cumulative count reaches exactly 1%
+   * there, so `>=` and `>` part company. The brightest 1% starts at 0.9 and
+   * the brightest 2% at 0.85, both inside the white bounds, so 0.99 and 0.98
+   * give different answers.
+   */
+  'a-half-bin-and-two-percentiles': {
+    width:      10,
+    height:     10,
+    background: 0.5,
+    greys:      [0.125, ...Array.from({ length: 96 }, () => 0.4), 0.425, 0.45, 0.5],
+  },
+  /* Nothing dark: the raw black point is 0.8, so its 0.4 bound is what answers. */
+  'a-clamped-black-point': {
+    width:      10,
+    height:     10,
+    background: 0.5,
+    greys:      [...Array.from({ length: 99 }, () => 0.4), 0.5],
+  },
+} as const
+
+const histogramCases = Object.entries(HISTOGRAM_FIXTURES).map(([name, spec]) => {
+  const gray = createGray(spec.width, spec.height)
+  gray.data.set(spec.greys)
+  const background = createGray(spec.width, spec.height)
+  background.data.fill(spec.background)
+
+  return [name, {
+    estimated: estimateContrastPoints(gray, background),
+    resolved:  resolveContrastPoints(0.9, 'auto', gray, background),
+  }] as const
+})
+
+const contrastCases = (['small', 'wide'] as const).map(name => {
+  const gray = toGrayscale(enhancePages[name].raster)
+  const background = boxBlur(gray, 8)
+
+  return [name, {
+    estimated: estimateContrastPoints(gray, background),
+    resolved:  resolveContrastPoints(0.9, 'auto', gray, background),
+    bothFixed: resolveContrastPoints(0.9, 0.2, gray, background),
+  }] as const
+})
+
+writeFileSync(
+  join(goldenDir, 'scan-illumination.json'),
+  JSON.stringify({
+    pages: {
+      small: { width: 120, height: 90, seed: 4 },
+      wide:  { width: 200, height: 80, seed: 9 },
+    },
+    builtPages:             BUILT_PAGES,
+    defaultOptions:         DEFAULT_ENHANCE_OPTIONS,
+    enhanceRaster:          Object.fromEntries(enhanced),
+    contrastPoints:         Object.fromEntries(contrastCases),
+    histogramFixtures:      HISTOGRAM_FIXTURES,
+    histogramPoints:        Object.fromEntries(histogramCases),
+    /*
+     * The threshold set to EXACTLY the page's own measured noise, where the
+     * comparison's strictness is the only thing that decides. `>` leaves the
+     * page alone; `>=` would filter it. Nothing else reaches this boundary -
+     * a measured statistic never equals a hand-written constant by accident.
+     */
+    noiseThresholdBoundary: (() => {
+      const page = builtPages['a-medium-mark']
+      const threshold = estimateNoiseSigma(toGrayscale(page))
+
+      return {
+        page:    'a-medium-mark',
+        threshold,
+        applied: enhanceRaster(page, { despeckleThreshold: threshold }).applied,
+      }
+    })(),
+  }, undefined, 2) + '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'scan-illumination.json') + '\n')
