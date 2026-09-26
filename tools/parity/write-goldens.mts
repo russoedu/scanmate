@@ -2662,9 +2662,9 @@ const markPoints: Array<[number, number]> = [[0, 0], [100, 50], [297.64, 420.945
 writeFileSync(
   join(goldenDir, 'merge-page-placement.json'),
   JSON.stringify({
-    paper:           PAPER,
-    minRecordedDpi:  MIN_RECORDED_DPI,
-    resolveDpi:      dpiCases.map(([given, recorded, fallback]) => ({
+    paper:          PAPER,
+    minRecordedDpi: MIN_RECORDED_DPI,
+    resolveDpi:     dpiCases.map(([given, recorded, fallback]) => ({
       given:    given ?? null,
       recorded,
       fallback,
@@ -2682,21 +2682,23 @@ writeFileSync(
 )
 process.stdout.write('wrote ' + join(goldenDir, 'merge-page-placement.json') + '\n')
 
+const viewportEntries = geometryCases.map(([name, geometry]) => {
+  const transform = viewportTransform(geometry)
+
+  return [name, {
+    geometry,
+    transform,
+    size:      viewportSize(geometry),
+    /* The round trip a mark makes: measured from the top-left as read, drawn
+     * in the PDF's own frame. */
+    userSpace: markPoints.map(([x, y]) => ({ x, y, user: toUserSpace(transform, x, y) })),
+  }] as const
+})
+
 writeFileSync(
   join(goldenDir, 'merge-page-viewport.json'),
   JSON.stringify({
-    cases: Object.fromEntries(geometryCases.map(([name, geometry]) => {
-      const transform = viewportTransform(geometry)
-
-      return [name, {
-        geometry,
-        transform,
-        size:      viewportSize(geometry),
-        /* The round trip a mark makes: measured from the top-left as read,
-         * drawn in the PDF's own frame. */
-        userSpace: markPoints.map(([x, y]) => ({ x, y, user: toUserSpace(transform, x, y) })),
-      }]
-    })),
+    cases:   Object.fromEntries(viewportEntries),
     /* Only quarter turns are legal; anything else is refused rather than
      * drawn somewhere plausible. */
     refuses: [45, 1, -30, 90.5].map(rotation => ({
@@ -2728,10 +2730,12 @@ const pdfHeaderCases: Array<[string, Uint8Array]> = [
   ['truncated-header', new TextEncoder().encode('%PDF')],
 ]
 
+const pdfHeaderResults = pdfHeaderCases.map(([name, bytes]) => [name, isPdf(bytes)] as const)
+
 writeFileSync(
   join(goldenDir, 'merge-source-reading.json'),
   JSON.stringify({
-    isPdf: Object.fromEntries(pdfHeaderCases.map(([name, bytes]) => [name, isPdf(bytes)])),
+    isPdf: Object.fromEntries(pdfHeaderResults),
   }, undefined, 2) + '\n',
 )
 process.stdout.write('wrote ' + join(goldenDir, 'merge-source-reading.json') + '\n')
@@ -2799,9 +2803,9 @@ const mergeDecisions: Record<string, unknown> = {}
 for (const [name, sources, options] of mergeCases) {
   const result = await mergeDocuments(sources, options)
   mergeDecisions[name] = {
-    pageCount:     result.pageCount,
-    passedThrough: result.passedThrough,
-    pages:         result.pages,
+    pageCount:              result.pageCount,
+    passedThrough:          result.passedThrough,
+    pages:                  result.pages,
     /* Whether the bytes came back untouched, which IS checkable: it is the one
      * path that produces no new file. */
     identicalToFirstSource: result.pdf.length === sources[0].length &&

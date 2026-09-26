@@ -34,6 +34,10 @@ const out = join(here, 'merge')
 
 const page = createSyntheticDocument({ width: 240, height: 320, seed: 7 })
 const grey = toGrayscale(page.raster)
+const a4 = await mergeDocuments(
+  [await encodeImage(page.raster, { format: 'png' })],
+  { pageSize: 'a4' },
+)
 
 const cases: Array<[string, Uint8Array]> = [
   // Embedded as its own bytes: a scan must not be compressed a second time.
@@ -48,10 +52,7 @@ const cases: Array<[string, Uint8Array]> = [
    * no-op on all of them - and a port that skipped the rounding passed. 595.28
    * x 841.89 rounds to 595.3 x 841.9, and now says so.
    */
-  ['a4.pdf', (await mergeDocuments(
-    [await encodeImage(page.raster, { format: 'png' })],
-    { pageSize: 'a4' },
-  )).pdf],
+  ['a4.pdf', a4.pdf],
 ]
 
 mkdirSync(out, { recursive: true })
