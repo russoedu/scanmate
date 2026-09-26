@@ -52,7 +52,7 @@
     "@mnci/eslint-config": ">=0.1.0 <1.0.0",
     "@mnci/nx-python-pip": "^0.2.11",
     "@nx/esbuild": "23.2.0",
-    "@nx/eslint": "23.2.0",
+    "@nx/eslint": "23.2.1",
     "@nx/eslint-plugin": "23.2.0",
     "@nx/js": "23.2.0",
     "@nx/node": "^23.2.0",
