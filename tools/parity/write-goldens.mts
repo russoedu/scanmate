@@ -109,6 +109,19 @@ import {
 } from '../../packages/align/dist/index.esm.js'
 import type { Correspondence } from '../../packages/align/dist/src/index.d.ts'
 import { findSignatureFields, verifySignatures } from '../../packages/seal/dist/index.esm.js'
+import {
+  MIN_RECORDED_DPI,
+  PAPER,
+  isPdf,
+  markPages,
+  mergeDocuments,
+  placeImage,
+  resolveDpi,
+  toUserSpace,
+  viewportSize,
+  viewportTransform,
+} from '../../packages/merge/dist/index.esm.js'
+import type { MarkOptions, MergeOptions, PageGeometry, PageMark, PageSize } from '../../packages/merge/dist/src/index.d.ts'
 import type { SignatureProblem as SealProblem } from '../../packages/seal/dist/src/index.d.ts'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -2587,3 +2600,269 @@ writeFileSync(
     '\n',
 )
 process.stdout.write('wrote ' + join(goldenDir, 'seal-package-surface.json') + '\n')
+
+/*
+ * ---------------------------------------------------------------------------
+ * @scanmate/merge
+ *
+ * Parity here stops short of the produced PDF's BYTES, and deliberately:
+ * pdf-lib and any Python PDF writer lay out objects, streams and the xref
+ * table differently, so two valid merges of the same sources are never the
+ * same file. What IS held is every decision that went into it - how many
+ * pages, from which source, embedded how, at what size and resolution - plus
+ * the geometry, which is ordinary arithmetic and is exact.
+ *
+ * The same boundary `@scanmate/ink` already draws around `resampleRaster` and
+ * `blurRaster`: where two engines cannot agree by construction, say so rather
+ * than write a golden nobody can meet.
+ * ---------------------------------------------------------------------------
+ */
+const dpiCases: Array<[number | null | undefined, number | null, number]> = [
+  [300, null, 150],
+  [300, 600, 150],
+  [undefined, 600, 150],
+  [undefined, 72, 150],
+  [undefined, 96, 150],
+  [undefined, 99, 150],
+  [undefined, MIN_RECORDED_DPI, 150],
+  [undefined, null, 150],
+  [null, null, 200],
+  [0, 600, 150],
+  [-1, 600, 150],
+  [0.5, null, 150],
+]
+
+const placementCases: Array<[number, number, number, PageSize, number]> = [
+  [2480, 3508, 300, 'image', 0],
+  [3508, 2480, 300, 'image', 0],
+  [1000, 1000, 150, 'a4', 0],
+  [1000, 1000, 150, 'a4', 36],
+  [3000, 2000, 300, 'a4', 0],
+  [3000, 2000, 300, 'letter', 18],
+  [850, 1100, 100, 'letter', 0],
+  [100, 100, 72, { width: 200, height: 400 }, 10],
+  [4000, 1000, 600, 'a4', 0],
+  [1, 1, 1, 'image', 0],
+]
+
+const geometryCases: Array<[string, PageGeometry]> = [
+  ['upright-a4', { view: [0, 0, 595.28, 841.89], rotation: 0 }],
+  ['quarter-turn', { view: [0, 0, 595.28, 841.89], rotation: 90 }],
+  ['half-turn', { view: [0, 0, 595.28, 841.89], rotation: 180 }],
+  ['three-quarter-turn', { view: [0, 0, 595.28, 841.89], rotation: 270 }],
+  ['negative-rotation', { view: [0, 0, 595.28, 841.89], rotation: -90 }],
+  ['over-a-full-turn', { view: [0, 0, 595.28, 841.89], rotation: 450 }],
+  ['cropped', { view: [20, 30, 400, 700], rotation: 0 }],
+  ['cropped-and-turned', { view: [20, 30, 400, 700], rotation: 90 }],
+]
+
+/** Points a mark might sit at, including the corners the transform is easiest to get wrong at. */
+const markPoints: Array<[number, number]> = [[0, 0], [100, 50], [297.64, 420.945], [595.28, 841.89], [-10, -10]]
+
+writeFileSync(
+  join(goldenDir, 'merge-page-placement.json'),
+  JSON.stringify({
+    paper:           PAPER,
+    minRecordedDpi:  MIN_RECORDED_DPI,
+    resolveDpi:      dpiCases.map(([given, recorded, fallback]) => ({
+      given:    given ?? null,
+      recorded,
+      fallback,
+      resolved: resolveDpi(given, recorded, fallback),
+    })),
+    placeImage: placementCases.map(([pixelWidth, pixelHeight, dpi, pageSize, margin]) => ({
+      pixelWidth,
+      pixelHeight,
+      dpi,
+      pageSize,
+      margin,
+      placement: placeImage(pixelWidth, pixelHeight, dpi, pageSize, margin),
+    })),
+  }, undefined, 2) + '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'merge-page-placement.json') + '\n')
+
+writeFileSync(
+  join(goldenDir, 'merge-page-viewport.json'),
+  JSON.stringify({
+    cases: Object.fromEntries(geometryCases.map(([name, geometry]) => {
+      const transform = viewportTransform(geometry)
+
+      return [name, {
+        geometry,
+        transform,
+        size:      viewportSize(geometry),
+        /* The round trip a mark makes: measured from the top-left as read,
+         * drawn in the PDF's own frame. */
+        userSpace: markPoints.map(([x, y]) => ({ x, y, user: toUserSpace(transform, x, y) })),
+      }]
+    })),
+    /* Only quarter turns are legal; anything else is refused rather than
+     * drawn somewhere plausible. */
+    refuses: [45, 1, -30, 90.5].map(rotation => ({
+      rotation,
+      message: rejected(() => viewportTransform({ view: [0, 0, 100, 100], rotation })),
+    })),
+  }, undefined, 2) + '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'merge-page-viewport.json') + '\n')
+
+/** Bytes that are and are not a PDF, including the header-window edges. */
+const pdfHeaderCases: Array<[string, Uint8Array]> = [
+  ['plain', new TextEncoder().encode('%PDF-1.7\nbody')],
+  ['empty', new Uint8Array(0)],
+  ['junk-then-header', new TextEncoder().encode('junk'.repeat(4) + '%PDF-1.4')],
+  ['header-at-window-edge', (() => {
+    const bytes = new Uint8Array(1200)
+    bytes.set(new TextEncoder().encode('%PDF-'), 1024)
+
+    return bytes
+  })()],
+  ['header-past-the-window', (() => {
+    const bytes = new Uint8Array(1200)
+    bytes.set(new TextEncoder().encode('%PDF-'), 1025)
+
+    return bytes
+  })()],
+  ['png', new Uint8Array([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])],
+  ['truncated-header', new TextEncoder().encode('%PDF')],
+]
+
+writeFileSync(
+  join(goldenDir, 'merge-source-reading.json'),
+  JSON.stringify({
+    isPdf: Object.fromEntries(pdfHeaderCases.map(([name, bytes]) => [name, isPdf(bytes)])),
+  }, undefined, 2) + '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'merge-source-reading.json') + '\n')
+
+const mergeExported = new Set(Object.keys(await import('../../packages/merge/dist/index.esm.js')))
+writeFileSync(
+  join(goldenDir, 'merge-package-surface.json'),
+  JSON.stringify({ exports: [...mergeExported].sort((a, b) => a.localeCompare(b)) }, undefined, 2) +
+    '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'merge-package-surface.json') + '\n')
+
+/*
+ * `mergeDocuments`, as DECISIONS rather than bytes.
+ *
+ * Every field of the result except the PDF itself: how many pages, which
+ * source each came from, how it was embedded, its size and the resolution it
+ * was placed at. Those are choices the two ports must make identically. The
+ * file they produce is not, and cannot be - see the note above.
+ */
+const mergeFixtureDir = join(here, 'fixtures', 'merge')
+const mergeBytes = (name: string): Uint8Array =>
+  new Uint8Array(readFileSync(join(mergeFixtureDir, name)))
+const sealPlain = new Uint8Array(readFileSync(join(here, 'fixtures', 'seal', 'plain.pdf')))
+
+const mergeCases: Array<[string, Uint8Array[], MergeOptions]> = [
+  ['one-jpeg', [mergeBytes('photo.jpg')], {}],
+  ['one-grey-jpeg', [mergeBytes('grey.jpg')], {}],
+  ['one-png', [mergeBytes('page.png')], {}],
+  ['images-in-order', [mergeBytes('photo.jpg'), mergeBytes('page.png'), mergeBytes('grey.jpg')], {}],
+  ['a-pdf-alone-passes-through', [sealPlain], {}],
+  ['a-pdf-alone-with-metadata-does-not', [sealPlain], { metadata: { title: 'A Title' } }],
+  ['a-pdf-alone-with-passthrough-off', [sealPlain], { passThrough: false }],
+  ['pdf-then-image', [sealPlain, mergeBytes('photo.jpg')], {}],
+  ['image-then-pdf', [mergeBytes('photo.jpg'), sealPlain], {}],
+  ['on-a4', [mergeBytes('photo.jpg')], { pageSize: 'a4' }],
+  ['on-a4-with-a-margin', [mergeBytes('photo.jpg')], { pageSize: 'a4', margin: 36 }],
+  ['on-letter', [mergeBytes('page.png')], { pageSize: 'letter' }],
+  ['at-a-given-dpi', [mergeBytes('photo.jpg')], { imageDpi: 300 }],
+  ['re-encoded-as-jpeg', [mergeBytes('page.png')], { encoding: 'jpeg', quality: 80, pageSize: 'a4' }],
+  /*
+   * A CMYK JPEG is the case that decides whether the colour-space check does
+   * anything: a PDF cannot take these bytes as they are, so it is decoded and
+   * encoded once. Without it, a port that embedded EVERY jpeg directly passed.
+   */
+  ['cmyk-jpeg-is-not-embedded-directly', [mergeBytes('cmyk.jpg')], {}],
+  ['cmyk-jpeg-re-encoded-as-jpeg', [mergeBytes('cmyk.jpg')], { encoding: 'jpeg' }],
+  /*
+   * A JPEG carrying an EXIF orientation must be DECODED, so the rotation is
+   * applied. Embedded as it is, it lands on the page sideways - and the page
+   * dimensions below are how you can tell: the source is 120 x 160, and a
+   * quarter turn makes the page wider than it is tall.
+   */
+  ['exif-rotated-jpeg-is-not-embedded-directly', [mergeBytes('rotated.jpg')], {}],
+  /*
+   * A multi-page TIFF - what a sheet-fed scanner emits. Every frame becomes
+   * its own page, numbered by `sourcePage`; a port that embedded only the
+   * first would lose two sheets of a document and report one page as if that
+   * were the whole of it.
+   */
+  ['multi-page-tiff', [mergeBytes('three-pages.tiff')], {}],
+]
+
+const mergeDecisions: Record<string, unknown> = {}
+for (const [name, sources, options] of mergeCases) {
+  const result = await mergeDocuments(sources, options)
+  mergeDecisions[name] = {
+    pageCount:     result.pageCount,
+    passedThrough: result.passedThrough,
+    pages:         result.pages,
+    /* Whether the bytes came back untouched, which IS checkable: it is the one
+     * path that produces no new file. */
+    identicalToFirstSource: result.pdf.length === sources[0].length &&
+      result.pdf.every((byte, i) => byte === sources[0][i]),
+  }
+}
+
+writeFileSync(
+  join(goldenDir, 'merge-decisions.json'),
+  JSON.stringify({ cases: mergeDecisions }, undefined, 2) + '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'merge-decisions.json') + '\n')
+
+/*
+ * `markPages`, as decisions: how many were drawn, and what was refused or
+ * flagged. The drawn appearance is not comparable between two PDF writers; the
+ * count and the warnings are the package's actual contract, and the geometry
+ * behind them is already pinned by `merge-page-viewport.json`.
+ */
+const markCases: Array<[string, PageMark[], MarkOptions]> = [
+  ['one-mark', [{ page: 1, x: 20, y: 30, width: 60, height: 20, id: 'sig' }], {}],
+  ['no-id-is-numbered', [{ page: 9, x: 0, y: 0, width: 10, height: 10 }], {}],
+  ['past-the-end', [{ page: 5, x: 0, y: 0, width: 10, height: 10, id: 'missing' }], {}],
+  ['page-zero', [{ page: 0, x: 0, y: 0, width: 10, height: 10, id: 'zero' }], {}],
+  ['overflows-its-page', [{ page: 1, x: 150, y: 150, width: 100, height: 100, id: 'over' }], {}],
+  ['negative-origin', [{ page: 1, x: -5, y: 10, width: 10, height: 10, id: 'neg' }], {}],
+  ['exactly-to-the-edge', [{ page: 1, x: 100, y: 100, width: 100, height: 100, id: 'edge' }], {}],
+  ['several', [
+    { page: 1, x: 10, y: 10, width: 20, height: 20, id: 'a' },
+    { page: 3, x: 10, y: 10, width: 20, height: 20, id: 'b' },
+    { page: 1, x: 40, y: 40, width: 20, height: 20, id: 'c' },
+  ], {}],
+  ['labels-off', [{ page: 1, x: 20, y: 30, width: 60, height: 20, id: 'sig' }], { labels: false }],
+  ['own-bleed', [{ page: 1, x: 20, y: 30, width: 60, height: 20, id: 'sig', bleedBottom: 20 }], {}],
+  ['no-bleed-at-all', [{ page: 1, x: 20, y: 30, width: 60, height: 20, id: 'sig' }], { bleed: 0 }],
+]
+
+const markDecisions: Record<string, unknown> = {}
+for (const [name, marks, markOptions] of markCases) {
+  const result = await markPages(sealPlain, marks, markOptions)
+  markDecisions[name] = { drawn: result.drawn, warnings: result.warnings }
+}
+
+/*
+ * The same, on a page whose size does NOT round to itself. Every other fixture
+ * PDF is exactly 200 x 200, so the one-decimal rounding in the "reaches past
+ * the edge" warning is a no-op on all of them - and a port that skipped the
+ * rounding entirely passed. A4 is 595.28 x 841.89, and rounds to 595.3 x 841.9.
+ */
+const a4Pdf = mergeBytes('a4.pdf')
+const a4Marks: Array<[string, PageMark[]]> = [
+  ['a4-overflow', [{ page: 1, x: 500, y: 700, width: 200, height: 300, id: 'over' }]],
+  ['a4-inside', [{ page: 1, x: 100, y: 100, width: 50, height: 50, id: 'in' }]],
+]
+for (const [name, marks] of a4Marks) {
+  const result = await markPages(a4Pdf, marks, {})
+  markDecisions[name] = { drawn: result.drawn, warnings: result.warnings }
+}
+
+writeFileSync(
+  join(goldenDir, 'merge-page-marking.json'),
+  JSON.stringify({ cases: markDecisions }, undefined, 2) + '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'merge-page-marking.json') + '\n')

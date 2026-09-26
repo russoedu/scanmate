@@ -1,0 +1,70 @@
+{
+  "cases": {
+    "one-mark": {
+      "drawn": 1,
+      "warnings": []
+    },
+    "no-id-is-numbered": {
+      "drawn": 0,
+      "warnings": [
+        "mark 1 is on page 9, and the document has 1"
+      ]
+    },
+    "past-the-end": {
+      "drawn": 0,
+      "warnings": [
+        "missing is on page 5, and the document has 1"
+      ]
+    },
+    "page-zero": {
+      "drawn": 0,
+      "warnings": [
+        "zero is on page 0, and the document has 1"
+      ]
+    },
+    "overflows-its-page": {
+      "drawn": 1,
+      "warnings": [
+        "over reaches past the edge of page 1, which is 200 x 200 pt"
+      ]
+    },
+    "negative-origin": {
+      "drawn": 1,
+      "warnings": [
+        "neg reaches past the edge of page 1, which is 200 x 200 pt"
+      ]
+    },
+    "exactly-to-the-edge": {
+      "drawn": 1,
+      "warnings": []
+    },
+    "several": {
+      "drawn": 2,
+      "warnings": [
+        "b is on page 3, and the document has 1"
+      ]
+    },
+    "labels-off": {
+      "drawn": 1,
+      "warnings": []
+    },
+    "own-bleed": {
+      "drawn": 1,
+      "warnings": []
+    },
+    "no-bleed-at-all": {
+      "drawn": 1,
+      "warnings": []
+    },
+    "a4-overflow": {
+      "drawn": 1,
+      "warnings": [
+        "over reaches past the edge of page 1, which is 595.3 x 841.9 pt"
+      ]
+    },
+    "a4-inside": {
+      "drawn": 1,
+      "warnings": []
+    }
+  }
+}

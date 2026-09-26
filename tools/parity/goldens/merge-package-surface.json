@@ -1,0 +1,18 @@
+{
+  "exports": [
+    "isPdf",
+    "markPages",
+    "mergeDocuments",
+    "MergeSourceError",
+    "MIN_RECORDED_DPI",
+    "openPdf",
+    "PAPER",
+    "PdfPasswordError",
+    "placeImage",
+    "readSource",
+    "resolveDpi",
+    "toUserSpace",
+    "viewportSize",
+    "viewportTransform"
+  ]
+}

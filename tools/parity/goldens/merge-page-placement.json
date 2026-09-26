@@ -1,0 +1,242 @@
+{
+  "paper": {
+    "a4": {
+      "width": 595.28,
+      "height": 841.89
+    },
+    "letter": {
+      "width": 612,
+      "height": 792
+    }
+  },
+  "minRecordedDpi": 100,
+  "resolveDpi": [
+    {
+      "given": 300,
+      "recorded": null,
+      "fallback": 150,
+      "resolved": 300
+    },
+    {
+      "given": 300,
+      "recorded": 600,
+      "fallback": 150,
+      "resolved": 300
+    },
+    {
+      "given": null,
+      "recorded": 600,
+      "fallback": 150,
+      "resolved": 600
+    },
+    {
+      "given": null,
+      "recorded": 72,
+      "fallback": 150,
+      "resolved": 150
+    },
+    {
+      "given": null,
+      "recorded": 96,
+      "fallback": 150,
+      "resolved": 150
+    },
+    {
+      "given": null,
+      "recorded": 99,
+      "fallback": 150,
+      "resolved": 150
+    },
+    {
+      "given": null,
+      "recorded": 100,
+      "fallback": 150,
+      "resolved": 100
+    },
+    {
+      "given": null,
+      "recorded": null,
+      "fallback": 150,
+      "resolved": 150
+    },
+    {
+      "given": null,
+      "recorded": null,
+      "fallback": 200,
+      "resolved": 200
+    },
+    {
+      "given": 0,
+      "recorded": 600,
+      "fallback": 150,
+      "resolved": 600
+    },
+    {
+      "given": -1,
+      "recorded": 600,
+      "fallback": 150,
+      "resolved": 600
+    },
+    {
+      "given": 0.5,
+      "recorded": null,
+      "fallback": 150,
+      "resolved": 0.5
+    }
+  ],
+  "placeImage": [
+    {
+      "pixelWidth": 2480,
+      "pixelHeight": 3508,
+      "dpi": 300,
+      "pageSize": "image",
+      "margin": 0,
+      "placement": {
+        "pageWidth": 595.2,
+        "pageHeight": 841.92,
+        "x": 0,
+        "y": 0,
+        "width": 595.2,
+        "height": 841.92
+      }
+    },
+    {
+      "pixelWidth": 3508,
+      "pixelHeight": 2480,
+      "dpi": 300,
+      "pageSize": "image",
+      "margin": 0,
+      "placement": {
+        "pageWidth": 841.92,
+        "pageHeight": 595.2,
+        "x": 0,
+        "y": 0,
+        "width": 841.92,
+        "height": 595.2
+      }
+    },
+    {
+      "pixelWidth": 1000,
+      "pixelHeight": 1000,
+      "dpi": 150,
+      "pageSize": "a4",
+      "margin": 0,
+      "placement": {
+        "pageWidth": 595.28,
+        "pageHeight": 841.89,
+        "x": 0,
+        "y": 123.305,
+        "width": 595.28,
+        "height": 595.28
+      }
+    },
+    {
+      "pixelWidth": 1000,
+      "pixelHeight": 1000,
+      "dpi": 150,
+      "pageSize": "a4",
+      "margin": 36,
+      "placement": {
+        "pageWidth": 595.28,
+        "pageHeight": 841.89,
+        "x": 36,
+        "y": 159.305,
+        "width": 523.28,
+        "height": 523.28
+      }
+    },
+    {
+      "pixelWidth": 3000,
+      "pixelHeight": 2000,
+      "dpi": 300,
+      "pageSize": "a4",
+      "margin": 0,
+      "placement": {
+        "pageWidth": 841.89,
+        "pageHeight": 595.28,
+        "x": 0,
+        "y": 17.00999999999999,
+        "width": 841.89,
+        "height": 561.26
+      }
+    },
+    {
+      "pixelWidth": 3000,
+      "pixelHeight": 2000,
+      "dpi": 300,
+      "pageSize": "letter",
+      "margin": 18,
+      "placement": {
+        "pageWidth": 792,
+        "pageHeight": 612,
+        "x": 18,
+        "y": 54,
+        "width": 756,
+        "height": 504
+      }
+    },
+    {
+      "pixelWidth": 850,
+      "pixelHeight": 1100,
+      "dpi": 100,
+      "pageSize": "letter",
+      "margin": 0,
+      "placement": {
+        "pageWidth": 612,
+        "pageHeight": 792,
+        "x": 0,
+        "y": 0,
+        "width": 612,
+        "height": 792
+      }
+    },
+    {
+      "pixelWidth": 100,
+      "pixelHeight": 100,
+      "dpi": 72,
+      "pageSize": {
+        "width": 200,
+        "height": 400
+      },
+      "margin": 10,
+      "placement": {
+        "pageWidth": 200,
+        "pageHeight": 400,
+        "x": 10,
+        "y": 110,
+        "width": 180,
+        "height": 180
+      }
+    },
+    {
+      "pixelWidth": 4000,
+      "pixelHeight": 1000,
+      "dpi": 600,
+      "pageSize": "a4",
+      "margin": 0,
+      "placement": {
+        "pageWidth": 841.89,
+        "pageHeight": 595.28,
+        "x": 0,
+        "y": 192.40375,
+        "width": 841.89,
+        "height": 210.4725
+      }
+    },
+    {
+      "pixelWidth": 1,
+      "pixelHeight": 1,
+      "dpi": 1,
+      "pageSize": "image",
+      "margin": 0,
+      "placement": {
+        "pageWidth": 72,
+        "pageHeight": 72,
+        "x": 0,
+        "y": 0,
+        "width": 72,
+        "height": 72
+      }
+    }
+  ]
+}

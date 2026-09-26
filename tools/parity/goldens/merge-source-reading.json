@@ -1,0 +1,11 @@
+{
+  "isPdf": {
+    "plain": true,
+    "empty": false,
+    "junk-then-header": true,
+    "header-at-window-edge": true,
+    "header-past-the-window": false,
+    "png": false,
+    "truncated-header": false
+  }
+}
