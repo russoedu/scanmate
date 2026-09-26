@@ -228,6 +228,20 @@
         "script": "scanmate-seal:build",
         "problemMatcher": [],
         "group": "build"
+      },
+      {
+        "label": "scanmate-merge: qa",
+        "type": "npm",
+        "script": "scanmate-merge:qa",
+        "problemMatcher": [],
+        "group": "qa"
+      },
+      {
+        "label": "scanmate-merge: build",
+        "type": "npm",
+        "script": "scanmate-merge:build",
+        "problemMatcher": [],
+        "group": "build"
       }
     ]
   },

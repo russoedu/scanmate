@@ -1,0 +1,370 @@
+{
+  "cases": {
+    "one-jpeg": {
+      "pageCount": 1,
+      "passedThrough": false,
+      "pages": [
+        {
+          "page": 1,
+          "source": 1,
+          "sourcePage": 1,
+          "kind": "image",
+          "embedding": "jpeg",
+          "width": 115.2,
+          "height": 153.6,
+          "dpi": 150
+        }
+      ],
+      "identicalToFirstSource": false
+    },
+    "one-grey-jpeg": {
+      "pageCount": 1,
+      "passedThrough": false,
+      "pages": [
+        {
+          "page": 1,
+          "source": 1,
+          "sourcePage": 1,
+          "kind": "image",
+          "embedding": "jpeg",
+          "width": 115.2,
+          "height": 153.6,
+          "dpi": 150
+        }
+      ],
+      "identicalToFirstSource": false
+    },
+    "one-png": {
+      "pageCount": 1,
+      "passedThrough": false,
+      "pages": [
+        {
+          "page": 1,
+          "source": 1,
+          "sourcePage": 1,
+          "kind": "image",
+          "embedding": "png",
+          "width": 115.2,
+          "height": 153.6,
+          "dpi": 150
+        }
+      ],
+      "identicalToFirstSource": false
+    },
+    "images-in-order": {
+      "pageCount": 3,
+      "passedThrough": false,
+      "pages": [
+        {
+          "page": 1,
+          "source": 1,
+          "sourcePage": 1,
+          "kind": "image",
+          "embedding": "jpeg",
+          "width": 115.2,
+          "height": 153.6,
+          "dpi": 150
+        },
+        {
+          "page": 2,
+          "source": 2,
+          "sourcePage": 1,
+          "kind": "image",
+          "embedding": "png",
+          "width": 115.2,
+          "height": 153.6,
+          "dpi": 150
+        },
+        {
+          "page": 3,
+          "source": 3,
+          "sourcePage": 1,
+          "kind": "image",
+          "embedding": "jpeg",
+          "width": 115.2,
+          "height": 153.6,
+          "dpi": 150
+        }
+      ],
+      "identicalToFirstSource": false
+    },
+    "a-pdf-alone-passes-through": {
+      "pageCount": 1,
+      "passedThrough": true,
+      "pages": [
+        {
+          "page": 1,
+          "source": 1,
+          "sourcePage": 1,
+          "kind": "pdf",
+          "embedding": "pdf-page",
+          "width": 200,
+          "height": 200,
+          "dpi": null
+        }
+      ],
+      "identicalToFirstSource": true
+    },
+    "a-pdf-alone-with-metadata-does-not": {
+      "pageCount": 1,
+      "passedThrough": false,
+      "pages": [
+        {
+          "page": 1,
+          "source": 1,
+          "sourcePage": 1,
+          "kind": "pdf",
+          "embedding": "pdf-page",
+          "width": 200,
+          "height": 200,
+          "dpi": null
+        }
+      ],
+      "identicalToFirstSource": false
+    },
+    "a-pdf-alone-with-passthrough-off": {
+      "pageCount": 1,
+      "passedThrough": false,
+      "pages": [
+        {
+          "page": 1,
+          "source": 1,
+          "sourcePage": 1,
+          "kind": "pdf",
+          "embedding": "pdf-page",
+          "width": 200,
+          "height": 200,
+          "dpi": null
+        }
+      ],
+      "identicalToFirstSource": false
+    },
+    "pdf-then-image": {
+      "pageCount": 2,
+      "passedThrough": false,
+      "pages": [
+        {
+          "page": 1,
+          "source": 1,
+          "sourcePage": 1,
+          "kind": "pdf",
+          "embedding": "pdf-page",
+          "width": 200,
+          "height": 200,
+          "dpi": null
+        },
+        {
+          "page": 2,
+          "source": 2,
+          "sourcePage": 1,
+          "kind": "image",
+          "embedding": "jpeg",
+          "width": 115.2,
+          "height": 153.6,
+          "dpi": 150
+        }
+      ],
+      "identicalToFirstSource": false
+    },
+    "image-then-pdf": {
+      "pageCount": 2,
+      "passedThrough": false,
+      "pages": [
+        {
+          "page": 1,
+          "source": 1,
+          "sourcePage": 1,
+          "kind": "image",
+          "embedding": "jpeg",
+          "width": 115.2,
+          "height": 153.6,
+          "dpi": 150
+        },
+        {
+          "page": 2,
+          "source": 2,
+          "sourcePage": 1,
+          "kind": "pdf",
+          "embedding": "pdf-page",
+          "width": 200,
+          "height": 200,
+          "dpi": null
+        }
+      ],
+      "identicalToFirstSource": false
+    },
+    "on-a4": {
+      "pageCount": 1,
+      "passedThrough": false,
+      "pages": [
+        {
+          "page": 1,
+          "source": 1,
+          "sourcePage": 1,
+          "kind": "image",
+          "embedding": "jpeg",
+          "width": 595.28,
+          "height": 841.89,
+          "dpi": 150
+        }
+      ],
+      "identicalToFirstSource": false
+    },
+    "on-a4-with-a-margin": {
+      "pageCount": 1,
+      "passedThrough": false,
+      "pages": [
+        {
+          "page": 1,
+          "source": 1,
+          "sourcePage": 1,
+          "kind": "image",
+          "embedding": "jpeg",
+          "width": 595.28,
+          "height": 841.89,
+          "dpi": 150
+        }
+      ],
+      "identicalToFirstSource": false
+    },
+    "on-letter": {
+      "pageCount": 1,
+      "passedThrough": false,
+      "pages": [
+        {
+          "page": 1,
+          "source": 1,
+          "sourcePage": 1,
+          "kind": "image",
+          "embedding": "png",
+          "width": 612,
+          "height": 792,
+          "dpi": 150
+        }
+      ],
+      "identicalToFirstSource": false
+    },
+    "at-a-given-dpi": {
+      "pageCount": 1,
+      "passedThrough": false,
+      "pages": [
+        {
+          "page": 1,
+          "source": 1,
+          "sourcePage": 1,
+          "kind": "image",
+          "embedding": "jpeg",
+          "width": 57.6,
+          "height": 76.8,
+          "dpi": 300
+        }
+      ],
+      "identicalToFirstSource": false
+    },
+    "re-encoded-as-jpeg": {
+      "pageCount": 1,
+      "passedThrough": false,
+      "pages": [
+        {
+          "page": 1,
+          "source": 1,
+          "sourcePage": 1,
+          "kind": "image",
+          "embedding": "png",
+          "width": 595.28,
+          "height": 841.89,
+          "dpi": 150
+        }
+      ],
+      "identicalToFirstSource": false
+    },
+    "cmyk-jpeg-is-not-embedded-directly": {
+      "pageCount": 1,
+      "passedThrough": false,
+      "pages": [
+        {
+          "page": 1,
+          "source": 1,
+          "sourcePage": 1,
+          "kind": "image",
+          "embedding": "encoded-png",
+          "width": 57.6,
+          "height": 76.8,
+          "dpi": 150
+        }
+      ],
+      "identicalToFirstSource": false
+    },
+    "cmyk-jpeg-re-encoded-as-jpeg": {
+      "pageCount": 1,
+      "passedThrough": false,
+      "pages": [
+        {
+          "page": 1,
+          "source": 1,
+          "sourcePage": 1,
+          "kind": "image",
+          "embedding": "encoded-jpeg",
+          "width": 57.6,
+          "height": 76.8,
+          "dpi": 150
+        }
+      ],
+      "identicalToFirstSource": false
+    },
+    "exif-rotated-jpeg-is-not-embedded-directly": {
+      "pageCount": 1,
+      "passedThrough": false,
+      "pages": [
+        {
+          "page": 1,
+          "source": 1,
+          "sourcePage": 1,
+          "kind": "image",
+          "embedding": "encoded-png",
+          "width": 76.8,
+          "height": 57.6,
+          "dpi": 150
+        }
+      ],
+      "identicalToFirstSource": false
+    },
+    "multi-page-tiff": {
+      "pageCount": 3,
+      "passedThrough": false,
+      "pages": [
+        {
+          "page": 1,
+          "source": 1,
+          "sourcePage": 1,
+          "kind": "image",
+          "embedding": "encoded-png",
+          "width": 48,
+          "height": 67.2,
+          "dpi": 150
+        },
+        {
+          "page": 2,
+          "source": 1,
+          "sourcePage": 2,
+          "kind": "image",
+          "embedding": "encoded-png",
+          "width": 48,
+          "height": 67.2,
+          "dpi": 150
+        },
+        {
+          "page": 3,
+          "source": 1,
+          "sourcePage": 3,
+          "kind": "image",
+          "embedding": "encoded-png",
+          "width": 48,
+          "height": 67.2,
+          "dpi": 150
+        }
+      ],
+      "identicalToFirstSource": false
+    }
+  }
+}
