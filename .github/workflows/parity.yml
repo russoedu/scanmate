@@ -68,7 +68,7 @@ jobs:
       # package added to `write-goldens.mts` and not added here fails with a
       # missing `dist` rather than with anything about goldens. It has already
       # done so once, for seal.
-      - run: npx nx run-many -t build -p @scanmate/ink,@scanmate/align,@scanmate/seal,@scanmate/merge,@scanmate/extract
+      - run: npx nx run-many -t build -p @scanmate/ink,@scanmate/align,@scanmate/seal,@scanmate/merge,@scanmate/extract,@scanmate/ocr
         name: Build the TypeScript the goldens are generated from
 
       - run: npm run parity:check

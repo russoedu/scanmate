@@ -1,0 +1,574 @@
+{
+  "compareTexts": {
+    "identical": {
+      "expected": "the quick brown fox",
+      "actual": "the quick brown fox",
+      "metrics": {
+        "levenshtein": 0,
+        "levenshteinSimilarity": 1,
+        "jaccard": 1,
+        "dice": 1,
+        "cosine": 1,
+        "jaroWinkler": 1,
+        "characterErrorRate": 0,
+        "wordErrorRate": 0,
+        "wordRecall": 1,
+        "lengthRatio": 1,
+        "characters": 19
+      }
+    },
+    "one-character": {
+      "expected": "invoice 12345",
+      "actual": "invoice 12346",
+      "metrics": {
+        "levenshtein": 1,
+        "levenshteinSimilarity": 0.9230769230769231,
+        "jaccard": 0.3333333333333333,
+        "dice": 0.9166666666666666,
+        "cosine": 0.4999999999999999,
+        "jaroWinkler": 0.9692307692307692,
+        "characterErrorRate": 0.07692307692307693,
+        "wordErrorRate": 0.5,
+        "wordRecall": 0.5,
+        "lengthRatio": 1,
+        "characters": 13
+      }
+    },
+    "a-word-dropped": {
+      "expected": "total due on receipt",
+      "actual": "total due receipt",
+      "metrics": {
+        "levenshtein": 3,
+        "levenshteinSimilarity": 0.85,
+        "jaccard": 0.75,
+        "dice": 0.9142857142857143,
+        "cosine": 0.8660254037844387,
+        "jaroWinkler": 0.9700000000000001,
+        "characterErrorRate": 0.15,
+        "wordErrorRate": 0.25,
+        "wordRecall": 0.75,
+        "lengthRatio": 0.85,
+        "characters": 20
+      }
+    },
+    "a-word-added": {
+      "expected": "total due",
+      "actual": "total now due",
+      "metrics": {
+        "levenshtein": 4,
+        "levenshteinSimilarity": 0.6923076923076923,
+        "jaccard": 0.6666666666666666,
+        "dice": 0.8,
+        "cosine": 0.8164965809277259,
+        "jaroWinkler": 0.9384615384615385,
+        "characterErrorRate": 0.4444444444444444,
+        "wordErrorRate": 0.5,
+        "wordRecall": 1,
+        "lengthRatio": 1.4444444444444444,
+        "characters": 9
+      }
+    },
+    "reflowed": {
+      "expected": "alpha beta gamma delta",
+      "actual": "delta gamma beta alpha",
+      "metrics": {
+        "levenshtein": 15,
+        "levenshteinSimilarity": 0.31818181818181823,
+        "jaccard": 1,
+        "dice": 0.9523809523809523,
+        "cosine": 1,
+        "jaroWinkler": 0.7599681020733652,
+        "characterErrorRate": 0.6818181818181818,
+        "wordErrorRate": 1,
+        "wordRecall": 1,
+        "lengthRatio": 1,
+        "characters": 22
+      }
+    },
+    "nothing-in-common": {
+      "expected": "abcdef",
+      "actual": "uvwxyz",
+      "metrics": {
+        "levenshtein": 6,
+        "levenshteinSimilarity": 0,
+        "jaccard": 0,
+        "dice": 0,
+        "cosine": 0,
+        "jaroWinkler": 0,
+        "characterErrorRate": 1,
+        "wordErrorRate": 1,
+        "wordRecall": 0,
+        "lengthRatio": 1,
+        "characters": 6
+      }
+    },
+    "empty-expected": {
+      "expected": "",
+      "actual": "something",
+      "metrics": {
+        "levenshtein": 9,
+        "levenshteinSimilarity": 0,
+        "jaccard": 0,
+        "dice": 0,
+        "cosine": 0,
+        "jaroWinkler": 0,
+        "characterErrorRate": 1,
+        "wordErrorRate": 1,
+        "wordRecall": 1,
+        "lengthRatio": null,
+        "characters": 0
+      }
+    },
+    "empty-actual": {
+      "expected": "something",
+      "actual": "",
+      "metrics": {
+        "levenshtein": 9,
+        "levenshteinSimilarity": 0,
+        "jaccard": 0,
+        "dice": 0,
+        "cosine": 0,
+        "jaroWinkler": 0,
+        "characterErrorRate": 1,
+        "wordErrorRate": 1,
+        "wordRecall": 0,
+        "lengthRatio": 0,
+        "characters": 9
+      }
+    },
+    "both-empty": {
+      "expected": "",
+      "actual": "",
+      "metrics": {
+        "levenshtein": 0,
+        "levenshteinSimilarity": 1,
+        "jaccard": 1,
+        "dice": 1,
+        "cosine": 1,
+        "jaroWinkler": 1,
+        "characterErrorRate": 0,
+        "wordErrorRate": 0,
+        "wordRecall": 1,
+        "lengthRatio": 1,
+        "characters": 0
+      }
+    },
+    "one-character-each": {
+      "expected": "a",
+      "actual": "b",
+      "metrics": {
+        "levenshtein": 1,
+        "levenshteinSimilarity": 0,
+        "jaccard": 0,
+        "dice": 0,
+        "cosine": 0,
+        "jaroWinkler": 0,
+        "characterErrorRate": 1,
+        "wordErrorRate": 1,
+        "wordRecall": 0,
+        "lengthRatio": 1,
+        "characters": 1
+      }
+    },
+    "repeated-words": {
+      "expected": "aa aa bb",
+      "actual": "aa bb bb",
+      "metrics": {
+        "levenshtein": 2,
+        "levenshteinSimilarity": 0.75,
+        "jaccard": 1,
+        "dice": 0.5714285714285714,
+        "cosine": 0.7999999999999998,
+        "jaroWinkler": 0.8444444444444444,
+        "characterErrorRate": 0.25,
+        "wordErrorRate": 0.3333333333333333,
+        "wordRecall": 0.6666666666666666,
+        "lengthRatio": 1,
+        "characters": 8
+      }
+    },
+    "a-shared-prefix": {
+      "expected": "martha",
+      "actual": "marhta",
+      "metrics": {
+        "levenshtein": 2,
+        "levenshteinSimilarity": 0.6666666666666667,
+        "jaccard": 0,
+        "dice": 0.4,
+        "cosine": 0,
+        "jaroWinkler": 0.9611111111111111,
+        "characterErrorRate": 0.3333333333333333,
+        "wordErrorRate": 1,
+        "wordRecall": 0,
+        "lengthRatio": 1,
+        "characters": 6
+      }
+    },
+    "short-names": {
+      "expected": "dixon",
+      "actual": "dicksonx",
+      "metrics": {
+        "levenshtein": 4,
+        "levenshteinSimilarity": 0.5,
+        "jaccard": 0,
+        "dice": 0.36363636363636365,
+        "cosine": 0,
+        "jaroWinkler": 0.8133333333333332,
+        "characterErrorRate": 0.8,
+        "wordErrorRate": 1,
+        "wordRecall": 0,
+        "lengthRatio": 1.6,
+        "characters": 5
+      }
+    },
+    "case-and-spacing": {
+      "expected": "  The   TOTAL  ",
+      "actual": "the total",
+      "metrics": {
+        "levenshtein": 0,
+        "levenshteinSimilarity": 1,
+        "jaccard": 1,
+        "dice": 1,
+        "cosine": 0.9999999999999998,
+        "jaroWinkler": 1,
+        "characterErrorRate": 0,
+        "wordErrorRate": 0,
+        "wordRecall": 1,
+        "lengthRatio": 1,
+        "characters": 9
+      }
+    },
+    "digits-transposed": {
+      "expected": "1099-MISC",
+      "actual": "1909-MISC",
+      "metrics": {
+        "levenshtein": 2,
+        "levenshteinSimilarity": 0.7777777777777778,
+        "jaccard": 0,
+        "dice": 0.75,
+        "cosine": 0,
+        "jaroWinkler": 0.9666666666666666,
+        "characterErrorRate": 0.2222222222222222,
+        "wordErrorRate": 1,
+        "wordRecall": 0,
+        "lengthRatio": 1,
+        "characters": 9
+      }
+    },
+    "a-long-page": {
+      "expected": "lorem ipsum dolor sit amet consectetur adipiscing elit sed do",
+      "actual": "lorem ipsom dolor sit amet consectetur adipisc1ng elit sed do",
+      "metrics": {
+        "levenshtein": 2,
+        "levenshteinSimilarity": 0.9672131147540983,
+        "jaccard": 0.6666666666666666,
+        "dice": 0.9333333333333333,
+        "cosine": 0.7999999999999998,
+        "jaroWinkler": 0.96146151708808,
+        "characterErrorRate": 0.03278688524590164,
+        "wordErrorRate": 0.2,
+        "wordRecall": 0.8,
+        "lengthRatio": 1,
+        "characters": 61
+      }
+    },
+    "an-astral-character": {
+      "expected": "fee 😀 due",
+      "actual": "fee 😀 due",
+      "metrics": {
+        "levenshtein": 0,
+        "levenshteinSimilarity": 1,
+        "jaccard": 1,
+        "dice": 1,
+        "cosine": 0.9999999999999998,
+        "jaroWinkler": 1,
+        "characterErrorRate": 0,
+        "wordErrorRate": 0,
+        "wordRecall": 1,
+        "lengthRatio": 1,
+        "characters": 7
+      }
+    },
+    "an-astral-difference": {
+      "expected": "fee 😀 due",
+      "actual": "fee 😁 due",
+      "metrics": {
+        "levenshtein": 0,
+        "levenshteinSimilarity": 1,
+        "jaccard": 1,
+        "dice": 1,
+        "cosine": 0.9999999999999998,
+        "jaroWinkler": 1,
+        "characterErrorRate": 0,
+        "wordErrorRate": 0,
+        "wordRecall": 1,
+        "lengthRatio": 1,
+        "characters": 7
+      }
+    },
+    "an-astral-against-nothing": {
+      "expected": "😀",
+      "actual": "",
+      "metrics": {
+        "levenshtein": 0,
+        "levenshteinSimilarity": 1,
+        "jaccard": 1,
+        "dice": 1,
+        "cosine": 1,
+        "jaroWinkler": 1,
+        "characterErrorRate": 0,
+        "wordErrorRate": 0,
+        "wordRecall": 1,
+        "lengthRatio": 1,
+        "characters": 0
+      }
+    },
+    "an-astral-against-one-letter": {
+      "expected": "😀",
+      "actual": "a",
+      "metrics": {
+        "levenshtein": 1,
+        "levenshteinSimilarity": 0,
+        "jaccard": 0,
+        "dice": 0,
+        "cosine": 0,
+        "jaroWinkler": 0,
+        "characterErrorRate": 1,
+        "wordErrorRate": 1,
+        "wordRecall": 1,
+        "lengthRatio": null,
+        "characters": 0
+      }
+    }
+  },
+  "onStrings": {
+    "identical": {
+      "levenshtein": 0,
+      "levenshteinSimilarity": 1,
+      "dice": 1,
+      "jaroWinkler": 1
+    },
+    "one-character": {
+      "levenshtein": 1,
+      "levenshteinSimilarity": 0.9230769230769231,
+      "dice": 0.9166666666666666,
+      "jaroWinkler": 0.9692307692307692
+    },
+    "a-word-dropped": {
+      "levenshtein": 3,
+      "levenshteinSimilarity": 0.85,
+      "dice": 0.9142857142857143,
+      "jaroWinkler": 0.9700000000000001
+    },
+    "a-word-added": {
+      "levenshtein": 4,
+      "levenshteinSimilarity": 0.6923076923076923,
+      "dice": 0.8,
+      "jaroWinkler": 0.9384615384615385
+    },
+    "reflowed": {
+      "levenshtein": 15,
+      "levenshteinSimilarity": 0.31818181818181823,
+      "dice": 0.9523809523809523,
+      "jaroWinkler": 0.7599681020733652
+    },
+    "nothing-in-common": {
+      "levenshtein": 6,
+      "levenshteinSimilarity": 0,
+      "dice": 0,
+      "jaroWinkler": 0
+    },
+    "empty-expected": {
+      "levenshtein": 9,
+      "levenshteinSimilarity": 0,
+      "dice": 0,
+      "jaroWinkler": 0
+    },
+    "empty-actual": {
+      "levenshtein": 9,
+      "levenshteinSimilarity": 0,
+      "dice": 0,
+      "jaroWinkler": 0
+    },
+    "both-empty": {
+      "levenshtein": 0,
+      "levenshteinSimilarity": 1,
+      "dice": 1,
+      "jaroWinkler": 1
+    },
+    "one-character-each": {
+      "levenshtein": 1,
+      "levenshteinSimilarity": 0,
+      "dice": 0,
+      "jaroWinkler": 0
+    },
+    "repeated-words": {
+      "levenshtein": 2,
+      "levenshteinSimilarity": 0.75,
+      "dice": 0.5714285714285714,
+      "jaroWinkler": 0.8444444444444444
+    },
+    "a-shared-prefix": {
+      "levenshtein": 2,
+      "levenshteinSimilarity": 0.6666666666666667,
+      "dice": 0.4,
+      "jaroWinkler": 0.9611111111111111
+    },
+    "short-names": {
+      "levenshtein": 4,
+      "levenshteinSimilarity": 0.5,
+      "dice": 0.36363636363636365,
+      "jaroWinkler": 0.8133333333333332
+    },
+    "case-and-spacing": {
+      "levenshtein": 12,
+      "levenshteinSimilarity": 0.19999999999999996,
+      "dice": 0.18181818181818182,
+      "jaroWinkler": 0.3444444444444444
+    },
+    "digits-transposed": {
+      "levenshtein": 2,
+      "levenshteinSimilarity": 0.7777777777777778,
+      "dice": 0.75,
+      "jaroWinkler": 0.9666666666666666
+    },
+    "a-long-page": {
+      "levenshtein": 2,
+      "levenshteinSimilarity": 0.9672131147540983,
+      "dice": 0.9333333333333333,
+      "jaroWinkler": 0.96146151708808
+    },
+    "an-astral-character": {
+      "levenshtein": 0,
+      "levenshteinSimilarity": 1,
+      "dice": 1,
+      "jaroWinkler": 1
+    },
+    "an-astral-difference": {
+      "levenshtein": 1,
+      "levenshteinSimilarity": 0.9,
+      "dice": 0.7777777777777778,
+      "jaroWinkler": 0.96
+    },
+    "an-astral-against-nothing": {
+      "levenshtein": 2,
+      "levenshteinSimilarity": 0,
+      "dice": 0,
+      "jaroWinkler": 0
+    },
+    "an-astral-against-one-letter": {
+      "levenshtein": 2,
+      "levenshteinSimilarity": 0,
+      "dice": 0,
+      "jaroWinkler": 0
+    }
+  },
+  "onWordLists": {
+    "same-words": {
+      "a": [
+        "a",
+        "b",
+        "c"
+      ],
+      "b": [
+        "a",
+        "b",
+        "c"
+      ],
+      "jaccard": 1,
+      "cosine": 1.0000000000000002,
+      "wordRecall": 1,
+      "wordDistance": 0
+    },
+    "disjoint": {
+      "a": [
+        "a",
+        "b"
+      ],
+      "b": [
+        "c",
+        "d"
+      ],
+      "jaccard": 0,
+      "cosine": 0,
+      "wordRecall": 0,
+      "wordDistance": 2
+    },
+    "partly-shared": {
+      "a": [
+        "a",
+        "b",
+        "c"
+      ],
+      "b": [
+        "b",
+        "c",
+        "d"
+      ],
+      "jaccard": 0.5,
+      "cosine": 0.6666666666666667,
+      "wordRecall": 0.6666666666666666,
+      "wordDistance": 2
+    },
+    "with-repeats": {
+      "a": [
+        "a",
+        "a",
+        "b"
+      ],
+      "b": [
+        "a",
+        "b",
+        "b"
+      ],
+      "jaccard": 1,
+      "cosine": 0.7999999999999998,
+      "wordRecall": 0.6666666666666666,
+      "wordDistance": 1
+    },
+    "expected-empty": {
+      "a": [],
+      "b": [
+        "a"
+      ],
+      "jaccard": 0,
+      "cosine": 0,
+      "wordRecall": 1,
+      "wordDistance": 1
+    },
+    "actual-empty": {
+      "a": [
+        "a"
+      ],
+      "b": [],
+      "jaccard": 0,
+      "cosine": 0,
+      "wordRecall": 0,
+      "wordDistance": 1
+    },
+    "both-empty": {
+      "a": [],
+      "b": [],
+      "jaccard": 1,
+      "cosine": 1,
+      "wordRecall": 1,
+      "wordDistance": 0
+    },
+    "reordered": {
+      "a": [
+        "a",
+        "b",
+        "c"
+      ],
+      "b": [
+        "c",
+        "b",
+        "a"
+      ],
+      "jaccard": 1,
+      "cosine": 1.0000000000000002,
+      "wordRecall": 1,
+      "wordDistance": 2
+    }
+  }
+}
