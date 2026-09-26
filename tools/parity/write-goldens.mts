@@ -112,6 +112,8 @@ import { findSignatureFields, verifySignatures } from '../../packages/seal/dist/
 import {
   approximateSearch,
   bestMatch,
+  despeckle,
+  estimateNoiseSigma,
   wordSpan,
 } from '../../packages/scan/dist/index.esm.js'
 import {
@@ -3562,3 +3564,79 @@ writeFileSync(
     '\n',
 )
 process.stdout.write('wrote ' + join(goldenDir, 'scan-package-surface.json') + '\n')
+
+/*
+ * `@scanmate/scan`'s image algorithms. The inputs are seeded synthetic pages,
+ * reproduced on the Python side from the same generator rather than shipped.
+ */
+const noisePages = [
+  ['clean', createSyntheticDocument({ width: 160, height: 120, seed: 11 })],
+  ['another', createSyntheticDocument({ width: 90, height: 140, seed: 3 })],
+] as const
+
+/** A speckled copy: every nth pixel driven to black or white, deterministically. */
+function speckle (raster: Raster, every: number): Raster {
+  const data = new Uint8ClampedArray(raster.data)
+  for (let i = 0; i < data.length; i += 4)
+    if ((i / 4) % every === 0) {
+      const value = ((i / 4 / every) % 2 === 0) ? 0 : 255
+      data[i] = value
+      data[i + 1] = value
+      data[i + 2] = value
+    }
+
+  return { width: raster.width, height: raster.height, data }
+}
+
+const despeckleCases: Array<[string, Raster, number]> = [
+  ['clean-r1', noisePages[0][1].raster, 1],
+  ['clean-r2', noisePages[0][1].raster, 2],
+  ['speckled-r1', speckle(noisePages[0][1].raster, 7), 1],
+  ['speckled-r3', speckle(noisePages[0][1].raster, 7), 3],
+  ['tall-r1', noisePages[1][1].raster, 1],
+  /*
+   * `Math.round`, not truncation: 1.6 is a radius of 2, and a port that cast
+   * to an integer would quietly run a 3x3 filter where a 5x5 was asked for.
+   */
+  ['radius-rounded-up', noisePages[1][1].raster, 1.6],
+  ['radius-rounded-down', noisePages[1][1].raster, 1.4],
+  /* ...and held at one, so this is the r = 1 filter. */
+  ['radius-floored', noisePages[1][1].raster, 0],
+]
+
+const despeckled = despeckleCases.map(([name, raster, radius]) => {
+  const out = despeckle(raster.data, raster.width, raster.height, radius)
+
+  return [name, {
+    width:   raster.width,
+    height:  raster.height,
+    radius,
+    sha256:  createHash('sha256').update(Buffer.from(out.buffer, out.byteOffset, out.byteLength)).digest('hex'),
+    /* A few pixels in full, so a failure says WHERE rather than only that the
+     * hashes differ - including the corner, where the window is clipped. */
+    samples: [0, 1, raster.width - 1, raster.width, raster.width * raster.height - 1]
+      .map(p => [out[p * 4], out[p * 4 + 1], out[p * 4 + 2], out[p * 4 + 3]]),
+  }] as const
+})
+
+const noiseSigmas = [
+  ...noisePages.map(([name, page]) => [name, estimateNoiseSigma(toGrayscale(page.raster))] as const),
+  ['speckled', estimateNoiseSigma(toGrayscale(speckle(noisePages[0][1].raster, 7)))] as const,
+  ['heavily-speckled', estimateNoiseSigma(toGrayscale(speckle(noisePages[0][1].raster, 3)))] as const,
+  /* Too small to measure at all. */
+  ['two-by-two', estimateNoiseSigma(createGray(2, 2))] as const,
+  ['three-by-three', estimateNoiseSigma(createGray(3, 3))] as const,
+]
+
+writeFileSync(
+  join(goldenDir, 'scan-noise-reduction.json'),
+  JSON.stringify({
+    pages: {
+      clean:   { width: 160, height: 120, seed: 11 },
+      another: { width: 90, height: 140, seed: 3 },
+    },
+    despeckle:          Object.fromEntries(despeckled),
+    estimateNoiseSigma: Object.fromEntries(noiseSigmas),
+  }, undefined, 2) + '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'scan-noise-reduction.json') + '\n')

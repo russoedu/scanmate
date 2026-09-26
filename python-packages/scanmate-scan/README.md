@@ -58,6 +58,31 @@ worth knowing: **a stage that re-runs drops everything downstream of it.**
 Aligning with a different model invalidates the diff measured on the old
 alignment, and the audit built on both.
 
+## Despeckling and noise
+
+A **median** filter, unlike the mean the background is estimated with, rejects
+the isolated specks a scanner leaves instead of smearing them into their
+neighbours - which, once contrast is stretched, is how a speck fuses into a thin
+stroke and a `1` becomes an `l`.
+
+```python
+from scanmate_scan import despeckle, estimate_noise_sigma
+
+cleaned = despeckle(page.pixels, page.width, page.height, radius=1)
+estimate_noise_sigma(grey)   # ~0 for a clean render, far higher for a photocopy
+```
+
+Two details the whole image hangs on, and both are pinned: alpha is **copied,
+never filtered**, because a median of the alpha channel would invent edges where
+a page is transparent; and a window clipped at the border may hold an even
+count, where the middle taken is the **upper** one - a mean-based median would
+be half a level out on every edge pixel.
+
+`estimate_noise_sigma` is Immerkaer (1996): the mean absolute response of a
+Laplacian-difference kernel, scaled so Gaussian noise of standard deviation
+sigma scores sigma. Text and edges occupy a small share of a page and noise is
+everywhere, so on a document the noise dominates.
+
 ## What is not here
 
 **The session that ties the pipeline together**, and most of what it calls. The
@@ -66,9 +91,9 @@ see [`scanmate-extract`][extract] and [`scanmate-ocr`][ocr] for why — pdf.js's
 rasteriser and text-layer segmentation, and Tesseract, have no Python equivalent
 that could honestly be called a parallel port.
 
-What remains portable, and is not yet done: the image algorithms
-(`illumination-correction`, `noise-reduction`, `scan-enhancement`,
-`checkbox-reading`, `audit-evidence`, `audit-calibration`), `region-comparison`,
+What remains portable, and is not yet done: the rest of the image algorithms
+(`illumination-correction`, `scan-enhancement`, `checkbox-reading`,
+`audit-evidence`, `audit-calibration`), `region-comparison`,
 `finding-correlation`, `corpus-calibration`, `audit-reuse`,
 `signature-checking`, and `content-search`. About 2,800 of the TypeScript's
 6,700 lines.
