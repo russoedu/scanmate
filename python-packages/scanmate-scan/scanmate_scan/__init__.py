@@ -20,6 +20,7 @@ from .approximate_search import (
     best_match,
     word_span,
 )
+from .noise_reduction import despeckle, estimate_noise_sigma
 from .stage_caching import fingerprint
 
 __all__ = [
@@ -28,6 +29,8 @@ __all__ = [
     "Span",
     "approximate_search",
     "best_match",
+    "despeckle",
+    "estimate_noise_sigma",
     "fingerprint",
     "word_span",
 ]
