@@ -1,0 +1,253 @@
+{
+  "approximateSearch": {
+    "exact": {
+      "needle": "Subscription Term",
+      "text": "The Initial Subscription Term begins",
+      "minScore": null,
+      "matches": [
+        {
+          "start": 12,
+          "end": 29,
+          "distance": 0,
+          "score": 1
+        }
+      ],
+      "best": {
+        "start": 12,
+        "end": 29,
+        "distance": 0,
+        "score": 1
+      }
+    },
+    "one-letter-misread": {
+      "needle": "Initial Subscription Term",
+      "text": "The lnitial Subscription Terrn begins",
+      "minScore": null,
+      "matches": [
+        {
+          "start": 4,
+          "end": 28,
+          "distance": 2,
+          "score": 0.92
+        }
+      ],
+      "best": {
+        "start": 4,
+        "end": 28,
+        "distance": 2,
+        "score": 0.92
+      }
+    },
+    "not-there": {
+      "needle": "Termination Notice",
+      "text": "The Initial Subscription Term begins",
+      "minScore": null,
+      "matches": [],
+      "best": null
+    },
+    "two-places": {
+      "needle": "total",
+      "text": "the total and the total again",
+      "minScore": null,
+      "matches": [
+        {
+          "start": 4,
+          "end": 9,
+          "distance": 0,
+          "score": 1
+        },
+        {
+          "start": 18,
+          "end": 23,
+          "distance": 0,
+          "score": 1
+        }
+      ],
+      "best": {
+        "start": 4,
+        "end": 9,
+        "distance": 0,
+        "score": 1
+      }
+    },
+    "overlapping-keeps-the-best": {
+      "needle": "aaaa",
+      "text": "aaaaaa",
+      "minScore": null,
+      "matches": [
+        {
+          "start": 0,
+          "end": 4,
+          "distance": 0,
+          "score": 1
+        }
+      ],
+      "best": {
+        "start": 0,
+        "end": 4,
+        "distance": 0,
+        "score": 1
+      }
+    },
+    "a-looser-bar": {
+      "needle": "Subscription",
+      "text": "Subscrlptlon",
+      "minScore": 0.8,
+      "matches": [
+        {
+          "start": 0,
+          "end": 12,
+          "distance": 2,
+          "score": 0.8333333333333334
+        }
+      ],
+      "best": {
+        "start": 0,
+        "end": 12,
+        "distance": 2,
+        "score": 0.8333333333333334
+      }
+    },
+    "a-stricter-bar": {
+      "needle": "Subscription",
+      "text": "Subscrlptlon",
+      "minScore": 0.95,
+      "matches": [],
+      "best": null
+    },
+    "an-empty-needle": {
+      "needle": "",
+      "text": "anything",
+      "minScore": null,
+      "matches": [],
+      "best": null
+    },
+    "an-empty-text": {
+      "needle": "something",
+      "text": "",
+      "minScore": null,
+      "matches": [],
+      "best": null
+    },
+    "a-figure-found": {
+      "needle": "1,250.00",
+      "text": "the sum of 1,250.00 is due",
+      "minScore": null,
+      "matches": [
+        {
+          "start": 11,
+          "end": 19,
+          "distance": 0,
+          "score": 1
+        }
+      ],
+      "best": {
+        "start": 11,
+        "end": 19,
+        "distance": 0,
+        "score": 1
+      }
+    },
+    "a-figure-inside-a-bigger-one": {
+      "needle": "1,250.00",
+      "text": "the sum of 11,250.00 is due",
+      "minScore": null,
+      "matches": [],
+      "best": null
+    },
+    "a-figure-that-is-not-the-same": {
+      "needle": "1,250.00",
+      "text": "the sum of 7,250.00 is due",
+      "minScore": null,
+      "matches": [],
+      "best": null
+    },
+    "a-figure-with-a-digit-after": {
+      "needle": "1,250.00",
+      "text": "the sum of 1,250.005 is due",
+      "minScore": null,
+      "matches": [],
+      "best": null
+    },
+    "a-lone-letter-present": {
+      "needle": "Schedule A",
+      "text": "see Schedule A attached",
+      "minScore": null,
+      "matches": [
+        {
+          "start": 4,
+          "end": 14,
+          "distance": 0,
+          "score": 1
+        }
+      ],
+      "best": {
+        "start": 4,
+        "end": 14,
+        "distance": 0,
+        "score": 1
+      }
+    },
+    "a-lone-letter-absent": {
+      "needle": "Schedule A",
+      "text": "see Schedule B attached",
+      "minScore": null,
+      "matches": [],
+      "best": null
+    },
+    "a-lone-letter-inside-a-word": {
+      "needle": "Option B",
+      "text": "see Optional Bundle attached",
+      "minScore": null,
+      "matches": [],
+      "best": null
+    }
+  },
+  "wordSpan": {
+    "inside-one-word": {
+      "text": "the subscription term begins",
+      "start": 4,
+      "end": 10,
+      "span": {
+        "start": 4,
+        "end": 16
+      }
+    },
+    "already-whole": {
+      "text": "the subscription term begins",
+      "start": 4,
+      "end": 16,
+      "span": {
+        "start": 4,
+        "end": 16
+      }
+    },
+    "from-the-start": {
+      "text": "subscription term",
+      "start": 0,
+      "end": 4,
+      "span": {
+        "start": 0,
+        "end": 12
+      }
+    },
+    "to-the-end": {
+      "text": "subscription term",
+      "start": 13,
+      "end": 17,
+      "span": {
+        "start": 13,
+        "end": 17
+      }
+    },
+    "the-whole-text": {
+      "text": "one",
+      "start": 1,
+      "end": 2,
+      "span": {
+        "start": 0,
+        "end": 3
+      }
+    }
+  }
+}

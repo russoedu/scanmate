@@ -110,6 +110,11 @@ import {
 import type { Correspondence } from '../../packages/align/dist/src/index.d.ts'
 import { findSignatureFields, verifySignatures } from '../../packages/seal/dist/index.esm.js'
 import {
+  approximateSearch,
+  bestMatch,
+  wordSpan,
+} from '../../packages/scan/dist/index.esm.js'
+import {
   FIGURE_CHARACTERS,
   TEXT_CHARACTERS,
   collectTemplates,
@@ -3488,3 +3493,72 @@ writeFileSync(
   }, undefined, 2) + '\n',
 )
 process.stdout.write('wrote ' + join(goldenDir, 'ocr-print-verification.json') + '\n')
+
+/*
+ * ---------------------------------------------------------------------------
+ * @scanmate/scan - the algorithms that depend on nothing but ink.
+ *
+ * The session that ties them together is not here: it orchestrates rendering
+ * and OCR, neither of which is ported. What IS here is ordinary computation
+ * and is held bit for bit.
+ * ---------------------------------------------------------------------------
+ */
+const searchCases: Array<[string, string, string, number | undefined]> = [
+  ['exact', 'Subscription Term', 'The Initial Subscription Term begins', undefined],
+  ['one-letter-misread', 'Initial Subscription Term', 'The lnitial Subscription Terrn begins', undefined],
+  ['not-there', 'Termination Notice', 'The Initial Subscription Term begins', undefined],
+  ['two-places', 'total', 'the total and the total again', undefined],
+  ['overlapping-keeps-the-best', 'aaaa', 'aaaaaa', undefined],
+  ['a-looser-bar', 'Subscription', 'Subscrlptlon', 0.8],
+  ['a-stricter-bar', 'Subscription', 'Subscrlptlon', 0.95],
+  ['an-empty-needle', '', 'anything', undefined],
+  ['an-empty-text', 'something', '', undefined],
+  /* A figure must keep its digits, in order, and touch no others. */
+  ['a-figure-found', '1,250.00', 'the sum of 1,250.00 is due', undefined],
+  ['a-figure-inside-a-bigger-one', '1,250.00', 'the sum of 11,250.00 is due', undefined],
+  ['a-figure-that-is-not-the-same', '1,250.00', 'the sum of 7,250.00 is due', undefined],
+  ['a-figure-with-a-digit-after', '1,250.00', 'the sum of 1,250.005 is due', undefined],
+  /* A lone letter is an identifier: one letter in ten is 90% similar. */
+  ['a-lone-letter-present', 'Schedule A', 'see Schedule A attached', undefined],
+  ['a-lone-letter-absent', 'Schedule A', 'see Schedule B attached', undefined],
+  ['a-lone-letter-inside-a-word', 'Option B', 'see Optional Bundle attached', undefined],
+]
+
+const searches = searchCases.map(([name, needle, text, minScore]) => {
+  const options = minScore === undefined ? {} : { minScore }
+
+  return [name, {
+    needle,
+    text,
+    minScore: minScore ?? null,
+    matches:  approximateSearch(needle, text, options),
+    best:     bestMatch(needle, text, options),
+  }] as const
+})
+
+const spanCases: Array<[string, string, number, number]> = [
+  ['inside-one-word', 'the subscription term begins', 4, 10],
+  ['already-whole', 'the subscription term begins', 4, 16],
+  ['from-the-start', 'subscription term', 0, 4],
+  ['to-the-end', 'subscription term', 13, 17],
+  ['the-whole-text', 'one', 1, 2],
+]
+const spans = spanCases.map(([name, text, start, end]) =>
+  [name, { text, start, end, span: wordSpan(text, start, end) }] as const)
+
+writeFileSync(
+  join(goldenDir, 'scan-approximate-search.json'),
+  JSON.stringify({
+    approximateSearch: Object.fromEntries(searches),
+    wordSpan:          Object.fromEntries(spans),
+  }, undefined, 2) + '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'scan-approximate-search.json') + '\n')
+
+const scanExported = new Set(Object.keys(await import('../../packages/scan/dist/index.esm.js')))
+writeFileSync(
+  join(goldenDir, 'scan-package-surface.json'),
+  JSON.stringify({ exports: [...scanExported].sort((a, b) => a.localeCompare(b)) }, undefined, 2) +
+    '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'scan-package-surface.json') + '\n')
