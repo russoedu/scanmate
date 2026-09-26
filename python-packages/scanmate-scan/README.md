@@ -83,6 +83,46 @@ Laplacian-difference kernel, scaled so Gaussian noise of standard deviation
 sigma scores sigma. Text and edges occupy a small share of a page and noise is
 everywhere, so on a document the noise dominates.
 
+## Levelling and contrast
+
+Scanned and photographed pages come back with shadows, yellowed or grey paper and
+washed-out text. Dividing each pixel by an estimate of the paper behind it - a
+wide box mean, which no stroke is big enough to move - flattens the lighting and
+leaves the ink; a linear stretch between the black and white points then clamps
+paper towards white and ink towards black. In colour mode each channel is divided
+by its own background, which corrects the white balance while a blue pen stays
+blue.
+
+```python
+from scanmate_scan import EnhanceOptions, SharpenOptions, enhance_raster
+
+result = enhance_raster(page)                                  # every default
+result.applied.white_point, result.applied.despeckled           # what it chose
+
+enhance_raster(page, EnhanceOptions(white_point=0.95))          # fix one point
+enhance_raster(page, EnhanceOptions(sharpen=SharpenOptions(sigma=2)))
+```
+
+Read what `"auto"` actually does, because it is **not** "paper to white". Paper is
+nearly all of a page and noise spreads it both ways, so its brightest 1% sit
+above 1 and the white point lands on its 1.1 bound; ink is a few percent of a
+text page, so the black point lands low. `"auto"` is therefore a gentle stretch
+that leaves paper light grey - kept because on OCR word recall it beat fixed
+points that do whiten the paper. For white paper, pass a fixed `white_point`
+below 1.
+
+Two roundings sit side by side here, and either would be right on most pixels on
+its own: the contrast stretch rounds a half **up** (`Math.round`), while the
+unsharp mask writes into a `Uint8ClampedArray`, which rounds a half **to even**.
+Both are pinned, and the tests compare the whole enhanced page as a sha256 over
+every byte rather than sampling it, because sampling is exactly how a
+one-rule-for-both port passes.
+
+`sharpen_raster` is **absent**: it is the same unsharp mask with the blur done by
+libvips, and `blur_raster` is absent from `scanmate-ink` for the reason that
+package's README gives. `sharpen` here uses the box-blur mask, which is the one
+the sharpening was tuned with.
+
 ## What is not here
 
 **The session that ties the pipeline together**, and most of what it calls. The
@@ -92,11 +132,10 @@ rasteriser and text-layer segmentation, and Tesseract, have no Python equivalent
 that could honestly be called a parallel port.
 
 What remains portable, and is not yet done: the rest of the image algorithms
-(`illumination-correction`, `scan-enhancement`, `checkbox-reading`,
-`audit-evidence`, `audit-calibration`), `region-comparison`,
-`finding-correlation`, `corpus-calibration`, `audit-reuse`,
-`signature-checking`, and `content-search`. About 2,800 of the TypeScript's
-6,700 lines.
+(`scan-enhancement`, `checkbox-reading`, `audit-evidence`,
+`audit-calibration`), `region-comparison`, `finding-correlation`,
+`corpus-calibration`, `audit-reuse`, `signature-checking`, and
+`content-search`. About 2,400 of the TypeScript's 6,700 lines.
 
 ## Requirements
 
