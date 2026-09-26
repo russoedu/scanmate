@@ -256,6 +256,20 @@
         "script": "scanmate-extract:build",
         "problemMatcher": [],
         "group": "build"
+      },
+      {
+        "label": "scanmate-ocr: qa",
+        "type": "npm",
+        "script": "scanmate-ocr:qa",
+        "problemMatcher": [],
+        "group": "qa"
+      },
+      {
+        "label": "scanmate-ocr: build",
+        "type": "npm",
+        "script": "scanmate-ocr:build",
+        "problemMatcher": [],
+        "group": "build"
       }
     ]
   },

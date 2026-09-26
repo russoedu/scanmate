@@ -110,6 +110,17 @@ import {
 import type { Correspondence } from '../../packages/align/dist/src/index.d.ts'
 import { findSignatureFields, verifySignatures } from '../../packages/seal/dist/index.esm.js'
 import {
+  compareTexts,
+  cosine,
+  dice,
+  jaccard,
+  jaroWinkler,
+  levenshtein,
+  levenshteinSimilarity,
+  wordDistance,
+  wordRecall,
+} from '../../packages/ocr/dist/index.esm.js'
+import {
   DEFAULT_DPI_LIMITS,
   SCAN_COVERAGE,
   MAX_WORD_GAP,
@@ -3207,3 +3218,92 @@ writeFileSync(
 )
 
 process.stdout.write('wrote ' + join(goldenDir, 'extract-field-location.json') + '\n')
+
+/*
+ * ---------------------------------------------------------------------------
+ * @scanmate/ocr - the text measures, which are pure and exact.
+ *
+ * Reading a page is Tesseract's, and is not here. Everything BELOW the engine -
+ * how two texts are compared, and how a printed run is verified - is ordinary
+ * computation and is held bit for bit.
+ * ---------------------------------------------------------------------------
+ */
+const similarityPairs: Array<[string, string, string]> = [
+  ['identical', 'the quick brown fox', 'the quick brown fox'],
+  ['one-character', 'invoice 12345', 'invoice 12346'],
+  ['a-word-dropped', 'total due on receipt', 'total due receipt'],
+  ['a-word-added', 'total due', 'total now due'],
+  ['reflowed', 'alpha beta gamma delta', 'delta gamma beta alpha'],
+  ['nothing-in-common', 'abcdef', 'uvwxyz'],
+  ['empty-expected', '', 'something'],
+  ['empty-actual', 'something', ''],
+  ['both-empty', '', ''],
+  ['one-character-each', 'a', 'b'],
+  ['repeated-words', 'aa aa bb', 'aa bb bb'],
+  ['a-shared-prefix', 'martha', 'marhta'],
+  ['short-names', 'dixon', 'dicksonx'],
+  ['case-and-spacing', '  The   TOTAL  ', 'the total'],
+  ['digits-transposed', '1099-MISC', '1909-MISC'],
+  ['a-long-page', 'lorem ipsum dolor sit amet consectetur adipiscing elit sed do', 'lorem ipsom dolor sit amet consectetur adipisc1ng elit sed do'],
+  /* Outside the BMP: one Python character, TWO JavaScript ones. Every length,
+   * every bigram and the Jaro window move with it. */
+  ['an-astral-character', 'fee \u{1F600} due', 'fee \u{1F600} due'],
+  ['an-astral-difference', 'fee \u{1F600} due', 'fee \u{1F601} due'],
+  /*
+   * The cases where the DISTANCE itself differs, not just the length:
+   * deleting an astral character is two edits in UTF-16 and one in code
+   * points. Without them a port counting Python characters agreed on every
+   * case above.
+   */
+  ['an-astral-against-nothing', '\u{1F600}', ''],
+  ['an-astral-against-one-letter', '\u{1F600}', 'a'],
+]
+
+/** The word lists the set measures take, as `compareTexts` splits them. */
+const wordListPairs: Array<[string, string[], string[]]> = [
+  ['same-words', ['a', 'b', 'c'], ['a', 'b', 'c']],
+  ['disjoint', ['a', 'b'], ['c', 'd']],
+  ['partly-shared', ['a', 'b', 'c'], ['b', 'c', 'd']],
+  ['with-repeats', ['a', 'a', 'b'], ['a', 'b', 'b']],
+  ['expected-empty', [], ['a']],
+  ['actual-empty', ['a'], []],
+  ['both-empty', [], []],
+  ['reordered', ['a', 'b', 'c'], ['c', 'b', 'a']],
+]
+
+const comparisons = similarityPairs.map(([name, expected, actual]) =>
+  [name, { expected, actual, metrics: compareTexts(expected, actual) }] as const)
+const pairMetrics = similarityPairs.map(([name, a, b]) =>
+  [name, {
+    levenshtein:           levenshtein(a, b),
+    levenshteinSimilarity: levenshteinSimilarity(a, b),
+    dice:                  dice(a, b),
+    jaroWinkler:           jaroWinkler(a, b),
+  }] as const)
+const listMetrics = wordListPairs.map(([name, a, b]) =>
+  [name, {
+    a,
+    b,
+    jaccard:      jaccard(a, b),
+    cosine:       cosine(a, b),
+    wordRecall:   wordRecall(a, b),
+    wordDistance: wordDistance(a, b),
+  }] as const)
+
+writeFileSync(
+  join(goldenDir, 'ocr-text-similarity.json'),
+  JSON.stringify({
+    compareTexts: Object.fromEntries(comparisons),
+    onStrings:    Object.fromEntries(pairMetrics),
+    onWordLists:  Object.fromEntries(listMetrics),
+  }, undefined, 2) + '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'ocr-text-similarity.json') + '\n')
+
+const ocrExported = new Set(Object.keys(await import('../../packages/ocr/dist/index.esm.js')))
+writeFileSync(
+  join(goldenDir, 'ocr-package-surface.json'),
+  JSON.stringify({ exports: [...ocrExported].sort((a, b) => a.localeCompare(b)) }, undefined, 2) +
+    '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'ocr-package-surface.json') + '\n')

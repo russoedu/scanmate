@@ -39,7 +39,9 @@
     "scanmate-merge:qa": "nx run scanmate-merge:lint && nx run scanmate-merge:test",
     "scanmate-merge:build": "nx run scanmate-merge:build",
     "scanmate-extract:qa": "nx run scanmate-extract:lint && nx run scanmate-extract:test",
-    "scanmate-extract:build": "nx run scanmate-extract:build"
+    "scanmate-extract:build": "nx run scanmate-extract:build",
+    "scanmate-ocr:qa": "nx run scanmate-ocr:lint && nx run scanmate-ocr:test",
+    "scanmate-ocr:build": "nx run scanmate-ocr:build"
   },
   "private": true,
   "devDependencies": {

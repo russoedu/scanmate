@@ -1,0 +1,33 @@
+{
+  "exports": [
+    "claimWords",
+    "collectInto",
+    "collectTemplates",
+    "compareTexts",
+    "cosine",
+    "createTesseractEngine",
+    "DEFAULT_RECHECK_PASSES",
+    "DEFAULT_TESSERACT_OPTIONS",
+    "dice",
+    "FIGURE_CHARACTERS",
+    "glyphCells",
+    "glyphWords",
+    "jaccard",
+    "jaroWinkler",
+    "judgeRun",
+    "judgeRuns",
+    "levenshtein",
+    "levenshteinSimilarity",
+    "matchWords",
+    "ocrPages",
+    "placeGlyphs",
+    "printPolarity",
+    "readRun",
+    "recheckRun",
+    "templateKey",
+    "TEXT_CHARACTERS",
+    "verifyPrintedRun",
+    "wordDistance",
+    "wordRecall"
+  ]
+}
