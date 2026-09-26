@@ -1,0 +1,28 @@
+{
+  "exports": [
+    "A4",
+    "classifyPage",
+    "createSyntheticPdf",
+    "DEFAULT_DPI_LIMITS",
+    "extractPages",
+    "extractPageStream",
+    "extractPair",
+    "extractPairStream",
+    "inspectDocument",
+    "inspectPage",
+    "locateAnchor",
+    "locateFields",
+    "MAX_WORD_GAP",
+    "nativeDpi",
+    "openPdf",
+    "pageDpi",
+    "pairDpi",
+    "placeField",
+    "planPairs",
+    "readTextLayer",
+    "renderPage",
+    "resolveFields",
+    "SCAN_COVERAGE",
+    "selectPages"
+  ]
+}

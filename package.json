@@ -37,7 +37,9 @@
     "scanmate-seal:qa": "nx run scanmate-seal:lint && nx run scanmate-seal:test",
     "scanmate-seal:build": "nx run scanmate-seal:build",
     "scanmate-merge:qa": "nx run scanmate-merge:lint && nx run scanmate-merge:test",
-    "scanmate-merge:build": "nx run scanmate-merge:build"
+    "scanmate-merge:build": "nx run scanmate-merge:build",
+    "scanmate-extract:qa": "nx run scanmate-extract:lint && nx run scanmate-extract:test",
+    "scanmate-extract:build": "nx run scanmate-extract:build"
   },
   "private": true,
   "devDependencies": {

@@ -1,0 +1,564 @@
+{
+  "scanCoverage": 0.8,
+  "defaultDpiLimits": {
+    "fallbackDpi": 200,
+    "minDpi": 72,
+    "maxDpi": 400
+  },
+  "selectPages": {
+    "every-page": {
+      "selection": null,
+      "pageCount": 4,
+      "pages": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    "a-list": {
+      "selection": [
+        3,
+        1,
+        2
+      ],
+      "pageCount": 5,
+      "pages": [
+        1,
+        2,
+        3
+      ]
+    },
+    "repeats-are-dropped": {
+      "selection": [
+        2,
+        2,
+        1
+      ],
+      "pageCount": 5,
+      "pages": [
+        1,
+        2
+      ]
+    },
+    "a-single-number": {
+      "selection": "3",
+      "pageCount": 5,
+      "pages": [
+        3
+      ]
+    },
+    "a-closed-range": {
+      "selection": "2-4",
+      "pageCount": 5,
+      "pages": [
+        2,
+        3,
+        4
+      ]
+    },
+    "an-open-end": {
+      "selection": "3-",
+      "pageCount": 5,
+      "pages": [
+        3,
+        4,
+        5
+      ]
+    },
+    "an-open-start": {
+      "selection": "-2",
+      "pageCount": 5,
+      "pages": [
+        1,
+        2
+      ]
+    },
+    "several-parts": {
+      "selection": "1-2,4,5-",
+      "pageCount": 6,
+      "pages": [
+        1,
+        2,
+        4,
+        5,
+        6
+      ]
+    },
+    "spaces-are-ignored": {
+      "selection": " 1 - 2 , 4 ",
+      "pageCount": 6,
+      "pages": [
+        1,
+        2,
+        4
+      ]
+    },
+    "empty-parts-are-ignored": {
+      "selection": "1,,3",
+      "pageCount": 5,
+      "pages": [
+        1,
+        3
+      ]
+    },
+    "an-empty-selection-selects-nothing": {
+      "selection": "",
+      "pageCount": 8,
+      "pages": []
+    }
+  },
+  "selectPagesRejects": {
+    "past-the-end": {
+      "selection": [
+        9
+      ],
+      "pageCount": 8,
+      "message": "page 9 is outside a 8-page document"
+    },
+    "page-zero": {
+      "selection": [
+        0
+      ],
+      "pageCount": 8,
+      "message": "page 0 is outside a 8-page document"
+    },
+    "a-fraction": {
+      "selection": [
+        1.5
+      ],
+      "pageCount": 8,
+      "message": "page 1.5 is outside a 8-page document"
+    },
+    "a-range-past-the-end": {
+      "selection": "9",
+      "pageCount": 8,
+      "message": "page 9 is outside a 8-page document"
+    },
+    "a-backwards-range": {
+      "selection": "4-2",
+      "pageCount": 8,
+      "message": "page range \"4-2\" runs backwards"
+    },
+    "nonsense": {
+      "selection": "a-b",
+      "pageCount": 8,
+      "message": "cannot read page range \"a-b\""
+    },
+    "a-bare-dash-pair": {
+      "selection": "1--2",
+      "pageCount": 8,
+      "message": "cannot read page range \"1--2\""
+    },
+    "a-bare-dash": {
+      "selection": "-",
+      "pageCount": 8,
+      "message": "cannot read page range \"-\""
+    }
+  },
+  "planPairs": {
+    "same-length": {
+      "originalCount": 3,
+      "scannedCount": 3,
+      "pairing": "index",
+      "plan": {
+        "pairs": [
+          [
+            1,
+            1
+          ],
+          [
+            2,
+            2
+          ],
+          [
+            3,
+            3
+          ]
+        ],
+        "unpaired": {
+          "original": [],
+          "scanned": []
+        }
+      }
+    },
+    "scan-is-short": {
+      "originalCount": 3,
+      "scannedCount": 2,
+      "pairing": "index",
+      "plan": {
+        "pairs": [
+          [
+            1,
+            1
+          ],
+          [
+            2,
+            2
+          ]
+        ],
+        "unpaired": {
+          "original": [
+            3
+          ],
+          "scanned": []
+        }
+      }
+    },
+    "scan-is-long": {
+      "originalCount": 2,
+      "scannedCount": 3,
+      "pairing": "index",
+      "plan": {
+        "pairs": [
+          [
+            1,
+            1
+          ],
+          [
+            2,
+            2
+          ]
+        ],
+        "unpaired": {
+          "original": [],
+          "scanned": [
+            3
+          ]
+        }
+      }
+    },
+    "explicit": {
+      "originalCount": 3,
+      "scannedCount": 3,
+      "pairing": [
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          3
+        ]
+      ],
+      "plan": {
+        "pairs": [
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            3
+          ]
+        ],
+        "unpaired": {
+          "original": [
+            3
+          ],
+          "scanned": [
+            1
+          ]
+        }
+      }
+    },
+    "out-of-order": {
+      "originalCount": 3,
+      "scannedCount": 3,
+      "pairing": [
+        [
+          3,
+          1
+        ],
+        [
+          1,
+          3
+        ]
+      ],
+      "plan": {
+        "pairs": [
+          [
+            3,
+            1
+          ],
+          [
+            1,
+            3
+          ]
+        ],
+        "unpaired": {
+          "original": [
+            2
+          ],
+          "scanned": [
+            2
+          ]
+        }
+      }
+    },
+    "none-at-all": {
+      "originalCount": 2,
+      "scannedCount": 2,
+      "pairing": [],
+      "plan": {
+        "pairs": [],
+        "unpaired": {
+          "original": [
+            1,
+            2
+          ],
+          "scanned": [
+            1,
+            2
+          ]
+        }
+      }
+    },
+    "a-repeated-original": {
+      "originalCount": 3,
+      "scannedCount": 3,
+      "pairing": [
+        [
+          1,
+          1
+        ],
+        [
+          1,
+          2
+        ]
+      ],
+      "plan": {
+        "pairs": [
+          [
+            1,
+            1
+          ],
+          [
+            1,
+            2
+          ]
+        ],
+        "unpaired": {
+          "original": [
+            2,
+            3
+          ],
+          "scanned": [
+            3
+          ]
+        }
+      }
+    }
+  },
+  "planPairsRejects": {
+    "pastTheEnd": "original page 3 is outside a 2-page document",
+    "scanPastEnd": "scanned page 5 is outside a 2-page document",
+    "pageZero": "original page 0 is outside a 2-page document"
+  },
+  "classifyPage": {
+    "a-plain-scan": {
+      "evidence": {
+        "imageCoverage": 1,
+        "characterCount": 0,
+        "drawsPaths": false
+      },
+      "kind": "scanned"
+    },
+    "a-scan-with-a-text-layer": {
+      "evidence": {
+        "imageCoverage": 1,
+        "characterCount": 500,
+        "drawsPaths": false
+      },
+      "kind": "scanned-with-text-layer"
+    },
+    "exactly-at-the-threshold": {
+      "evidence": {
+        "imageCoverage": 0.8,
+        "characterCount": 0,
+        "drawsPaths": false
+      },
+      "kind": "scanned"
+    },
+    "just-under-the-threshold": {
+      "evidence": {
+        "imageCoverage": 0.7999,
+        "characterCount": 0,
+        "drawsPaths": false
+      },
+      "kind": "vector"
+    },
+    "a-letterhead-logo": {
+      "evidence": {
+        "imageCoverage": 0.012,
+        "characterCount": 800,
+        "drawsPaths": true
+      },
+      "kind": "vector"
+    },
+    "paths-only": {
+      "evidence": {
+        "imageCoverage": 0,
+        "characterCount": 0,
+        "drawsPaths": true
+      },
+      "kind": "vector"
+    },
+    "an-image-and-nothing-else": {
+      "evidence": {
+        "imageCoverage": 0.05,
+        "characterCount": 0,
+        "drawsPaths": false
+      },
+      "kind": "vector"
+    },
+    "nothing-at-all": {
+      "evidence": {
+        "imageCoverage": 0,
+        "characterCount": 0,
+        "drawsPaths": false
+      },
+      "kind": "empty"
+    }
+  },
+  "nativeDpi": {
+    "a4Vector": 200,
+    "a4Scan120": 120,
+    "a4Scan93": 93,
+    "a4Scan600": 400,
+    "a4Scan50": 72,
+    "letterScan120": 120,
+    "landscapeScan": 120,
+    "hugePagePhoto": 72
+  },
+  "pageDpi": {
+    "a4Vector-150": 150,
+    "a4Vector-native": 200,
+    "a4Vector-match": 200,
+    "a4Scan120-150": 150,
+    "a4Scan120-native": 120,
+    "a4Scan120-match": 120,
+    "a4Scan93-150": 150,
+    "a4Scan93-native": 93,
+    "a4Scan93-match": 93,
+    "a4Scan600-150": 150,
+    "a4Scan600-native": 400,
+    "a4Scan600-match": 400,
+    "a4Scan50-150": 150,
+    "a4Scan50-native": 72,
+    "a4Scan50-match": 72,
+    "letterScan120-150": 150,
+    "letterScan120-native": 120,
+    "letterScan120-match": 120,
+    "landscapeScan-150": 150,
+    "landscapeScan-native": 120,
+    "landscapeScan-match": 120,
+    "hugePagePhoto-150": 150,
+    "hugePagePhoto-native": 72,
+    "hugePagePhoto-match": 72
+  },
+  "pairDpi": {
+    "scan-on-its-own-paper-150": {
+      "original": 150,
+      "scanned": 150
+    },
+    "scan-on-its-own-paper-native": {
+      "original": 200,
+      "scanned": 120
+    },
+    "scan-on-its-own-paper-match": {
+      "original": 120,
+      "scanned": 120
+    },
+    "a-low-dpi-scan-150": {
+      "original": 150,
+      "scanned": 150
+    },
+    "a-low-dpi-scan-native": {
+      "original": 200,
+      "scanned": 93
+    },
+    "a-low-dpi-scan-match": {
+      "original": 93,
+      "scanned": 93
+    },
+    "a-scan-above-the-ceiling-150": {
+      "original": 150,
+      "scanned": 150
+    },
+    "a-scan-above-the-ceiling-native": {
+      "original": 200,
+      "scanned": 400
+    },
+    "a-scan-above-the-ceiling-match": {
+      "original": 400,
+      "scanned": 400
+    },
+    "a-scan-below-the-floor-150": {
+      "original": 150,
+      "scanned": 150
+    },
+    "a-scan-below-the-floor-native": {
+      "original": 200,
+      "scanned": 72
+    },
+    "a-scan-below-the-floor-match": {
+      "original": 72,
+      "scanned": 72
+    },
+    "a4-against-letter-150": {
+      "original": 150,
+      "scanned": 150
+    },
+    "a4-against-letter-native": {
+      "original": 200,
+      "scanned": 120
+    },
+    "a4-against-letter-match": {
+      "original": 120,
+      "scanned": 120
+    },
+    "a-landscape-scan-150": {
+      "original": 150,
+      "scanned": 150
+    },
+    "a-landscape-scan-native": {
+      "original": 200,
+      "scanned": 120
+    },
+    "a-landscape-scan-match": {
+      "original": 120,
+      "scanned": 120
+    },
+    "a-photo-on-a-huge-page-150": {
+      "original": 150,
+      "scanned": 150
+    },
+    "a-photo-on-a-huge-page-native": {
+      "original": 200,
+      "scanned": 72
+    },
+    "a-photo-on-a-huge-page-match": {
+      "original": 344.8241456722375,
+      "scanned": 72
+    },
+    "no-scan-at-all-150": {
+      "original": 150,
+      "scanned": 150
+    },
+    "no-scan-at-all-native": {
+      "original": 200,
+      "scanned": 200
+    },
+    "no-scan-at-all-match": {
+      "original": 200,
+      "scanned": 200
+    }
+  },
+  "dpiRejects": {
+    "zero": "dpi must be a positive number, got 0",
+    "negative": "dpi must be a positive number, got -10",
+    "infinite": "dpi must be a positive number, got Infinity",
+    "notANumber": "dpi must be a positive number, got NaN"
+  }
+}

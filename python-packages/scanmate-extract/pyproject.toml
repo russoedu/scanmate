@@ -1,0 +1,68 @@
+[project]
+name = "scanmate-extract"
+version = "0.0.1"
+description = "The decisions a PDF extraction pipeline makes: which pages, which pairs, at what resolution, and where a form's fields are."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  # >=0.0.1, not the real floor: a release never commits its version bump, so
+  # every manifest on disk stays at the scaffold version forever and a real
+  # floor makes the workspace-wide editable install unresolvable. `nx release`
+  # rewrites it to the true version as it publishes.
+  "scanmate-ink>=0.0.1",
+]
+
+keywords = ["pdf", "extraction", "document", "scan", "dpi", "form-fields"]
+license = "MIT"
+# A COPY of the repository's LICENSE: a Python distribution cannot reference a
+# file outside its own root.
+license-files = ["LICENSE"]
+authors = [{ name = "Eduardo Russo" }]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Text Processing",
+  "Typing :: Typed",
+]
+
+[project.urls]
+Homepage = "https://github.com/russoedu/scanmate/tree/main/python-packages/scanmate-extract#readme"
+Repository = "https://github.com/russoedu/scanmate"
+Issues = "https://github.com/russoedu/scanmate/issues"
+"Parallels (TypeScript)" = "https://github.com/russoedu/scanmate/tree/main/packages/extract#readme"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["scanmate_extract"]
+# Tests sit beside the code, so they must be kept OUT of the wheel.
+exclude = ["**/test_*.py", "**/conftest.py"]
+
+[tool.pytest.ini_options]
+testpaths = ["scanmate_extract"]
+
+[tool.mypy]
+strict = true
+# Stub-less third-party packages, and ONLY those. Measured on a generated
+# project: plain strict passes out of the box, and the one thing that breaks it
+# in practice is importing a library that ships no type stubs - "import yaml"
+# fails as import-untyped on code you wrote normally and cannot fix. Disabling
+# that one code keeps every other strict check on your own code, and a module
+# that genuinely cannot be found still fails, as import-not-found.
+disable_error_code = ["import-untyped"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+# Pyflakes, pycodestyle, isort, bugbear, comprehensions, pyupgrade, naming.
+select = ["F", "E", "W", "I", "B", "C4", "UP", "N"]

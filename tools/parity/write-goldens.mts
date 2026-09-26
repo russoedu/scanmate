@@ -110,6 +110,27 @@ import {
 import type { Correspondence } from '../../packages/align/dist/src/index.d.ts'
 import { findSignatureFields, verifySignatures } from '../../packages/seal/dist/index.esm.js'
 import {
+  DEFAULT_DPI_LIMITS,
+  SCAN_COVERAGE,
+  MAX_WORD_GAP,
+  classifyPage,
+  locateAnchor,
+  nativeDpi,
+  pageDpi,
+  pairDpi,
+  placeField,
+  planPairs,
+  resolveFields,
+  selectPages,
+} from '../../packages/extract/dist/index.esm.js'
+import type {
+  DpiChoice,
+  FieldSpec,
+  PageMetadata,
+  PagePairing,
+  PageSelection,
+} from '../../packages/extract/dist/src/index.d.ts'
+import {
   MIN_RECORDED_DPI,
   PAPER,
   isPdf,
@@ -2870,3 +2891,319 @@ writeFileSync(
   JSON.stringify({ cases: markDecisions }, undefined, 2) + '\n',
 )
 process.stdout.write('wrote ' + join(goldenDir, 'merge-page-marking.json') + '\n')
+
+/*
+ * ---------------------------------------------------------------------------
+ * @scanmate/extract - the decisions, which are pure and exact.
+ *
+ * Rendering is NOT here and cannot be: pdf.js rasterises through a canvas and
+ * no Python engine produces the same pixels, the same reason `ink` declares
+ * `resampleRaster` and `blurRaster` deliberately absent. What is held is every
+ * choice made before and after a page is rendered - which pages, which pairs,
+ * what kind of page, and at what resolution.
+ * ---------------------------------------------------------------------------
+ */
+
+/** A page's metadata, with only the fields the dpi policy reads. */
+const meta = (
+  page: number,
+  pointWidth: number,
+  pointHeight: number,
+  effectiveDpi: number | null,
+): PageMetadata => ({
+  page,
+  pointWidth,
+  pointHeight,
+  rotation:       0,
+  mediaBox:       { x: 0, y: 0, width: pointWidth, height: pointHeight },
+  kind:           effectiveDpi === null ? 'vector' : 'scanned',
+  imageCoverage:  effectiveDpi === null ? 0 : 1,
+  hasTextLayer:   false,
+  text:           null,
+  textItems:      [],
+  characterCount: 0,
+  embeddedImages: [],
+  effectiveDpi,
+})
+
+const A4_POINTS: [number, number] = [595.28, 841.89]
+const dpiPages: Record<string, PageMetadata> = {
+  a4Vector:      meta(1, A4_POINTS[0], A4_POINTS[1], null),
+  a4Scan120:     meta(1, A4_POINTS[0], A4_POINTS[1], 120),
+  a4Scan93:      meta(1, A4_POINTS[0], A4_POINTS[1], 93),
+  a4Scan600:     meta(1, A4_POINTS[0], A4_POINTS[1], 600),
+  a4Scan50:      meta(1, A4_POINTS[0], A4_POINTS[1], 50),
+  letterScan120: meta(1, 612, 792, 120),
+  landscapeScan: meta(1, A4_POINTS[1], A4_POINTS[0], 120),
+  /* The photo case: a 3024-pixel picture of an A4 sheet stored one pixel per
+   * point, so it claims 72 dpi of itself and holds far more on the paper. */
+  hugePagePhoto: meta(1, 3024, 4032, 72),
+}
+
+const selectionCases: Array<[string, PageSelection | undefined, number]> = [
+  ['every-page', undefined, 4],
+  ['a-list', [3, 1, 2], 5],
+  ['repeats-are-dropped', [2, 2, 1], 5],
+  ['a-single-number', '3', 5],
+  ['a-closed-range', '2-4', 5],
+  ['an-open-end', '3-', 5],
+  ['an-open-start', '-2', 5],
+  ['several-parts', '1-2,4,5-', 6],
+  ['spaces-are-ignored', ' 1 - 2 , 4 ', 6],
+  ['empty-parts-are-ignored', '1,,3', 5],
+  /* An empty string has no parts at all, so it selects NOTHING - it is not
+   * read as "every page", and it is not an error either. */
+  ['an-empty-selection-selects-nothing', '', 8],
+]
+
+const selectionRejects: Array<[string, PageSelection, number]> = [
+  ['past-the-end', [9], 8],
+  ['page-zero', [0], 8],
+  ['a-fraction', [1.5], 8],
+  ['a-range-past-the-end', '9', 8],
+  ['a-backwards-range', '4-2', 8],
+  ['nonsense', 'a-b', 8],
+  ['a-bare-dash-pair', '1--2', 8],
+  /* A bare dash names neither end, and is refused rather than read as "all". */
+  ['a-bare-dash', '-', 8],
+]
+
+const pairingCases: Array<[string, number, number, PagePairing]> = [
+  ['same-length', 3, 3, 'index'],
+  ['scan-is-short', 3, 2, 'index'],
+  ['scan-is-long', 2, 3, 'index'],
+  ['explicit', 3, 3, [[1, 2], [2, 3]]],
+  ['out-of-order', 3, 3, [[3, 1], [1, 3]]],
+  ['none-at-all', 2, 2, []],
+  ['a-repeated-original', 3, 3, [[1, 1], [1, 2]]],
+]
+
+const kindCases: Array<[string, { imageCoverage: number, characterCount: number, drawsPaths: boolean }]> = [
+  ['a-plain-scan', { imageCoverage: 1, characterCount: 0, drawsPaths: false }],
+  ['a-scan-with-a-text-layer', { imageCoverage: 1, characterCount: 500, drawsPaths: false }],
+  ['exactly-at-the-threshold', { imageCoverage: SCAN_COVERAGE, characterCount: 0, drawsPaths: false }],
+  ['just-under-the-threshold', { imageCoverage: SCAN_COVERAGE - 0.0001, characterCount: 0, drawsPaths: false }],
+  ['a-letterhead-logo', { imageCoverage: 0.012, characterCount: 800, drawsPaths: true }],
+  ['paths-only', { imageCoverage: 0, characterCount: 0, drawsPaths: true }],
+  ['an-image-and-nothing-else', { imageCoverage: 0.05, characterCount: 0, drawsPaths: false }],
+  ['nothing-at-all', { imageCoverage: 0, characterCount: 0, drawsPaths: false }],
+]
+
+const dpiChoices: DpiChoice[] = [150, 'native', 'match']
+const pairCases: Array<[string, string, string]> = [
+  ['scan-on-its-own-paper', 'a4Vector', 'a4Scan120'],
+  ['a-low-dpi-scan', 'a4Vector', 'a4Scan93'],
+  ['a-scan-above-the-ceiling', 'a4Vector', 'a4Scan600'],
+  ['a-scan-below-the-floor', 'a4Vector', 'a4Scan50'],
+  ['a4-against-letter', 'a4Vector', 'letterScan120'],
+  ['a-landscape-scan', 'a4Vector', 'landscapeScan'],
+  ['a-photo-on-a-huge-page', 'a4Vector', 'hugePagePhoto'],
+  ['no-scan-at-all', 'a4Vector', 'a4Vector'],
+]
+
+const selectedPages = selectionCases.map(([name, selection, count]) =>
+  [name, { selection: selection ?? null, pageCount: count, pages: selectPages(selection, count) }] as const)
+const selectionRefusals = selectionRejects.map(([name, selection, count]) =>
+  [name, { selection, pageCount: count, message: rejected(() => selectPages(selection, count)) }] as const)
+const plannedPairs = pairingCases.map(([name, originals, scans, pairing]) =>
+  [name, { originalCount: originals, scannedCount: scans, pairing, plan: planPairs(originals, scans, pairing) }] as const)
+const classifiedPages = kindCases.map(([name, evidence]) =>
+  [name, { evidence, kind: classifyPage(evidence) }] as const)
+const nativeDpis = Object.entries(dpiPages).map(([name, page]) =>
+  [name, nativeDpi(page, DEFAULT_DPI_LIMITS)] as const)
+const pageDpis = Object.entries(dpiPages).flatMap(([name, page]) =>
+  dpiChoices.map(choice => [`${name}-${String(choice)}`, pageDpi(page, choice, DEFAULT_DPI_LIMITS)] as const))
+const pairDpis = pairCases.flatMap(([name, original, scanned]) =>
+  dpiChoices.map(choice =>
+    [`${name}-${String(choice)}`, pairDpi(dpiPages[original], dpiPages[scanned], choice, DEFAULT_DPI_LIMITS)] as const))
+
+writeFileSync(
+  join(goldenDir, 'extract-decisions.json'),
+  JSON.stringify({
+    scanCoverage:       SCAN_COVERAGE,
+    defaultDpiLimits:   DEFAULT_DPI_LIMITS,
+    selectPages:        Object.fromEntries(selectedPages),
+    selectPagesRejects: Object.fromEntries(selectionRefusals),
+    planPairs:          Object.fromEntries(plannedPairs),
+    planPairsRejects:   {
+      pastTheEnd:  rejected(() => planPairs(2, 2, [[3, 1]])),
+      scanPastEnd: rejected(() => planPairs(2, 2, [[1, 5]])),
+      pageZero:    rejected(() => planPairs(2, 2, [[0, 1]])),
+    },
+    classifyPage: Object.fromEntries(classifiedPages),
+    nativeDpi:    Object.fromEntries(nativeDpis),
+    pageDpi:      Object.fromEntries(pageDpis),
+    pairDpi:      Object.fromEntries(pairDpis),
+    dpiRejects:   {
+      zero:       rejected(() => pageDpi(dpiPages.a4Vector, 0, DEFAULT_DPI_LIMITS)),
+      negative:   rejected(() => pageDpi(dpiPages.a4Vector, -10, DEFAULT_DPI_LIMITS)),
+      infinite:   rejected(() => pageDpi(dpiPages.a4Vector, Infinity, DEFAULT_DPI_LIMITS)),
+      notANumber: rejected(() => pageDpi(dpiPages.a4Vector, NaN, DEFAULT_DPI_LIMITS)),
+    },
+  }, undefined, 2) + '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'extract-decisions.json') + '\n')
+
+const extractExported = new Set(Object.keys(await import('../../packages/extract/dist/index.esm.js')))
+writeFileSync(
+  join(goldenDir, 'extract-package-surface.json'),
+  JSON.stringify({ exports: [...extractExported].sort((a, b) => a.localeCompare(b)) }, undefined, 2) +
+    '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'extract-package-surface.json') + '\n')
+
+/*
+ * `@scanmate/extract`'s field location - the largest pure piece of the package,
+ * and exact. Runs are built here rather than read from a PDF, because what is
+ * being pinned is how runs are JOINED and where the box lands, not how a
+ * particular engine extracted them.
+ */
+const run = (
+  text: string,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  angle = 0,
+): TextRun => ({ text, x, y, width, height, angle, baseline: y + height, fontSize: height, fontName: 'Helvetica', endsLine: false })
+
+const runPages: Record<string, TextRun[]> = {
+  /* A label and its value on one line, then a second label further down. */
+  simple: [
+    run('Signature:', 72, 100, 60, 10),
+    run('Date', 300, 100, 24, 10),
+    run('Printed name', 72, 200, 70, 10),
+  ],
+  /* One label split across two runs on the same line. */
+  splitAcrossRuns: [
+    run('Signature of', 72, 100, 66, 10),
+    run('U.S. person', 142, 100, 60, 10),
+  ],
+  /* A label wrapped onto the next line, which is what `lineSpacing` is for. */
+  wrapped: [
+    run('Signature of', 72, 100, 66, 10),
+    run('U.S. person', 72, 113, 60, 10),
+  ],
+  /* Too far down to be a continuation: a paragraph, not a wrap. */
+  farBelow: [
+    run('Signature of', 72, 100, 66, 10),
+    run('U.S. person', 72, 160, 60, 10),
+  ],
+  /* Two columns, not two halves of one label. */
+  twoColumns: [
+    run('Signature of', 72, 100, 66, 10),
+    run('U.S. person', 400, 100, 60, 10),
+  ],
+  /* The same label twice: ambiguous under 'unique', selectable by number. */
+  twice: [
+    run('Signature:', 72, 100, 60, 10),
+    run('Signature:', 72, 300, 60, 10),
+  ],
+  /* A label inside a longer run - the box for it is ESTIMATED. */
+  insideARun: [
+    run('Please sign here: Signature below the line', 72, 100, 240, 10),
+  ],
+  /* Punctuation at the edges is set aside; `Date` must not find `Update`. */
+  punctuation: [
+    run('"Date":', 72, 100, 40, 10),
+    run('Update', 200, 100, 40, 10),
+  ],
+  /* A quarter-turned run, which reads down the page. */
+  rotated: [
+    run('Signature', 72, 100, 10, 60, 90),
+  ],
+  /* Padding spaces around the text: the box is the whole run, not estimated. */
+  padded: [
+    run('   Signature   ', 72, 100, 90, 10),
+  ],
+}
+
+const anchorCases: Array<[string, string, string]> = [
+  ['one-run', 'simple', 'Signature'],
+  ['a-second-label', 'simple', 'Date'],
+  ['missing', 'simple', 'Nowhere'],
+  ['joined-on-one-line', 'splitAcrossRuns', 'Signature of U.S. person'],
+  ['joined-across-a-wrap', 'wrapped', 'Signature of U.S. person'],
+  ['not-joined-when-far-below', 'farBelow', 'Signature of U.S. person'],
+  ['not-joined-across-columns', 'twoColumns', 'Signature of U.S. person'],
+  ['found-twice', 'twice', 'Signature'],
+  ['estimated-inside-a-run', 'insideARun', 'Signature'],
+  ['edge-punctuation-ignored', 'punctuation', 'Date'],
+  ['never-inside-a-word', 'punctuation', 'Updat'],
+  ['a-rotated-run', 'rotated', 'Signature'],
+  ['padding-does-not-estimate', 'padded', 'Signature'],
+  ['an-empty-anchor', 'simple', ''],
+  ['multi-word-in-one-run', 'simple', 'Printed name'],
+]
+
+const fieldSpecs: Array<[string, string, FieldSpec[]]> = [
+  ['one-field', 'simple', [
+    { anchor: 'Signature', fields: { sig: { dx: 44, dy: -4, width: 200, height: 22 } } },
+  ]],
+  ['from-the-right', 'simple', [
+    { anchor: 'Signature', from: 'top-right', fields: { sig: { dx: 4, dy: 0, width: 100, height: 12 } } },
+  ]],
+  ['from-the-bottom', 'simple', [
+    { anchor: 'Signature', from: 'bottom-left', fields: { sig: { dx: 0, dy: 2, width: 100, height: 12 } } },
+  ]],
+  ['ambiguous-anchor', 'twice', [
+    { anchor: 'Signature', fields: { sig: { dx: 0, dy: 0, width: 10, height: 10 } } },
+  ]],
+  ['picks-an-occurrence', 'twice', [
+    { anchor: 'Signature', occurrence: 2, fields: { sig: { dx: 0, dy: 0, width: 10, height: 10 } } },
+  ]],
+  ['occurrence-past-the-end', 'twice', [
+    { anchor: 'Signature', occurrence: 5, fields: { sig: { dx: 0, dy: 0, width: 10, height: 10 } } },
+  ]],
+  ['missing-anchor', 'simple', [
+    { anchor: 'Nowhere', fields: { sig: { dx: 0, dy: 0, width: 10, height: 10 } } },
+  ]],
+  ['duplicate-ids', 'simple', [
+    { anchor: 'Signature', fields: { sig: { dx: 0, dy: 20, width: 10, height: 10 } } },
+    { anchor: 'Printed name', fields: { sig: { dx: 0, dy: 20, width: 10, height: 10 } } },
+  ]],
+  ['off-the-page', 'simple', [
+    { anchor: 'Signature', fields: { sig: { dx: 0, dy: 0, width: 2000, height: 10 } } },
+  ]],
+  ['a-zero-sized-field', 'simple', [
+    { anchor: 'Signature', fields: { sig: { dx: 0, dy: 0, width: 0, height: 10 } } },
+  ]],
+  ['overlapping-fields', 'simple', [
+    {
+      anchor: 'Signature',
+      fields: {
+        a: { dx: 0, dy: 20, width: 40, height: 20 },
+        b: { dx: 20, dy: 30, width: 40, height: 20 },
+      },
+    },
+  ]],
+  ['two-anchors', 'simple', [
+    { anchor: 'Signature', fields: { sig: { dx: 60, dy: 0, width: 40, height: 10 } } },
+    { anchor: 'Date', fields: { when: { dx: 30, dy: 0, width: 40, height: 10 } } },
+  ]],
+]
+
+const anchorResults = anchorCases.map(([name, page, anchor]) =>
+  [name, { page, anchor, matches: locateAnchor(runPages[page], anchor) }] as const)
+const fieldResults = fieldSpecs.map(([name, page, specs]) => {
+  const located = resolveFields([{ page: 1, width: 612, height: 792, textItems: runPages[page] }], specs)
+
+  return [name, { page, specs, located }] as const
+})
+const placedCorners = (['top-left', 'top-right', 'bottom-left', 'bottom-right'] as const).map(corner => ({
+  corner,
+  box: placeField({ x: 100, y: 200, width: 60, height: 10 }, { dx: 5, dy: -3, width: 80, height: 14 }, corner),
+}))
+
+writeFileSync(
+  join(goldenDir, 'extract-field-location.json'),
+  JSON.stringify({
+    maxWordGap:    MAX_WORD_GAP,
+    pages:         runPages,
+    locateAnchor:  Object.fromEntries(anchorResults),
+    resolveFields: Object.fromEntries(fieldResults),
+    placeField:    placedCorners,
+  }, undefined, 2) + '\n',
+)
+
+process.stdout.write('wrote ' + join(goldenDir, 'extract-field-location.json') + '\n')

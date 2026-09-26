@@ -1,0 +1,1022 @@
+{
+  "maxWordGap": 4,
+  "pages": {
+    "simple": [
+      {
+        "text": "Signature:",
+        "x": 72,
+        "y": 100,
+        "width": 60,
+        "height": 10,
+        "angle": 0,
+        "baseline": 110,
+        "fontSize": 10,
+        "fontName": "Helvetica",
+        "endsLine": false
+      },
+      {
+        "text": "Date",
+        "x": 300,
+        "y": 100,
+        "width": 24,
+        "height": 10,
+        "angle": 0,
+        "baseline": 110,
+        "fontSize": 10,
+        "fontName": "Helvetica",
+        "endsLine": false
+      },
+      {
+        "text": "Printed name",
+        "x": 72,
+        "y": 200,
+        "width": 70,
+        "height": 10,
+        "angle": 0,
+        "baseline": 210,
+        "fontSize": 10,
+        "fontName": "Helvetica",
+        "endsLine": false
+      }
+    ],
+    "splitAcrossRuns": [
+      {
+        "text": "Signature of",
+        "x": 72,
+        "y": 100,
+        "width": 66,
+        "height": 10,
+        "angle": 0,
+        "baseline": 110,
+        "fontSize": 10,
+        "fontName": "Helvetica",
+        "endsLine": false
+      },
+      {
+        "text": "U.S. person",
+        "x": 142,
+        "y": 100,
+        "width": 60,
+        "height": 10,
+        "angle": 0,
+        "baseline": 110,
+        "fontSize": 10,
+        "fontName": "Helvetica",
+        "endsLine": false
+      }
+    ],
+    "wrapped": [
+      {
+        "text": "Signature of",
+        "x": 72,
+        "y": 100,
+        "width": 66,
+        "height": 10,
+        "angle": 0,
+        "baseline": 110,
+        "fontSize": 10,
+        "fontName": "Helvetica",
+        "endsLine": false
+      },
+      {
+        "text": "U.S. person",
+        "x": 72,
+        "y": 113,
+        "width": 60,
+        "height": 10,
+        "angle": 0,
+        "baseline": 123,
+        "fontSize": 10,
+        "fontName": "Helvetica",
+        "endsLine": false
+      }
+    ],
+    "farBelow": [
+      {
+        "text": "Signature of",
+        "x": 72,
+        "y": 100,
+        "width": 66,
+        "height": 10,
+        "angle": 0,
+        "baseline": 110,
+        "fontSize": 10,
+        "fontName": "Helvetica",
+        "endsLine": false
+      },
+      {
+        "text": "U.S. person",
+        "x": 72,
+        "y": 160,
+        "width": 60,
+        "height": 10,
+        "angle": 0,
+        "baseline": 170,
+        "fontSize": 10,
+        "fontName": "Helvetica",
+        "endsLine": false
+      }
+    ],
+    "twoColumns": [
+      {
+        "text": "Signature of",
+        "x": 72,
+        "y": 100,
+        "width": 66,
+        "height": 10,
+        "angle": 0,
+        "baseline": 110,
+        "fontSize": 10,
+        "fontName": "Helvetica",
+        "endsLine": false
+      },
+      {
+        "text": "U.S. person",
+        "x": 400,
+        "y": 100,
+        "width": 60,
+        "height": 10,
+        "angle": 0,
+        "baseline": 110,
+        "fontSize": 10,
+        "fontName": "Helvetica",
+        "endsLine": false
+      }
+    ],
+    "twice": [
+      {
+        "text": "Signature:",
+        "x": 72,
+        "y": 100,
+        "width": 60,
+        "height": 10,
+        "angle": 0,
+        "baseline": 110,
+        "fontSize": 10,
+        "fontName": "Helvetica",
+        "endsLine": false
+      },
+      {
+        "text": "Signature:",
+        "x": 72,
+        "y": 300,
+        "width": 60,
+        "height": 10,
+        "angle": 0,
+        "baseline": 310,
+        "fontSize": 10,
+        "fontName": "Helvetica",
+        "endsLine": false
+      }
+    ],
+    "insideARun": [
+      {
+        "text": "Please sign here: Signature below the line",
+        "x": 72,
+        "y": 100,
+        "width": 240,
+        "height": 10,
+        "angle": 0,
+        "baseline": 110,
+        "fontSize": 10,
+        "fontName": "Helvetica",
+        "endsLine": false
+      }
+    ],
+    "punctuation": [
+      {
+        "text": "\"Date\":",
+        "x": 72,
+        "y": 100,
+        "width": 40,
+        "height": 10,
+        "angle": 0,
+        "baseline": 110,
+        "fontSize": 10,
+        "fontName": "Helvetica",
+        "endsLine": false
+      },
+      {
+        "text": "Update",
+        "x": 200,
+        "y": 100,
+        "width": 40,
+        "height": 10,
+        "angle": 0,
+        "baseline": 110,
+        "fontSize": 10,
+        "fontName": "Helvetica",
+        "endsLine": false
+      }
+    ],
+    "rotated": [
+      {
+        "text": "Signature",
+        "x": 72,
+        "y": 100,
+        "width": 10,
+        "height": 60,
+        "angle": 90,
+        "baseline": 160,
+        "fontSize": 60,
+        "fontName": "Helvetica",
+        "endsLine": false
+      }
+    ],
+    "padded": [
+      {
+        "text": "   Signature   ",
+        "x": 72,
+        "y": 100,
+        "width": 90,
+        "height": 10,
+        "angle": 0,
+        "baseline": 110,
+        "fontSize": 10,
+        "fontName": "Helvetica",
+        "endsLine": false
+      }
+    ]
+  },
+  "locateAnchor": {
+    "one-run": {
+      "page": "simple",
+      "anchor": "Signature",
+      "matches": [
+        {
+          "box": {
+            "x": 72,
+            "y": 100,
+            "width": 60,
+            "height": 10
+          },
+          "estimated": false
+        }
+      ]
+    },
+    "a-second-label": {
+      "page": "simple",
+      "anchor": "Date",
+      "matches": [
+        {
+          "box": {
+            "x": 300,
+            "y": 100,
+            "width": 24,
+            "height": 10
+          },
+          "estimated": false
+        }
+      ]
+    },
+    "missing": {
+      "page": "simple",
+      "anchor": "Nowhere",
+      "matches": []
+    },
+    "joined-on-one-line": {
+      "page": "splitAcrossRuns",
+      "anchor": "Signature of U.S. person",
+      "matches": [
+        {
+          "box": {
+            "x": 72,
+            "y": 100,
+            "width": 130,
+            "height": 10
+          },
+          "estimated": false
+        }
+      ]
+    },
+    "joined-across-a-wrap": {
+      "page": "wrapped",
+      "anchor": "Signature of U.S. person",
+      "matches": [
+        {
+          "box": {
+            "x": 72,
+            "y": 100,
+            "width": 66,
+            "height": 23
+          },
+          "estimated": false
+        }
+      ]
+    },
+    "not-joined-when-far-below": {
+      "page": "farBelow",
+      "anchor": "Signature of U.S. person",
+      "matches": []
+    },
+    "not-joined-across-columns": {
+      "page": "twoColumns",
+      "anchor": "Signature of U.S. person",
+      "matches": []
+    },
+    "found-twice": {
+      "page": "twice",
+      "anchor": "Signature",
+      "matches": [
+        {
+          "box": {
+            "x": 72,
+            "y": 100,
+            "width": 60,
+            "height": 10
+          },
+          "estimated": false
+        },
+        {
+          "box": {
+            "x": 72,
+            "y": 300,
+            "width": 60,
+            "height": 10
+          },
+          "estimated": false
+        }
+      ]
+    },
+    "estimated-inside-a-run": {
+      "page": "insideARun",
+      "anchor": "Signature",
+      "matches": [
+        {
+          "box": {
+            "x": 174.85714285714286,
+            "y": 100,
+            "width": 51.428571428571416,
+            "height": 10
+          },
+          "estimated": true
+        }
+      ]
+    },
+    "edge-punctuation-ignored": {
+      "page": "punctuation",
+      "anchor": "Date",
+      "matches": [
+        {
+          "box": {
+            "x": 72,
+            "y": 100,
+            "width": 40,
+            "height": 10
+          },
+          "estimated": false
+        }
+      ]
+    },
+    "never-inside-a-word": {
+      "page": "punctuation",
+      "anchor": "Updat",
+      "matches": []
+    },
+    "a-rotated-run": {
+      "page": "rotated",
+      "anchor": "Signature",
+      "matches": [
+        {
+          "box": {
+            "x": 72,
+            "y": 100,
+            "width": 10,
+            "height": 60
+          },
+          "estimated": false
+        }
+      ]
+    },
+    "padding-does-not-estimate": {
+      "page": "padded",
+      "anchor": "Signature",
+      "matches": [
+        {
+          "box": {
+            "x": 72,
+            "y": 100,
+            "width": 90,
+            "height": 10
+          },
+          "estimated": false
+        }
+      ]
+    },
+    "an-empty-anchor": {
+      "page": "simple",
+      "anchor": "",
+      "matches": []
+    },
+    "multi-word-in-one-run": {
+      "page": "simple",
+      "anchor": "Printed name",
+      "matches": [
+        {
+          "box": {
+            "x": 72,
+            "y": 200,
+            "width": 70,
+            "height": 10
+          },
+          "estimated": false
+        }
+      ]
+    }
+  },
+  "resolveFields": {
+    "one-field": {
+      "page": "simple",
+      "specs": [
+        {
+          "anchor": "Signature",
+          "fields": {
+            "sig": {
+              "dx": 44,
+              "dy": -4,
+              "width": 200,
+              "height": 22
+            }
+          }
+        }
+      ],
+      "located": {
+        "regions": [
+          {
+            "page": 1,
+            "id": "sig",
+            "x": 116,
+            "y": 96,
+            "width": 200,
+            "height": 22
+          }
+        ],
+        "anchors": [
+          {
+            "box": {
+              "x": 72,
+              "y": 100,
+              "width": 60,
+              "height": 10
+            },
+            "estimated": false,
+            "anchor": "Signature",
+            "page": 1
+          }
+        ],
+        "problems": []
+      }
+    },
+    "from-the-right": {
+      "page": "simple",
+      "specs": [
+        {
+          "anchor": "Signature",
+          "from": "top-right",
+          "fields": {
+            "sig": {
+              "dx": 4,
+              "dy": 0,
+              "width": 100,
+              "height": 12
+            }
+          }
+        }
+      ],
+      "located": {
+        "regions": [
+          {
+            "page": 1,
+            "id": "sig",
+            "x": 136,
+            "y": 100,
+            "width": 100,
+            "height": 12
+          }
+        ],
+        "anchors": [
+          {
+            "box": {
+              "x": 72,
+              "y": 100,
+              "width": 60,
+              "height": 10
+            },
+            "estimated": false,
+            "anchor": "Signature",
+            "page": 1
+          }
+        ],
+        "problems": []
+      }
+    },
+    "from-the-bottom": {
+      "page": "simple",
+      "specs": [
+        {
+          "anchor": "Signature",
+          "from": "bottom-left",
+          "fields": {
+            "sig": {
+              "dx": 0,
+              "dy": 2,
+              "width": 100,
+              "height": 12
+            }
+          }
+        }
+      ],
+      "located": {
+        "regions": [
+          {
+            "page": 1,
+            "id": "sig",
+            "x": 72,
+            "y": 112,
+            "width": 100,
+            "height": 12
+          }
+        ],
+        "anchors": [
+          {
+            "box": {
+              "x": 72,
+              "y": 100,
+              "width": 60,
+              "height": 10
+            },
+            "estimated": false,
+            "anchor": "Signature",
+            "page": 1
+          }
+        ],
+        "problems": []
+      }
+    },
+    "ambiguous-anchor": {
+      "page": "twice",
+      "specs": [
+        {
+          "anchor": "Signature",
+          "fields": {
+            "sig": {
+              "dx": 0,
+              "dy": 0,
+              "width": 10,
+              "height": 10
+            }
+          }
+        }
+      ],
+      "located": {
+        "regions": [],
+        "anchors": [],
+        "problems": [
+          {
+            "kind": "anchor-ambiguous",
+            "anchor": "Signature",
+            "occurrences": 2
+          }
+        ]
+      }
+    },
+    "picks-an-occurrence": {
+      "page": "twice",
+      "specs": [
+        {
+          "anchor": "Signature",
+          "occurrence": 2,
+          "fields": {
+            "sig": {
+              "dx": 0,
+              "dy": 0,
+              "width": 10,
+              "height": 10
+            }
+          }
+        }
+      ],
+      "located": {
+        "regions": [
+          {
+            "page": 1,
+            "id": "sig",
+            "x": 72,
+            "y": 300,
+            "width": 10,
+            "height": 10
+          }
+        ],
+        "anchors": [
+          {
+            "box": {
+              "x": 72,
+              "y": 300,
+              "width": 60,
+              "height": 10
+            },
+            "estimated": false,
+            "anchor": "Signature",
+            "page": 1
+          }
+        ],
+        "problems": []
+      }
+    },
+    "occurrence-past-the-end": {
+      "page": "twice",
+      "specs": [
+        {
+          "anchor": "Signature",
+          "occurrence": 5,
+          "fields": {
+            "sig": {
+              "dx": 0,
+              "dy": 0,
+              "width": 10,
+              "height": 10
+            }
+          }
+        }
+      ],
+      "located": {
+        "regions": [],
+        "anchors": [],
+        "problems": [
+          {
+            "kind": "occurrence-missing",
+            "anchor": "Signature",
+            "occurrence": 5,
+            "occurrences": 2
+          }
+        ]
+      }
+    },
+    "missing-anchor": {
+      "page": "simple",
+      "specs": [
+        {
+          "anchor": "Nowhere",
+          "fields": {
+            "sig": {
+              "dx": 0,
+              "dy": 0,
+              "width": 10,
+              "height": 10
+            }
+          }
+        }
+      ],
+      "located": {
+        "regions": [],
+        "anchors": [],
+        "problems": [
+          {
+            "kind": "anchor-missing",
+            "anchor": "Nowhere"
+          }
+        ]
+      }
+    },
+    "duplicate-ids": {
+      "page": "simple",
+      "specs": [
+        {
+          "anchor": "Signature",
+          "fields": {
+            "sig": {
+              "dx": 0,
+              "dy": 20,
+              "width": 10,
+              "height": 10
+            }
+          }
+        },
+        {
+          "anchor": "Printed name",
+          "fields": {
+            "sig": {
+              "dx": 0,
+              "dy": 20,
+              "width": 10,
+              "height": 10
+            }
+          }
+        }
+      ],
+      "located": {
+        "regions": [
+          {
+            "page": 1,
+            "id": "sig",
+            "x": 72,
+            "y": 120,
+            "width": 10,
+            "height": 10
+          }
+        ],
+        "anchors": [
+          {
+            "box": {
+              "x": 72,
+              "y": 100,
+              "width": 60,
+              "height": 10
+            },
+            "estimated": false,
+            "anchor": "Signature",
+            "page": 1
+          },
+          {
+            "box": {
+              "x": 72,
+              "y": 200,
+              "width": 70,
+              "height": 10
+            },
+            "estimated": false,
+            "anchor": "Printed name",
+            "page": 1
+          }
+        ],
+        "problems": [
+          {
+            "kind": "duplicate-id",
+            "id": "sig"
+          }
+        ]
+      }
+    },
+    "off-the-page": {
+      "page": "simple",
+      "specs": [
+        {
+          "anchor": "Signature",
+          "fields": {
+            "sig": {
+              "dx": 0,
+              "dy": 0,
+              "width": 2000,
+              "height": 10
+            }
+          }
+        }
+      ],
+      "located": {
+        "regions": [
+          {
+            "page": 1,
+            "id": "sig",
+            "x": 72,
+            "y": 100,
+            "width": 2000,
+            "height": 10
+          }
+        ],
+        "anchors": [
+          {
+            "box": {
+              "x": 72,
+              "y": 100,
+              "width": 60,
+              "height": 10
+            },
+            "estimated": false,
+            "anchor": "Signature",
+            "page": 1
+          }
+        ],
+        "problems": [
+          {
+            "kind": "off-page",
+            "id": "sig",
+            "page": 1
+          }
+        ]
+      }
+    },
+    "a-zero-sized-field": {
+      "page": "simple",
+      "specs": [
+        {
+          "anchor": "Signature",
+          "fields": {
+            "sig": {
+              "dx": 0,
+              "dy": 0,
+              "width": 0,
+              "height": 10
+            }
+          }
+        }
+      ],
+      "located": {
+        "regions": [
+          {
+            "page": 1,
+            "id": "sig",
+            "x": 72,
+            "y": 100,
+            "width": 0,
+            "height": 10
+          }
+        ],
+        "anchors": [
+          {
+            "box": {
+              "x": 72,
+              "y": 100,
+              "width": 60,
+              "height": 10
+            },
+            "estimated": false,
+            "anchor": "Signature",
+            "page": 1
+          }
+        ],
+        "problems": [
+          {
+            "kind": "not-finite",
+            "id": "sig",
+            "page": 1
+          }
+        ]
+      }
+    },
+    "overlapping-fields": {
+      "page": "simple",
+      "specs": [
+        {
+          "anchor": "Signature",
+          "fields": {
+            "a": {
+              "dx": 0,
+              "dy": 20,
+              "width": 40,
+              "height": 20
+            },
+            "b": {
+              "dx": 20,
+              "dy": 30,
+              "width": 40,
+              "height": 20
+            }
+          }
+        }
+      ],
+      "located": {
+        "regions": [
+          {
+            "page": 1,
+            "id": "a",
+            "x": 72,
+            "y": 120,
+            "width": 40,
+            "height": 20
+          },
+          {
+            "page": 1,
+            "id": "b",
+            "x": 92,
+            "y": 130,
+            "width": 40,
+            "height": 20
+          }
+        ],
+        "anchors": [
+          {
+            "box": {
+              "x": 72,
+              "y": 100,
+              "width": 60,
+              "height": 10
+            },
+            "estimated": false,
+            "anchor": "Signature",
+            "page": 1
+          }
+        ],
+        "problems": [
+          {
+            "kind": "overlap",
+            "ids": [
+              "a",
+              "b"
+            ],
+            "page": 1
+          }
+        ]
+      }
+    },
+    "two-anchors": {
+      "page": "simple",
+      "specs": [
+        {
+          "anchor": "Signature",
+          "fields": {
+            "sig": {
+              "dx": 60,
+              "dy": 0,
+              "width": 40,
+              "height": 10
+            }
+          }
+        },
+        {
+          "anchor": "Date",
+          "fields": {
+            "when": {
+              "dx": 30,
+              "dy": 0,
+              "width": 40,
+              "height": 10
+            }
+          }
+        }
+      ],
+      "located": {
+        "regions": [
+          {
+            "page": 1,
+            "id": "sig",
+            "x": 132,
+            "y": 100,
+            "width": 40,
+            "height": 10
+          },
+          {
+            "page": 1,
+            "id": "when",
+            "x": 330,
+            "y": 100,
+            "width": 40,
+            "height": 10
+          }
+        ],
+        "anchors": [
+          {
+            "box": {
+              "x": 72,
+              "y": 100,
+              "width": 60,
+              "height": 10
+            },
+            "estimated": false,
+            "anchor": "Signature",
+            "page": 1
+          },
+          {
+            "box": {
+              "x": 300,
+              "y": 100,
+              "width": 24,
+              "height": 10
+            },
+            "estimated": false,
+            "anchor": "Date",
+            "page": 1
+          }
+        ],
+        "problems": []
+      }
+    }
+  },
+  "placeField": [
+    {
+      "corner": "top-left",
+      "box": {
+        "x": 105,
+        "y": 197,
+        "width": 80,
+        "height": 14
+      }
+    },
+    {
+      "corner": "top-right",
+      "box": {
+        "x": 165,
+        "y": 197,
+        "width": 80,
+        "height": 14
+      }
+    },
+    {
+      "corner": "bottom-left",
+      "box": {
+        "x": 105,
+        "y": 207,
+        "width": 80,
+        "height": 14
+      }
+    },
+    {
+      "corner": "bottom-right",
+      "box": {
+        "x": 165,
+        "y": 207,
+        "width": 80,
+        "height": 14
+      }
+    }
+  ]
+}
