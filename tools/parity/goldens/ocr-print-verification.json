@@ -1,0 +1,651 @@
+{
+  "dpi": 144,
+  "figureCharacters": "0123456789",
+  "textCharacters": "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
+  "pages": {
+    "original": {
+      "width": 600,
+      "height": 200,
+      "scale": 3,
+      "labels": [
+        [
+          "0123456789",
+          8,
+          8
+        ],
+        [
+          "12.50",
+          8,
+          48
+        ],
+        [
+          "Total due",
+          8,
+          88
+        ],
+        [
+          "4321",
+          8,
+          128
+        ]
+      ]
+    },
+    "tampered": {
+      "width": 600,
+      "height": 200,
+      "scale": 3,
+      "labels": [
+        [
+          "0123456789",
+          8,
+          8
+        ],
+        [
+          "13.50",
+          8,
+          48
+        ],
+        [
+          "Total due",
+          8,
+          88
+        ],
+        [
+          "4321",
+          8,
+          128
+        ]
+      ]
+    },
+    "sparse": {
+      "width": 300,
+      "height": 100,
+      "scale": 3,
+      "labels": [
+        [
+          "12",
+          8,
+          8
+        ]
+      ]
+    },
+    "small": {
+      "width": 300,
+      "height": 100,
+      "scale": 1,
+      "labels": [
+        [
+          "0123456789",
+          4,
+          4
+        ],
+        [
+          "12.50",
+          4,
+          24
+        ]
+      ]
+    }
+  },
+  "runs": [
+    {
+      "text": "0123456789",
+      "x": 8,
+      "y": 8,
+      "width": 88.5,
+      "height": 10.5,
+      "angle": 0,
+      "baseline": 18.5,
+      "fontSize": 10.5,
+      "fontName": "synthetic",
+      "endsLine": false
+    },
+    {
+      "text": "12.50",
+      "x": 8,
+      "y": 48,
+      "width": 43.5,
+      "height": 10.5,
+      "angle": 0,
+      "baseline": 58.5,
+      "fontSize": 10.5,
+      "fontName": "synthetic",
+      "endsLine": false
+    },
+    {
+      "text": "Total due",
+      "x": 8,
+      "y": 88,
+      "width": 79.5,
+      "height": 10.5,
+      "angle": 0,
+      "baseline": 98.5,
+      "fontSize": 10.5,
+      "fontName": "synthetic",
+      "endsLine": false
+    },
+    {
+      "text": "4321",
+      "x": 8,
+      "y": 128,
+      "width": 34.5,
+      "height": 10.5,
+      "angle": 0,
+      "baseline": 138.5,
+      "fontSize": 10.5,
+      "fontName": "synthetic",
+      "endsLine": false
+    }
+  ],
+  "templateCounts": {
+    "original": 19,
+    "sparse": 2,
+    "small": 11
+  },
+  "templateKeys": {
+    "run-0": [
+      "synthetic|10.5|0|0",
+      "synthetic|10.5|0|1",
+      "synthetic|10.5|0|2",
+      "synthetic|10.5|0|3",
+      "synthetic|10.5|0|4",
+      "synthetic|10.5|0|5",
+      "synthetic|10.5|0|6",
+      "synthetic|10.5|0|7",
+      "synthetic|10.5|0|8",
+      "synthetic|10.5|0|9"
+    ],
+    "run-1": [
+      "synthetic|10.5|0|1",
+      "synthetic|10.5|0|2",
+      "synthetic|10.5|0|.",
+      "synthetic|10.5|0|5",
+      "synthetic|10.5|0|0"
+    ],
+    "run-2": [
+      "synthetic|10.5|0|T",
+      "synthetic|10.5|0|o",
+      "synthetic|10.5|0|t",
+      "synthetic|10.5|0|a",
+      "synthetic|10.5|0|l",
+      "synthetic|10.5|0|d",
+      "synthetic|10.5|0|u",
+      "synthetic|10.5|0|e"
+    ],
+    "run-3": [
+      "synthetic|10.5|0|4",
+      "synthetic|10.5|0|3",
+      "synthetic|10.5|0|2",
+      "synthetic|10.5|0|1"
+    ]
+  },
+  "printPolarity": {
+    "run-0": "dark-on-light",
+    "run-1": "dark-on-light",
+    "run-2": "dark-on-light",
+    "run-3": "dark-on-light"
+  },
+  "placeGlyphs": {
+    "run-0": [
+      {
+        "x": 8,
+        "y": 8,
+        "width": 7.5,
+        "height": 10.5,
+        "angle": 0
+      },
+      {
+        "x": 18.5,
+        "y": 8,
+        "width": 4.5,
+        "height": 10.5,
+        "angle": 0
+      },
+      {
+        "x": 26,
+        "y": 8,
+        "width": 7.5,
+        "height": 10.5,
+        "angle": 0
+      },
+      {
+        "x": 35,
+        "y": 8,
+        "width": 7.5,
+        "height": 10.5,
+        "angle": 0
+      },
+      {
+        "x": 44,
+        "y": 8,
+        "width": 7.5,
+        "height": 10.5,
+        "angle": 0
+      },
+      {
+        "x": 53,
+        "y": 8,
+        "width": 7.5,
+        "height": 10.5,
+        "angle": 0
+      },
+      {
+        "x": 62,
+        "y": 8,
+        "width": 7.5,
+        "height": 10.5,
+        "angle": 0
+      },
+      {
+        "x": 71,
+        "y": 8,
+        "width": 7.5,
+        "height": 10.5,
+        "angle": 0
+      },
+      {
+        "x": 80,
+        "y": 8,
+        "width": 7.5,
+        "height": 10.5,
+        "angle": 0
+      },
+      {
+        "x": 89,
+        "y": 8,
+        "width": 7.5,
+        "height": 10.5,
+        "angle": 0
+      }
+    ],
+    "run-1": [
+      {
+        "x": 9.5,
+        "y": 48,
+        "width": 4.5,
+        "height": 10.5,
+        "angle": 0
+      },
+      {
+        "x": 17,
+        "y": 48,
+        "width": 7.5,
+        "height": 10.5,
+        "angle": 0
+      },
+      {
+        "x": 27.5,
+        "y": 48,
+        "width": 3,
+        "height": 10.5,
+        "angle": 0
+      },
+      {
+        "x": 35,
+        "y": 48,
+        "width": 7.5,
+        "height": 10.5,
+        "angle": 0
+      },
+      {
+        "x": 44,
+        "y": 48,
+        "width": 7.5,
+        "height": 10.5,
+        "angle": 0
+      }
+    ],
+    "run-2": [
+      {
+        "x": 8,
+        "y": 88,
+        "width": 7.5,
+        "height": 10.5,
+        "angle": 0
+      },
+      {
+        "x": 17,
+        "y": 88,
+        "width": 7.5,
+        "height": 10.5,
+        "angle": 0
+      },
+      {
+        "x": 26,
+        "y": 88,
+        "width": 7.5,
+        "height": 10.5,
+        "angle": 0
+      },
+      {
+        "x": 35,
+        "y": 88,
+        "width": 7.5,
+        "height": 10.5,
+        "angle": 0
+      },
+      {
+        "x": 44,
+        "y": 88,
+        "width": 7.5,
+        "height": 10.5,
+        "angle": 0
+      },
+      {
+        "x": 62,
+        "y": 88,
+        "width": 7.5,
+        "height": 10.5,
+        "angle": 0
+      },
+      {
+        "x": 71,
+        "y": 88,
+        "width": 7.5,
+        "height": 10.5,
+        "angle": 0
+      },
+      {
+        "x": 80,
+        "y": 88,
+        "width": 7.5,
+        "height": 10.5,
+        "angle": 0
+      }
+    ],
+    "run-3": null
+  },
+  "verifyPrintedRun": {
+    "unchanged": {
+      "verified": true,
+      "reading": "12.50",
+      "agrees": true,
+      "checked": 4,
+      "confidence": 0.31079974831727086,
+      "cells": [
+        {
+          "at": 0,
+          "printed": "1",
+          "printedScore": 1,
+          "rival": "2",
+          "rivalScore": 0.3506282013070224,
+          "read": "1"
+        },
+        {
+          "at": 1,
+          "printed": "2",
+          "printedScore": 1,
+          "rival": "7",
+          "rivalScore": 0.3796097252192818,
+          "read": "2"
+        },
+        {
+          "at": 3,
+          "printed": "5",
+          "printedScore": 1,
+          "rival": "3",
+          "rivalScore": 0.6326069806356251,
+          "read": "5"
+        },
+        {
+          "at": 4,
+          "printed": "0",
+          "printedScore": 1,
+          "rival": "8",
+          "rivalScore": 0.6892002516827291,
+          "read": "0"
+        }
+      ]
+    },
+    "changed": {
+      "verified": true,
+      "reading": "13.50",
+      "agrees": false,
+      "checked": 4,
+      "confidence": 0.31079974831727086,
+      "cells": [
+        {
+          "at": 0,
+          "printed": "1",
+          "printedScore": 1,
+          "rival": "2",
+          "rivalScore": 0.3506282013070224,
+          "read": "1"
+        },
+        {
+          "at": 1,
+          "printed": "2",
+          "printedScore": 0.3432934588946819,
+          "rival": "3",
+          "rivalScore": 1,
+          "read": "3"
+        },
+        {
+          "at": 3,
+          "printed": "5",
+          "printedScore": 1,
+          "rival": "3",
+          "rivalScore": 0.6326069806356251,
+          "read": "5"
+        },
+        {
+          "at": 4,
+          "printed": "0",
+          "printedScore": 1,
+          "rival": "8",
+          "rivalScore": 0.6892002516827291,
+          "read": "0"
+        }
+      ]
+    },
+    "another-figure": {
+      "verified": false,
+      "because": "unplaceable"
+    },
+    "no-figure": {
+      "verified": false,
+      "because": "no-figure"
+    },
+    "text-scope": {
+      "verified": false,
+      "because": "few-rivals"
+    },
+    "few-rivals": {
+      "verified": false,
+      "because": "few-rivals"
+    },
+    "too-coarse": {
+      "verified": false,
+      "because": "too-coarse"
+    },
+    "confirm-agreeing": {
+      "verified": true,
+      "reading": "12.50",
+      "agrees": true,
+      "checked": 1,
+      "confidence": 0.6567065411053181,
+      "cells": [
+        {
+          "at": 1,
+          "printed": "2",
+          "printedScore": 1,
+          "rival": "3",
+          "rivalScore": 0.3432934588946819,
+          "read": "2"
+        }
+      ]
+    },
+    "confirm-without-a-claim": {
+      "verified": false,
+      "because": "no-claim"
+    },
+    "confirm-misaligned": {
+      "verified": false,
+      "because": "no-claim"
+    },
+    "a-single-digit-is-not-a-figure": {
+      "verified": false,
+      "because": "no-figure"
+    },
+    "a-change-the-print-matched-too-well-to-be": {
+      "verified": true,
+      "reading": "12.50",
+      "agrees": true,
+      "checked": 3,
+      "confidence": 0.31079974831727086,
+      "cells": [
+        {
+          "at": 0,
+          "printed": "1",
+          "printedScore": 1,
+          "rival": "2",
+          "rivalScore": 0.3506282013070224,
+          "read": "1"
+        },
+        {
+          "at": 1,
+          "printed": "2",
+          "printedScore": 0.3432934588946819,
+          "rival": "3",
+          "rivalScore": 1,
+          "read": null
+        },
+        {
+          "at": 3,
+          "printed": "5",
+          "printedScore": 1,
+          "rival": "3",
+          "rivalScore": 0.6326069806356251,
+          "read": "5"
+        },
+        {
+          "at": 4,
+          "printed": "0",
+          "printedScore": 1,
+          "rival": "8",
+          "rivalScore": 0.6892002516827291,
+          "read": "0"
+        }
+      ]
+    },
+    "the-same-change-with-the-bar-left-alone": {
+      "verified": true,
+      "reading": "13.50",
+      "agrees": false,
+      "checked": 4,
+      "confidence": 0.31079974831727086,
+      "cells": [
+        {
+          "at": 0,
+          "printed": "1",
+          "printedScore": 1,
+          "rival": "2",
+          "rivalScore": 0.3506282013070224,
+          "read": "1"
+        },
+        {
+          "at": 1,
+          "printed": "2",
+          "printedScore": 0.3432934588946819,
+          "rival": "3",
+          "rivalScore": 1,
+          "read": "3"
+        },
+        {
+          "at": 3,
+          "printed": "5",
+          "printedScore": 1,
+          "rival": "3",
+          "rivalScore": 0.6326069806356251,
+          "read": "5"
+        },
+        {
+          "at": 4,
+          "printed": "0",
+          "printedScore": 1,
+          "rival": "8",
+          "rivalScore": 0.6892002516827291,
+          "read": "0"
+        }
+      ]
+    },
+    "a-scan-too-soft-to-decide": {
+      "verified": true,
+      "reading": "12.50",
+      "agrees": true,
+      "checked": 1,
+      "confidence": 0.5429415850490229,
+      "cells": [
+        {
+          "at": 0,
+          "printed": "1",
+          "printedScore": 0.7018815070098234,
+          "rival": "4",
+          "rivalScore": 0.1589399219608006,
+          "read": "1"
+        },
+        {
+          "at": 1,
+          "printed": "2",
+          "printedScore": 0.6520258412796405,
+          "rival": "7",
+          "rivalScore": 0.5166512393148082,
+          "read": null
+        },
+        {
+          "at": 3,
+          "printed": "5",
+          "printedScore": 0.514885265949752,
+          "rival": "3",
+          "rivalScore": 0.3546237045952064,
+          "read": null
+        },
+        {
+          "at": 4,
+          "printed": "0",
+          "printedScore": 0.4339140144329261,
+          "rival": "6",
+          "rivalScore": 0.3153707515996946,
+          "read": null
+        }
+      ]
+    }
+  },
+  "templateKeyHalves": [
+    {
+      "fontSize": 10.25,
+      "angle": 0,
+      "key": "F|10.5|0|0"
+    },
+    {
+      "fontSize": 10.75,
+      "angle": 0,
+      "key": "F|11|0|0"
+    },
+    {
+      "fontSize": 10.5,
+      "angle": 0,
+      "key": "F|10.5|0|0"
+    },
+    {
+      "fontSize": 11,
+      "angle": 0,
+      "key": "F|11|0|0"
+    },
+    {
+      "fontSize": 10.25,
+      "angle": 45,
+      "key": "F|10.5|1|0"
+    },
+    {
+      "fontSize": 10.25,
+      "angle": 135,
+      "key": "F|10.5|2|0"
+    },
+    {
+      "fontSize": 10.25,
+      "angle": -45,
+      "key": "F|10.5|0|0"
+    }
+  ]
+}

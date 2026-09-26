@@ -30,6 +30,16 @@ _EQUIVALENTS = {
     "levenshteinSimilarity": "levenshtein_similarity",
     "wordDistance": "word_distance",
     "wordRecall": "word_recall",
+    "FIGURE_CHARACTERS": "FIGURE_CHARACTERS",
+    "TEXT_CHARACTERS": "TEXT_CHARACTERS",
+    "collectInto": "collect_into",
+    "collectTemplates": "collect_templates",
+    "glyphCells": "glyph_cells",
+    "glyphWords": "glyph_words",
+    "placeGlyphs": "place_glyphs",
+    "printPolarity": "print_polarity",
+    "templateKey": "template_key",
+    "verifyPrintedRun": "verify_printed_run",
 }
 
 #: Absent on purpose: reading a page is Tesseract's, and a Python wrapper of a
@@ -49,20 +59,8 @@ _ABSENT_BY_DESIGN = {
 }
 
 #: Not ported yet, and named so that "missing" never has to be guessed at.
-#: Every one of these takes a rendered page's pixels, so porting them needs
-#: image-driven goldens rather than value-driven ones.
-_NOT_YET_PORTED = {
-    "FIGURE_CHARACTERS": "print verification",
-    "TEXT_CHARACTERS": "print verification",
-    "collectInto": "print verification",
-    "collectTemplates": "print verification",
-    "glyphCells": "print verification",
-    "glyphWords": "print verification",
-    "placeGlyphs": "print verification",
-    "printPolarity": "print verification",
-    "templateKey": "print verification",
-    "verifyPrintedRun": "print verification",
-}
+#: Empty: print verification landed, and nothing else is outstanding.
+_NOT_YET_PORTED: dict[str, str] = {}
 
 
 def test_every_typescript_export_is_accounted_for() -> None:

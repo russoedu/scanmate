@@ -110,6 +110,9 @@ import {
 import type { Correspondence } from '../../packages/align/dist/src/index.d.ts'
 import { findSignatureFields, verifySignatures } from '../../packages/seal/dist/index.esm.js'
 import {
+  FIGURE_CHARACTERS,
+  TEXT_CHARACTERS,
+  collectTemplates,
   compareTexts,
   cosine,
   dice,
@@ -117,9 +120,14 @@ import {
   jaroWinkler,
   levenshtein,
   levenshteinSimilarity,
+  placeGlyphs,
+  printPolarity,
+  templateKey,
+  verifyPrintedRun,
   wordDistance,
   wordRecall,
 } from '../../packages/ocr/dist/index.esm.js'
+import type { PrintCheck } from '../../packages/ocr/dist/src/index.d.ts'
 import {
   DEFAULT_DPI_LIMITS,
   SCAN_COVERAGE,
@@ -3307,3 +3315,176 @@ writeFileSync(
     '\n',
 )
 process.stdout.write('wrote ' + join(goldenDir, 'ocr-package-surface.json') + '\n')
+
+/*
+ * `@scanmate/ocr`'s print verification.
+ *
+ * The input pages are not carried in the golden: both ports build them from
+ * `createRaster` + `drawLabel` + `toGrayscale`, which are bit-exact ports, and
+ * the greyscale page hashes identically on each side. So only the VERDICTS are
+ * recorded, and the inputs are reproduced rather than transported.
+ */
+const PRINT_DPI = 144
+
+/** One page of labels, and a TextRun for each, as the original's text layer. */
+function printedPage (
+  width: number,
+  height: number,
+  labels: Array<[string, number, number]>,
+  scale: number,
+): { gray: GrayImage, runs: TextRun[], raster: Raster } {
+  const page = createRaster(width, height)
+  const runs: TextRun[] = []
+  /*
+   * `drawLabel` works in PIXELS and a TextRun is in POINTS, so the label is
+   * drawn at the point position scaled up and reported back scaled down.
+   * Feeding the pixel box straight through instead made every cell land on a
+   * blank part of the page, where two different pages agree perfectly - which
+   * is exactly what a golden would then enshrine.
+   */
+  const s = PRINT_DPI / 72
+  for (const [text, x, y] of labels) {
+    const box = drawLabel(page, text, { x: x * s, y: y * s }, { scale })
+    runs.push({
+      text,
+      x:        box.x / s,
+      y:        box.y / s,
+      width:    box.width / s,
+      height:   box.height / s,
+      angle:    0,
+      baseline: (box.y + box.height) / s,
+      fontSize: box.height / s,
+      fontName: 'synthetic',
+      endsLine: false,
+    })
+  }
+
+  return { gray: toGrayscale(page), runs, raster: page }
+}
+
+/** Everything a golden records about one check. */
+const asCheck = (check: PrintCheck): Record<string, unknown> => (check.verified
+  ? {
+      verified:   true,
+      reading:    check.reading,
+      agrees:     check.agrees,
+      checked:    check.checked,
+      confidence: check.confidence,
+      cells:      check.cells,
+    }
+  : { verified: false, because: check.because })
+
+/* A page printing all ten digits, so a figure has rivals to be ruled out by. */
+const printedOriginal = printedPage(600, 200, [
+  ['0123456789', 8, 8],
+  ['12.50', 8, 48],
+  ['Total due', 8, 88],
+  ['4321', 8, 128],
+], 3)
+/* The same page with one figure changed - the scan a forgery would produce. */
+const printedTampered = printedPage(600, 200, [
+  ['0123456789', 8, 8],
+  ['13.50', 8, 48],
+  ['Total due', 8, 88],
+  ['4321', 8, 128],
+], 3)
+/* A page printing almost nothing, so no run on it has enough rivals. */
+const printedSparse = printedPage(300, 100, [['12', 8, 8]], 3)
+/* The same labels at a scale whose cells fall below the match height. */
+const printedSmall = printedPage(300, 100, [['0123456789', 4, 4], ['12.50', 4, 24]], 1)
+
+/* The same page, softened until most of its cells stop being decidable. */
+const printedBlurred = toGrayscale(boxBlurRaster(printedOriginal.raster, 3))
+
+const printedTemplates = collectTemplates(printedOriginal.gray, PRINT_DPI, printedOriginal.runs)
+const sparseTemplates = collectTemplates(printedSparse.gray, PRINT_DPI, printedSparse.runs)
+const smallTemplates = collectTemplates(printedSmall.gray, PRINT_DPI, printedSmall.runs)
+
+const printChecks: Array<[string, PrintCheck]> = [
+  ['unchanged', verifyPrintedRun(printedOriginal.gray, printedOriginal.gray, PRINT_DPI, printedOriginal.runs[1], printedTemplates)],
+  ['changed', verifyPrintedRun(printedOriginal.gray, printedTampered.gray, PRINT_DPI, printedOriginal.runs[1], printedTemplates)],
+  ['another-figure', verifyPrintedRun(printedOriginal.gray, printedOriginal.gray, PRINT_DPI, printedOriginal.runs[3], printedTemplates)],
+  /* "Total due" holds no digits at all. */
+  ['no-figure', verifyPrintedRun(printedOriginal.gray, printedOriginal.gray, PRINT_DPI, printedOriginal.runs[2], printedTemplates)],
+  /* ...but under `text` every letter is checked. */
+  ['text-scope', verifyPrintedRun(printedOriginal.gray, printedOriginal.gray, PRINT_DPI, printedOriginal.runs[2], printedTemplates, { scope: 'text' })],
+  ['few-rivals', verifyPrintedRun(printedSparse.gray, printedSparse.gray, PRINT_DPI, printedSparse.runs[0], sparseTemplates)],
+  ['too-coarse', verifyPrintedRun(printedSmall.gray, printedSmall.gray, PRINT_DPI, printedSmall.runs[1], smallTemplates)],
+  ['confirm-agreeing', verifyPrintedRun(printedOriginal.gray, printedOriginal.gray, PRINT_DPI, printedOriginal.runs[1], printedTemplates, { scope: 'confirm', claimed: '13.50' })],
+  ['confirm-without-a-claim', verifyPrintedRun(printedOriginal.gray, printedOriginal.gray, PRINT_DPI, printedOriginal.runs[1], printedTemplates, { scope: 'confirm' })],
+  ['confirm-misaligned', verifyPrintedRun(printedOriginal.gray, printedOriginal.gray, PRINT_DPI, printedOriginal.runs[1], printedTemplates, { scope: 'confirm', claimed: '1' })],
+  ['a-single-digit-is-not-a-figure', verifyPrintedRun(printedOriginal.gray, printedOriginal.gray, PRINT_DPI, printedOriginal.runs[1], printedTemplates, { minDigits: 5 })],
+  /*
+   * `maxPrinted` is the rule that a near-perfect match is not a forgery: a
+   * rival may only overturn the print when the print itself matched BADLY.
+   * Here the changed digit's own glyph scores 0.34, so raising the bar above
+   * that lets the change through and lowering it below refuses to call it -
+   * which is the only pair of cases that tells the rule apart from no rule.
+   */
+  ['a-change-the-print-matched-too-well-to-be', verifyPrintedRun(printedOriginal.gray, printedTampered.gray, PRINT_DPI, printedOriginal.runs[1], printedTemplates, { maxPrinted: 0.2 })],
+  ['the-same-change-with-the-bar-left-alone', verifyPrintedRun(printedOriginal.gray, printedTampered.gray, PRINT_DPI, printedOriginal.runs[1], printedTemplates, { maxPrinted: 0.9 })],
+  /*
+   * A scan soft enough that most of its cells stop being decidable. This is
+   * the case that reaches the cross-pass rule: a verdict has to hold at every
+   * sharpening or the cell is left undecided, because a reading that moves as
+   * the sharpening moves is the sharpening talking rather than the ink.
+   */
+  ['a-scan-too-soft-to-decide', verifyPrintedRun(printedOriginal.gray, printedBlurred, PRINT_DPI, printedOriginal.runs[1], printedTemplates)],
+]
+
+/*
+ * `templateKey` rounds a size to the nearest half point and an angle to the
+ * nearest quarter turn, both with `Math.round` - which rounds a half UP, where
+ * Python's `round` goes to even. These sizes and angles are the ones that land
+ * exactly on a half, and so the only ones that tell the two apart.
+ */
+const keyRun = (fontSize: number, angle: number): TextRun => ({
+  text:     '0',
+  x:        0,
+  y:        0,
+  width:    10,
+  height:   10,
+  angle,
+  baseline: 10,
+  fontSize,
+  fontName: 'F',
+  endsLine: false,
+})
+const halfCases: Array<[number, number]> = [
+  [10.25, 0], [10.75, 0], [10.5, 0], [11, 0], [10.25, 45], [10.25, 135], [10.25, -45],
+]
+
+/* The pieces under the verdict, pinned on their own so a failure says which. */
+const polarities = printedOriginal.runs.map((run, index) =>
+  [`run-${index}`, printPolarity(printedOriginal.gray, PRINT_DPI, run)] as const)
+const placements = printedOriginal.runs.map((run, index) =>
+  [`run-${index}`, placeGlyphs(printedOriginal.gray, PRINT_DPI, run, run.text)] as const)
+const keys = printedOriginal.runs.map((run, index) =>
+  [`run-${index}`, [...run.text].filter(c => c.trim() !== '').map(c => templateKey(run, c))] as const)
+
+const printVerdicts = printChecks.map(([name, check]) => [name, asCheck(check)] as const)
+
+writeFileSync(
+  join(goldenDir, 'ocr-print-verification.json'),
+  JSON.stringify({
+    dpi:              PRINT_DPI,
+    figureCharacters: FIGURE_CHARACTERS,
+    textCharacters:   TEXT_CHARACTERS,
+    /* Both ports build the page from these, and must agree on its pixels. */
+    pages:            {
+      original: { width: 600, height: 200, scale: 3, labels: [['0123456789', 8, 8], ['12.50', 8, 48], ['Total due', 8, 88], ['4321', 8, 128]] },
+      tampered: { width: 600, height: 200, scale: 3, labels: [['0123456789', 8, 8], ['13.50', 8, 48], ['Total due', 8, 88], ['4321', 8, 128]] },
+      sparse:   { width: 300, height: 100, scale: 3, labels: [['12', 8, 8]] },
+      small:    { width: 300, height: 100, scale: 1, labels: [['0123456789', 4, 4], ['12.50', 4, 24]] },
+    },
+    runs:              printedOriginal.runs,
+    templateCounts:    { original: printedTemplates.size, sparse: sparseTemplates.size, small: smallTemplates.size },
+    templateKeys:      Object.fromEntries(keys),
+    printPolarity:     Object.fromEntries(polarities),
+    placeGlyphs:       Object.fromEntries(placements),
+    verifyPrintedRun:  Object.fromEntries(printVerdicts),
+    templateKeyHalves: halfCases.map(([fontSize, angle]) =>
+      ({ fontSize, angle, key: templateKey(keyRun(fontSize, angle), '0') })),
+  }, undefined, 2) + '\n',
+)
+process.stdout.write('wrote ' + join(goldenDir, 'ocr-print-verification.json') + '\n')
